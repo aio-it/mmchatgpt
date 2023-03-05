@@ -44,9 +44,9 @@ class ChatGPT(Plugin):
             self.log_channel = log_channel
         openai.api_key = openai_api_key
 
-        print(f"Allowed users: {self.redis.smembers('users')}")
-        print(f"Allowed admins: {self.redis.smembers('admins')}")
-        print(f"Allowed models: {self.ALLOWED_MODELS}")
+        self.debug(f"Allowed users: {self.redis.smembers('users')}")
+        self.debug(f"Allowed admins: {self.redis.smembers('admins')}")
+        self.debug(f"Allowed models: {self.ALLOWED_MODELS}")
 
     def get_user_by_username(self, username):
         """get user id from username"""
@@ -198,7 +198,7 @@ class ChatGPT(Plugin):
                         size="1024x1024"
                     )
                     image_url = response['data'][0]['url']
-                    print(response)
+                    self.debug(response)
                     self.driver.reply_to(message, image_url)
                     self.log(f"{message.sender_name} used .mkimg")
             except TooManyRequests:
@@ -210,7 +210,7 @@ class ChatGPT(Plugin):
 
     def parse_params(self, message: str):
         """parse the params"""
-        print(message)
+        self.debug(message)
         if " " not in message:
             return "", "", ""
         cmd = message.split(" ")[1] if len(message.split(" ")) > 1 else ""
@@ -253,9 +253,9 @@ class ChatGPT(Plugin):
         thread_id = message.reply_id
         thread_key = REDIS_PREPEND+thread_id
         if self.redis.exists(thread_key):
-            print(f"thread exists {thread_id}")
+            self.debug(f"thread exists {thread_id}")
         else:
-            print(
+            self.debug(
                 f"thread does not exist {thread_id} fetching all posts in thread")
             thread = self.driver.get_post_thread(thread_id)
             for thread_index in thread['order']:

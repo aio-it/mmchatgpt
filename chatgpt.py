@@ -5,6 +5,7 @@ import redis
 # import serialized_redis
 from mmpy_bot import Plugin, listen_to
 from mmpy_bot import Message
+from redis_rate_limit import RateLimit, TooManyRequests
 
 MODEL = "gpt-3.5-turbo-0301"
 ADMINS = []  # put admins in here to prepopulate the redis db
@@ -184,15 +185,18 @@ class ChatGPT(Plugin):
         """use the openai module to get and image from text"""
         if self.is_user(message.sender_name):
             try:
-                response = openai.Image.create(
-                    prompt=text,
-                    n=1,
-                    size="1024x1024"
-                )
-                image_url = response['data'][0]['url']
-                print(response)
-                self.driver.reply_to(message, image_url)
-                self.log(f"{message.sender_name} used .mkimg")
+                with RateLimit(resource="mkimg", max_requests=1, expire=60):
+                    response = openai.Image.create(
+                        prompt=text,
+                        n=1,
+                        size="1024x1024"
+                    )
+                    image_url = response['data'][0]['url']
+                    print(response)
+                    self.driver.reply_to(message, image_url)
+                    self.log(f"{message.sender_name} used .mkimg")
+            except TooManyRequests:
+                self.driver.reply_to(message, "Rate limit exceeded (1/60s)")
             except openai.error.InvalidRequestError as error:
                 self.driver.reply_to(message, f"Error: {error}")
             except:

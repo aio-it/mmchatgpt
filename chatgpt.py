@@ -25,7 +25,6 @@ class ChatGPT(Plugin):
     def __init__(self, openai_api_key=None, log_channel=None):
         super().__init__()
         self.name = "ChatGPT"
-        self.chatlogs = {}
         self.model = MODEL
         self.redis = redis.Redis(
             host="localhost", port=6379, db=0, decode_responses=True)
@@ -43,9 +42,6 @@ class ChatGPT(Plugin):
             self.log_to_channel = True
             self.log_channel = log_channel
         openai.api_key = openai_api_key
-        # self.log_channel_id = self.driver.channels.get_channel_by_name_for_team_name(
-        #    self.team_name, "ChatGPT-log")['id']
-                # print(f"Log channel id: {self.log_channel_id}")
 
         print(f"Allowed users: {self.redis.smembers('users')}")
         print(f"Allowed admins: {self.redis.smembers('admins')}")
@@ -171,7 +167,6 @@ class ChatGPT(Plugin):
     async def clear(self, message: Message):
         """clear the chatlog"""
         if self.is_admin(message.sender_name):
-            self.chatlogs = {}
             self.driver.reply_to(message, "Chatlog cleared")
 
     @listen_to(".getchatlog")
@@ -223,10 +218,6 @@ class ChatGPT(Plugin):
             thread = self.driver.get_post_thread(thread_id)
             for thread_index in thread['order']:
                 thread_post = thread['posts'][thread_index]
-                # if "@" + self.driver.client.username + " " in thread_post['message']:
-
-                # message = Message(message)
-                print(thread_post)
                 thread_post['message'] = thread_post['message'].replace(
                     "@" + self.driver.client.username + ' ', '')
                 if self.driver.client.userid == thread_post['user_id']:
@@ -239,7 +230,6 @@ class ChatGPT(Plugin):
 
         messages = self.append_chatlog(
             thread_id, {"role": "user", "content": msg})
-        # print(self.driver.get_post_thread(thread_id))
         self.driver.react_to(message, "thought_balloon")
         response = openai.ChatCompletion.create(
             model=self.model,
@@ -276,19 +266,16 @@ class ChatGPT(Plugin):
         thread_key = REDIS_PREPEND+thread_id
         self.redis.rpush(thread_key, self.redis_serialize_json(msg))
         self.redis.expire(thread_key, expiry)
-        # self.chatlogs[thread_id].append(msg)
         messages = self.redis_deserialize_json(
             self.redis.lrange(thread_key, 0, -1))
         return messages
 
     def redis_serialize_json(self, msg):
         """serialize a message to json"""
-        # print(f"serializing {msg}")
         return json.dumps(msg)
 
     def redis_deserialize_json(self, msg):
         """deserialize a message from json"""
-        # print(f"deserializing {msg}")
         if isinstance(msg, list):
             return [json.loads(m) for m in msg]
         return json.loads(msg)

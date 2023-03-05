@@ -247,9 +247,6 @@ class ChatGPT(Plugin):
                         message, f"Error: {response['message']}")
                 else:
                     self.driver.reply_to(message, "Error")
-
-                self.driver.reply_to(
-                    message, f"Error: {response['message']}")
                 self.driver.reactions.delete_reaction(
                     self.driver.user_id, message.id, "thought_balloon")
                 self.driver.react_to(message, "x")

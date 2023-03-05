@@ -69,6 +69,7 @@ class ChatGPT(Plugin):
 
     def on_start(self):
         """send startup message to all admins"""
+        self.log("ChatGPT Bot started")
         # self.send_message_to_all_admins("ChatGPT Bot started")
         # self.send_message_to_all_admins(f"price per token: {PRICE_PER_TOKEN}$")
 

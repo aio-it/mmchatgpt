@@ -290,9 +290,13 @@ class ChatGPT(Plugin):
                 0, {"role": "system", "content": self.get_chatgpt_setting("system_prompt")})
         self.driver.react_to(message, "thought_balloon")
         try:
+            temperature = float(self.get_chatgpt_setting("temperature"))
+            top_p = float(self.get_chatgpt_setting("top_p"))
             response = openai.ChatCompletion.create(
                 model=self.model,
                 messages=messages,
+                temperature=temperature,
+                top_p=top_p,
                 temperature=0,
             )
             if "error" in response:

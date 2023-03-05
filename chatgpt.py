@@ -84,7 +84,7 @@ class ChatGPT(Plugin):
                                        message=message)
         self.log(message)
 
-    def log(self, message):
+    def log(self, message: str):
         """send message to log channel"""
         if self.log_to_channel:
             self.driver.create_post(self.log_channel, message)

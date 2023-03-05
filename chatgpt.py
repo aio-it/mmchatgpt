@@ -92,7 +92,7 @@ class ChatGPT(Plugin):
         """send debug message to log channel. if private is true send to all admins"""
         if self.log_to_channel and not private:
             self.log(f"DEBUG: {message}")
-        elif private:
+        elif not self.log_to_channel and private:
             self.wall(f"DEBUG: {message}")
 
     @listen_to(".usage")
@@ -295,7 +295,7 @@ class ChatGPT(Plugin):
                 self.driver.user_id, message.id, "thought_balloon")
             self.driver.react_to(message, "x")
             return
-        print(response)
+        self.debug(response)
         self.add_usage_for_user(message.sender_name,
                                 response['usage']['total_tokens'])
         self.log(

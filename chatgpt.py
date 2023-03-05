@@ -249,8 +249,8 @@ class ChatGPT(Plugin):
     def get_chatgpt_setting(self, key: str, default: str):
         settings_key = self.SETTINGS_KEY
         value = self.redis.hget(settings_key, key)
-        if value is None:
-            value = self.chatgpt_default_settings[key]
+        if value is None and key in self.ChatGPT_DEFAULTS:
+            value = self.ChatGPT_DEFAULTS[key]
         return value
     @listen_to(".+", needs_mention=True)
     async def chat(self, message: Message):

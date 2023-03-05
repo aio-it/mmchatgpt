@@ -13,7 +13,11 @@ USERS = []  # put users in here to prepopulate the redis db
 REDIS_PREPEND = "thread_"
 PRICE_PER_TOKEN = 0.002/1000
 DOLLAR_TO_DKK = 6.5
-
+chatgpt_defaults = {
+    "temperature": 1.0,
+    "system_prompt": "",
+    "top_p": 1.0,
+}
 
 class ChatGPT(Plugin):
     """mmypy chatgpt plugin"""

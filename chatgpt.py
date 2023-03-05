@@ -202,6 +202,25 @@ class ChatGPT(Plugin):
             except:
                 self.driver.reply_to(message, "Error")
 
+    @listen_to(".params? (.+) [a-zA-Z0-9_-] (.+)")
+    def params_get(self, message: Message, cmd: str, param: str, value: str):
+        """crud param handler"""
+        allowed_cmds = ["get", "set", "list", "restore"]
+        key = "settings"
+        allowed_params = ["system", "temperature", "top_p", "top_k",
+                          "frequency_penalty", "presence_penalty", "dimension", "max_tokens"]
+        if self.is_admin(message.sender_name):
+            if cmd in allowed_cmds:
+                if cmd == "get":
+                    self.driver.reply_to(
+                        message, f"{param} for {cmd}: {self.redis.hget(key,param)}")
+                elif cmd == "set":
+                    self.driver.reply_to(
+                        message, f"{param} for {cmd}: {self.redis.hset(key, param, value)}")
+                elif cmd == "list":
+                    self.driver.reply_to(
+                        message, f"{param} for {cmd}: {self.redis.hgetall(key)}")
+
     @listen_to(".+", needs_mention=True)
     async def chat(self, message: Message):
         """listen to everything and respond when mentioned"""

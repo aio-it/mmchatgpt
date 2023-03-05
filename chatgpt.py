@@ -218,7 +218,7 @@ class ChatGPT(Plugin):
             self.driver.reply_to(message, f"Set {key} to {value}")
 
     @listen_to(".get chatgpt ([a-zA-Z0-9_-])")
-    async def set_chatgpt(self, message: Message, key: str):
+    async def get_chatgpt(self, message: Message, key: str):
         """get the chatgpt key"""
         settings_key = "chatgpt_settings"
         self.debug(f"get_chatgpt {key}")

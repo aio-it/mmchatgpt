@@ -26,7 +26,7 @@ class ChatGPT(Plugin):
 
     ChatGPT_DEFAULTS = {
         "temperature": 1.0,
-        "system_prompt": "",
+        "system": "",
         "top_p": 1.0,
     }
 
@@ -195,9 +195,9 @@ class ChatGPT(Plugin):
             thread_key = REDIS_PREPEND+thread_id
             chatlog = self.redis_deserialize_json(
                 self.redis.lrange(thread_key, 0, -1))
-            if self.get_chatgpt_setting("system_prompt") != "":
+            if self.get_chatgpt_setting("system") != "":
                 chatlog.insert(
-                    0, {"role": "system", "content": self.get_chatgpt_setting("system_prompt")})
+                    0, {"role": "system", "content": self.get_chatgpt_setting("system")})
 
             self.driver.reply_to(message, f"Chatlog: {chatlog}")
 
@@ -300,9 +300,9 @@ class ChatGPT(Plugin):
                     {"role": role, "content": thread_post['message']}))
         messages = self.append_chatlog(
             thread_id, {"role": "user", "content": msg})
-        if self.get_chatgpt_setting("system_prompt") != "":
+        if self.get_chatgpt_setting("system") != "":
             messages.insert(
-                0, {"role": "system", "content": self.get_chatgpt_setting("system_prompt")})
+                0, {"role": "system", "content": self.get_chatgpt_setting("system")})
         self.driver.react_to(message, "thought_balloon")
         try:
             temperature = float(self.get_chatgpt_setting("temperature"))

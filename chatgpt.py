@@ -195,6 +195,10 @@ class ChatGPT(Plugin):
             thread_key = REDIS_PREPEND+thread_id
             chatlog = self.redis_deserialize_json(
                 self.redis.lrange(thread_key, 0, -1))
+            if self.get_chatgpt_setting("system_prompt") != "":
+                chatlog.insert(
+                    0, {"role": "system", "content": self.get_chatgpt_setting("system_prompt")})
+
             self.driver.reply_to(message, f"Chatlog: {chatlog}")
 
     @listen_to(".mkimg (.*)")

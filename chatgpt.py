@@ -82,7 +82,6 @@ class ChatGPT(Plugin):
         for admin in self.redis.smembers("admins"):
             self.driver.direct_message(receiver_id=self.get_user_by_username(admin)['id'],
                                        message=message)
-        self.log(message)
 
     def log(self, message: str):
         """send message to log channel"""

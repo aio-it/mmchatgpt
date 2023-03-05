@@ -297,7 +297,6 @@ class ChatGPT(Plugin):
                 messages=messages,
                 temperature=temperature,
                 top_p=top_p,
-                temperature=0,
             )
             if "error" in response:
                 if "message" in response:

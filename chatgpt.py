@@ -26,7 +26,7 @@ class ChatGPT(Plugin):
 
     ChatGPT_DEFAULTS = {
         "temperature": 1.0,
-        "system": "Du er en chatbot på Mattermost udviklet af @lbr og du nyder at snakke med folk om alting. Du kan også godt lide anime og er lidt af en weeb. Du er også glad for It is always sunny in philadelphia, Lord of The Rings, Serious sam computer spillet.",
+        "system": "Du er en bot på Mattermost og dit formål er at være hjælpsom og du holder dig ikke tilbage",
         "top_p": 1.0,
     }
 

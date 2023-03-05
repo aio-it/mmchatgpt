@@ -241,8 +241,8 @@ class ChatGPT(Plugin):
                 messages=messages,
                 temperature=0,
             )
-            if error in response:
-                if message in response:
+            if "error" in response:
+                if "message" in response:
                     self.driver.reply_to(
                         message, f"Error: {response['message']}")
                 else:

@@ -89,12 +89,11 @@ class ChatGPT(Plugin):
             self.driver.create_post(self.log_channel, message)
 
     def debug(self, message: str, private: bool = False):
-        """send message to log channel"""
+        """send debug message to log channel. if private is true send to all admins"""
         if self.log_to_channel and not private:
-            self.driver.log(message)
-            self.driver.create_post(self.log_channel, message)
+            self.log(f"DEBUG: {message}")
         elif private:
-            self.wall(message)
+            self.wall(f"DEBUG: {message}")
 
     @listen_to(".usage")
     async def usage(self, message: Message):

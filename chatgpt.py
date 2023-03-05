@@ -211,15 +211,16 @@ class ChatGPT(Plugin):
                           "frequency_penalty", "presence_penalty", "dimension", "max_tokens"]
         if self.is_admin(message.sender_name):
             if cmd in allowed_cmds:
-                if cmd == "get":
-                    self.driver.reply_to(
-                        message, f"{param} for {cmd}: {self.redis.hget(key,param)}")
-                elif cmd == "set":
-                    self.driver.reply_to(
-                        message, f"{param} for {cmd}: {self.redis.hset(key, param, value)}")
-                elif cmd == "list":
-                    self.driver.reply_to(
-                        message, f"{param} for {cmd}: {self.redis.hgetall(key)}")
+                if param in allowed_params or param == "":
+                    if cmd == "get":
+                        self.driver.reply_to(
+                            message, f"{param} for {cmd}: {self.redis.hget(key,param)}")
+                    elif cmd == "set":
+                        self.driver.reply_to(
+                            message, f"{param} for {cmd}: {self.redis.hset(key, param, value)}")
+                    elif cmd == "list":
+                        self.driver.reply_to(
+                            message, f"{param} for {cmd}: {self.redis.hgetall(key)}")
 
     @listen_to(".+", needs_mention=True)
     async def chat(self, message: Message):

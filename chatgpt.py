@@ -283,11 +283,11 @@ class ChatGPT(Plugin):
 
                 self.redis.rpush(thread_key, self.redis_serialize_json(
                     {"role": role, "content": thread_post['message']}))
-        if self.get_chatgpt_setting("system_prompt"):
-            messages.insert(
-                0, {"role": "system", "content": self.get_chatgpt_setting("system_prompt")})
         messages = self.append_chatlog(
             thread_id, {"role": "user", "content": msg})
+        if self.get_chatgpt_setting("system_prompt") != "":
+            messages.insert(
+                0, {"role": "system", "content": self.get_chatgpt_setting("system_prompt")})
         self.driver.react_to(message, "thought_balloon")
         try:
             response = openai.ChatCompletion.create(

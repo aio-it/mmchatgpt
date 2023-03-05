@@ -185,7 +185,7 @@ class ChatGPT(Plugin):
         """use the openai module to get and image from text"""
         if self.is_user(message.sender_name):
             try:
-                with RateLimit(resource="mkimg", max_requests=1, expire=60):
+                with RateLimit(resource="mkimg", client=message.sender_name, max_requests=1, expire=60):
                     response = openai.Image.create(
                         prompt=text,
                         n=1,

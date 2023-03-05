@@ -110,7 +110,7 @@ class ChatGPT(Plugin):
         if self.is_admin(message.sender_name):
             self.redis.srem("users", username)
             self.driver.reply_to(message, f"Removed user: {username}")
-            self.wall(f"Removed user: {username}")
+            self.log(f"Removed user: {username}")
 
     @listen_to(".users add (.+)")
     async def users_add(self, message: Message, username: str):
@@ -192,7 +192,7 @@ class ChatGPT(Plugin):
                 image_url = response['data'][0]['url']
                 print(response)
                 self.driver.reply_to(message, image_url)
-                self.wall(f"{message.sender_name} used .mkimg")
+                self.log(f"{message.sender_name} used .mkimg")
             except openai.error.InvalidRequestError as error:
                 self.driver.reply_to(message, f"Error: {error}")
             except:
@@ -239,7 +239,7 @@ class ChatGPT(Plugin):
         print(response)
         self.add_usage_for_user(message.sender_name,
                                 response['usage']['total_tokens'])
-        self.wall(
+        self.log(
             f"User: {message.sender_name} used {response['usage']['total_tokens']} tokens")
         self.driver.reply_to(
             message, f"@{message.sender_name}: {response.choices[0].message.content}")

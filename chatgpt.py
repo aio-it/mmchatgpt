@@ -62,7 +62,7 @@ class ChatGPT(Plugin):
 
     def on_stop(self):
         """send startup message to all admins"""
-        self.wall("ChatGPT Bot stopped")
+        self.log("ChatGPT Bot stopped")
 
     def print_to_console(self, message: Message):
         """print to console"""

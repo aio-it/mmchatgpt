@@ -212,7 +212,7 @@ class ChatGPT(Plugin):
     @listen_to(".params?")
     def params_get(self, message: Message):
         """crud param handler"""
-        cmd, param, value = self.parse_params(message)
+        cmd, param, value = self.parse_params(message.text)
         allowed_cmds = ["get", "set", "list", "restore"]
         key = "settings"
         allowed_params = ["system", "temperature", "top_p", "top_k",

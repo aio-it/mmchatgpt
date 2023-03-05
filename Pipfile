@@ -8,6 +8,7 @@ openai = "*"
 mmpy-bot = "*"
 redis = "*"
 environs = "*"
+python-redis-rate-limit = "*"
 
 [dev-packages]
 autopep8 = "*"

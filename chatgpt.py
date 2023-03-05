@@ -208,37 +208,23 @@ class ChatGPT(Plugin):
             except:
                 self.driver.reply_to(message, "Error")
 
-    def parse_params(self, message: str):
-        """parse the params"""
-        self.debug(message)
-        if " " not in message:
-            return "", "", ""
-        cmd = message.split(" ")[1] if len(message.split(" ")) > 1 else ""
-        param = message.split(" ")[2] if len(message.split(" ")) > 2 else ""
-        value = " ".join(message.split(" ")[3:] if len(
-            message.split(" ")) > 3 else [])
-        return cmd, param, value
-
-    @listen_to(".params?")
-    def params_get(self, message: Message):
-        """crud param handler"""
-        cmd, param, value = self.parse_params(message.text)
-        allowed_cmds = ["get", "set", "list", "restore"]
-        key = "settings"
-        allowed_params = ["system", "temperature", "top_p", "top_k",
-                          "frequency_penalty", "presence_penalty", "dimension", "max_tokens"]
+    @listen_to(".set chatgpt ([a-zA-Z0-9_-]) (.*)")
+    async def set_chatgpt(self, message: Message, key: str, value: str):
+        """set the chatgpt key"""
+        settings_key = "chatgpt_settings"
+        self.debug(f"set_chatgpt {key} {value}")
         if self.is_admin(message.sender_name):
-            if cmd in allowed_cmds:
-                if param in allowed_params or param == "":
-                    if cmd == "get":
-                        self.driver.reply_to(
-                            message, f"{param} for {cmd}: {self.redis.hget(key,param)}")
-                    elif cmd == "set":
-                        self.driver.reply_to(
-                            message, f"{param} for {cmd}: {self.redis.hset(key, param, value)}")
-                    elif cmd == "list":
-                        self.driver.reply_to(
-                            message, f"{param} for {cmd}: {self.redis.hgetall(key)}")
+            self.redis.hset(settings_key, key, value)
+            self.driver.reply_to(message, f"Set {key} to {value}")
+
+    @listen_to(".get chatgpt ([a-zA-Z0-9_-])")
+    async def set_chatgpt(self, message: Message, key: str):
+        """get the chatgpt key"""
+        settings_key = "chatgpt_settings"
+        self.debug(f"get_chatgpt {key}")
+        if self.is_admin(message.sender_name):
+            value = self.redis.hget(settings_key, key)
+            self.driver.reply_to(message, f"Set {key} to {value}")
 
     @listen_to(".+", needs_mention=True)
     async def chat(self, message: Message):

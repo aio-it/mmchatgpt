@@ -209,7 +209,7 @@ class ChatGPT(Plugin):
             return "", "", ""
         cmd = message.split(" ")[1] if len(message.split(" ")) > 1 else ""
         param = message.split(" ")[2] if len(message.split(" ")) > 2 else ""
-        value = message.split(" ")[3] if len(message.split(" ")) > 3 else ""
+        value = message.split(" ")[3:] if len(message.split(" ")) > 3 else ""
         return cmd, param, value
 
     @listen_to(".params?")

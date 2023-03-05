@@ -44,9 +44,9 @@ class ChatGPT(Plugin):
             self.log_channel = log_channel
         openai.api_key = openai_api_key
 
-        self.debug(f"Allowed users: {self.redis.smembers('users')}")
-        self.debug(f"Allowed admins: {self.redis.smembers('admins')}")
-        self.debug(f"Allowed models: {self.ALLOWED_MODELS}")
+        print(f"Allowed users: {self.redis.smembers('users')}")
+        print(f"Allowed admins: {self.redis.smembers('admins')}")
+        print(f"Allowed models: {self.ALLOWED_MODELS}")
 
     def get_user_by_username(self, username):
         """get user id from username"""

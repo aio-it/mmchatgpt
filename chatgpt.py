@@ -29,11 +29,11 @@ class ChatGPT(Plugin):
         self.model = MODEL
         self.redis = redis.Redis(
             host="localhost", port=6379, db=0, decode_responses=True)
-        if self.redis.scard("admins") <= 0:
+        if self.redis.scard("admins") <= 0 and len(ADMINS) > 0:
             self.redis.sadd("admins", *ADMINS)
-        if self.redis.scard("users") <= 0:
+        if self.redis.scard("users") <= 0 and len(USERS) > 0:
             self.redis.sadd("users", *USERS)
-        if self.redis.scard("admins") > 0:
+        if self.redis.scard("admins") > 0 and len(ADMINS) > 0:
             self.redis.sadd("users", *ADMINS)
         if openai_api_key is None:
             raise Exception("No OPENAI API key provided")

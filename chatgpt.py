@@ -246,7 +246,9 @@ class ChatGPT(Plugin):
             for key in self.redis.hkeys(settings_key):
                 self.driver.reply_to(
                     message, f"{key} {self.redis.hget(settings_key, key)}")
-    def get_chatgpt_setting(self, key: str, default: str):
+
+    def get_chatgpt_setting(self, key: str):
+        """get the chatgpt key setting"""
         settings_key = self.SETTINGS_KEY
         value = self.redis.hget(settings_key, key)
         if value is None and key in self.ChatGPT_DEFAULTS:

@@ -217,7 +217,7 @@ class ChatGPT(Plugin):
             except:
                 self.driver.reply_to(message, "Error")
 
-    @listen_to(".set chatgpt ([a-zA-Z0-9_-]) (.*)")
+    @listen_to(".set chatgpt ([a-zA-Z0-9_-]+) (.*)")
     async def set_chatgpt(self, message: Message, key: str, value: str):
         """set the chatgpt key"""
         settings_key = self.SETTINGS_KEY

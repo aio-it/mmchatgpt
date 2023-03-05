@@ -229,7 +229,7 @@ class ChatGPT(Plugin):
                             message, f"{param} for {cmd}: {self.self.redis.hget(key,self.param)}"
                     elif cmd == "set":
                         self.driver.reply_to(
-                            message, f"{param} for {cmd}: {self.redis.hset(key, param, value)}")
+                            message, f"{param} for {cmd}: {self.redis.hset(key, param, value)}"
                     elif cmd == "list":
                         self.driver.reply_to(
                             message, f"{param} for {cmd}: {self.redis.hgetall(key)}")

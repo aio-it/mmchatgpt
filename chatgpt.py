@@ -89,6 +89,14 @@ class ChatGPT(Plugin):
         if self.log_to_channel:
             self.driver.create_post(self.log_channel, message)
 
+    def debug(self, message: str, private: bool = False):
+        """send message to log channel"""
+        if self.log_to_channel and not private:
+            self.driver.log(message)
+            self.driver.create_post(self.log_channel, message)
+        elif private:
+            self.wall(message)
+
     @listen_to(".usage")
     async def usage(self, message: Message):
         """reply with usage"""

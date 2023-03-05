@@ -26,7 +26,7 @@ class ChatGPT(Plugin):
 
     ChatGPT_DEFAULTS = {
         "temperature": 1.0,
-        "system": "",
+        "system": "Du er en chatbot på Mattermost udviklet af @lbr og du nyder at snakke med folk om alting. Du kan også godt lide anime og er lidt af en weeb. Du er også glad for It is always sunny in philadelphia, Lord of The Rings, Serious sam computer spillet.",
         "top_p": 1.0,
     }
 
@@ -259,8 +259,9 @@ class ChatGPT(Plugin):
         self.debug("get_chatgpt_all")
         if self.is_admin(message.sender_name):
             for key in self.redis.hkeys(settings_key):
-                self.driver.reply_to(
-                    message, f"{key} {self.redis.hget(settings_key, key)}")
+                if key in self.ChatGPT_DEFAULTS:
+                    self.driver.reply_to(
+                        message, f"{key} {self.redis.hget(settings_key, key)}")
 
     def get_chatgpt_setting(self, key: str):
         """get the chatgpt key setting"""

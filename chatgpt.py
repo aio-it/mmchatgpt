@@ -235,11 +235,25 @@ class ChatGPT(Plugin):
         messages = self.append_chatlog(
             thread_id, {"role": "user", "content": msg})
         self.driver.react_to(message, "thought_balloon")
-        response = openai.ChatCompletion.create(
-            model=self.model,
-            messages=messages,
-            temperature=0,
-        )
+        try:
+            response = openai.ChatCompletion.create(
+                model=self.model,
+                messages=messages,
+                temperature=0,
+            )
+            if response['error']:
+                self.driver.reply_to(
+                    message, f"Error: {response['message']}")
+                self.driver.reactions.delete_reaction(
+                    self.driver.user_id, message.id, "thought_balloon")
+                self.driver.react_to(message, "x")
+                return
+        except openai.error.InvalidRequestError as error:
+            self.driver.reply_to(message, f"Error: {error}")
+            self.driver.reactions.delete_reaction(
+                self.driver.user_id, message.id, "thought_balloon")
+            self.driver.react_to(message, "x")
+            return
         print(response)
         self.add_usage_for_user(message.sender_name,
                                 response['usage']['total_tokens'])

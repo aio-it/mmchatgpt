@@ -232,6 +232,17 @@ class ChatGPT(Plugin):
             self.redis.hset(settings_key, key, value)
             self.driver.reply_to(message, f"Set {key} to {value}")
 
+    @listen_to(".reset chatgpt ([a-zA-Z0-9_-]+)")
+    async def reset_chatgpt(self, message: Message, key: str):
+        """reset the chatgpt key"""
+        settings_key = self.SETTINGS_KEY
+        if self.is_admin(message.sender_name) and key in self.ChatGPT_DEFAULTS:
+            value = self.ChatGPT_DEFAULTS[key]
+            self.debug(f"reset_chatgpt {key} {value}")
+            self.redis.hset(settings_key, key, self.ChatGPT_DEFAULTS[key])
+            self.redis.hdel(settings_key, key)
+            self.driver.reply_to(message, f"Reset {key} to {value}")
+
     @listen_to(".get chatgpt ([a-zA-Z0-9_-])")
     async def get_chatgpt(self, message: Message, key: str):
         """get the chatgpt key"""

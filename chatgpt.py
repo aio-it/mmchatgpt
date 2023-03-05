@@ -13,11 +13,6 @@ USERS = []  # put users in here to prepopulate the redis db
 REDIS_PREPEND = "thread_"
 PRICE_PER_TOKEN = 0.002/1000
 DOLLAR_TO_DKK = 6.5
-chatgpt_defaults = {
-    "temperature": 1.0,
-    "system_prompt": "",
-    "top_p": 1.0,
-}
 
 
 class ChatGPT(Plugin):
@@ -27,6 +22,13 @@ class ChatGPT(Plugin):
         "gpt-3.5-turbo-0301",
         "gpt-3.5-turbo"
     ]
+
+
+    ChatGPT_DEFAULTS = {
+        "temperature": 1.0,
+        "system_prompt": "",
+        "top_p": 1.0,
+    }
 
     SETTINGS_KEY = "chatgpt_settings"
 
@@ -50,7 +52,7 @@ class ChatGPT(Plugin):
             self.log_to_channel = True
             self.log_channel = log_channel
         openai.api_key = openai_api_key
-        for key, value in chatgpt_defaults.items():
+        for key, value in self.ChatGPT_DEFAULTS.items():
             if self.redis.hget(self.SETTINGS_KEY, key) is None:
                 self.redis.hset(self.SETTINGS_KEY, key, value)
         print(f"Allowed users: {self.redis.smembers('users')}")
@@ -244,7 +246,12 @@ class ChatGPT(Plugin):
             for key in self.redis.hkeys(settings_key):
                 self.driver.reply_to(
                     message, f"{key} {self.redis.hget(settings_key, key)}")
-
+    def get_chatgpt_setting(self, key: str, default: str):
+        settings_key = self.SETTINGS_KEY
+        value = self.redis.hget(settings_key, key)
+        if value is None:
+            value = self.chatgpt_default_settings[key]
+        return value
     @listen_to(".+", needs_mention=True)
     async def chat(self, message: Message):
         """listen to everything and respond when mentioned"""
@@ -274,7 +281,7 @@ class ChatGPT(Plugin):
 
                 self.redis.rpush(thread_key, self.redis_serialize_json(
                     {"role": role, "content": thread_post['message']}))
-
+                
         messages = self.append_chatlog(
             thread_id, {"role": "user", "content": msg})
         self.driver.react_to(message, "thought_balloon")

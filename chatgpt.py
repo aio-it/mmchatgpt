@@ -241,7 +241,7 @@ class ChatGPT(Plugin):
     async def get_chatgpt_all(self, message: Message):
         """get all the chatgpt keys"""
         settings_key = self.SETTINGS_KEY
-        self.debug(f"get_chatgpt_all")
+        self.debug("get_chatgpt_all")
         if self.is_admin(message.sender_name):
             for key in self.redis.hkeys(settings_key):
                 self.driver.reply_to(

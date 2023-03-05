@@ -204,7 +204,7 @@ class ChatGPT(Plugin):
 
     def parse_params(self, message: str):
         """parse the params"""
-        print(str)
+        print(message)
         if " " not in message:
             return "", "", ""
         cmd = message.split(" ")[1] if len(message.split(" ")) > 1 else ""

@@ -225,10 +225,10 @@ class ChatGPT(Plugin):
                 if param in allowed_params or param == "":
                     if cmd == "get":
                         self.driver.reply_to(
-                            message, f"{param} for {cmd}: {self.redis.hget(key,param)}")
+                            message, f"{param} for {cmd}: {self.redis_deserialize_json(self.redis.hget(key,self.param))}")
                     elif cmd == "set":
                         self.driver.reply_to(
-                            message, f"{param} for {cmd}: {self.redis.hset(key, param, value)}")
+                            message, f"{param} for {cmd}: {self.redis.hset(key, param, self.redis_serialize_json(value))}")
                     elif cmd == "list":
                         self.driver.reply_to(
                             message, f"{param} for {cmd}: {self.redis.hgetall(key)}")

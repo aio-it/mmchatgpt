@@ -202,11 +202,11 @@ class ChatGPT(Plugin):
             except:
                 self.driver.reply_to(message, "Error")
 
-    def parse_params(self, message: Message):
+    def parse_params(self, message: str):
         """parse the params"""
-        cmd = message.body.split(" ")[1]
-        param = message.body.split(" ")[2]
-        value = message.body.split(" ")[3]
+        cmd = message.split(" ")[1]
+        param = message.split(" ")[2]
+        value = message.split(" ")[3]
         return cmd, param, value
 
     @listen_to(".params?")

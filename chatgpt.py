@@ -241,7 +241,13 @@ class ChatGPT(Plugin):
                 messages=messages,
                 temperature=0,
             )
-            if response['error']:
+            if error in response:
+                if message in response:
+                    self.driver.reply_to(
+                        message, f"Error: {response['message']}")
+                else:
+                    self.driver.reply_to(message, "Error")
+
                 self.driver.reply_to(
                     message, f"Error: {response['message']}")
                 self.driver.reactions.delete_reaction(

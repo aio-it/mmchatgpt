@@ -19,6 +19,7 @@ chatgpt_defaults = {
     "top_p": 1.0,
 }
 
+
 class ChatGPT(Plugin):
     """mmypy chatgpt plugin"""
     MODEL = "gpt-3.5-turbo-0301"
@@ -26,6 +27,8 @@ class ChatGPT(Plugin):
         "gpt-3.5-turbo-0301",
         "gpt-3.5-turbo"
     ]
+
+    SETTINGS_KEY = "chatgpt_settings"
 
     def __init__(self, openai_api_key=None, log_channel=None):
         super().__init__()
@@ -47,7 +50,9 @@ class ChatGPT(Plugin):
             self.log_to_channel = True
             self.log_channel = log_channel
         openai.api_key = openai_api_key
-
+        for key, value in chatgpt_defaults.items():
+            if self.redis.hget(self.SETTINGS_KEY, key) is None:
+                self.redis.hset(self.SETTINGS_KEY, key, value)
         print(f"Allowed users: {self.redis.smembers('users')}")
         print(f"Allowed admins: {self.redis.smembers('admins')}")
         print(f"Allowed models: {self.ALLOWED_MODELS}")

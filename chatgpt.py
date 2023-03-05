@@ -220,7 +220,7 @@ class ChatGPT(Plugin):
     @listen_to(".set chatgpt ([a-zA-Z0-9_-]) (.*)")
     async def set_chatgpt(self, message: Message, key: str, value: str):
         """set the chatgpt key"""
-        settings_key = "chatgpt_settings"
+        settings_key = self.SETTINGS_KEY
         self.debug(f"set_chatgpt {key} {value}")
         if self.is_admin(message.sender_name):
             self.redis.hset(settings_key, key, value)
@@ -229,11 +229,20 @@ class ChatGPT(Plugin):
     @listen_to(".get chatgpt ([a-zA-Z0-9_-])")
     async def get_chatgpt(self, message: Message, key: str):
         """get the chatgpt key"""
-        settings_key = "chatgpt_settings"
+        settings_key = self.SETTINGS_KEY
         self.debug(f"get_chatgpt {key}")
         if self.is_admin(message.sender_name):
             value = self.redis.hget(settings_key, key)
             self.driver.reply_to(message, f"Set {key} to {value}")
+
+    @listen_to(".get chatgpt")
+    async def get_chatgpt_all(self, message: Message):
+        """get all the chatgpt keys"""
+        settings_key = self.SETTINGS_KEY
+        self.debug(f"get_chatgpt_all")
+        if self.is_admin(message.sender_name):
+            for key in self.redis.hkeys(settings_key):
+                self.driver.reply_to(message, f"{a} {self.redis.hget(settings_key, key)}")
 
     @listen_to(".+", needs_mention=True)
     async def chat(self, message: Message):

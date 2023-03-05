@@ -254,6 +254,11 @@ class ChatGPT(Plugin):
                 self.driver.user_id, message.id, "thought_balloon")
             self.driver.react_to(message, "x")
             return
+        except:
+            self.driver.reply_to(message, "Error")
+            self.driver.reactions.delete_reaction(self.driver.user_id,
+                                                  message.id, "thought_balloon")
+            self.driver.react_to(message, "x")
         print(response)
         self.add_usage_for_user(message.sender_name,
                                 response['usage']['total_tokens'])

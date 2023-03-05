@@ -242,7 +242,8 @@ class ChatGPT(Plugin):
         self.debug(f"get_chatgpt_all")
         if self.is_admin(message.sender_name):
             for key in self.redis.hkeys(settings_key):
-                self.driver.reply_to(message, f"{a} {self.redis.hget(settings_key, key)}")
+                self.driver.reply_to(
+                    message, f"{key} {self.redis.hget(settings_key, key)}")
 
     @listen_to(".+", needs_mention=True)
     async def chat(self, message: Message):

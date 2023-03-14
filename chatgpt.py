@@ -20,9 +20,10 @@ class ChatGPT(Plugin):
     MODEL = "gpt-3.5-turbo-0301"
     ALLOWED_MODELS = [
         "gpt-3.5-turbo-0301",
-        "gpt-3.5-turbo"
+        "gpt-3.5-turbo",
+        "gpt-4",
+        "gpt-4-32k",
     ]
-
 
     ChatGPT_DEFAULTS = {
         "temperature": 1.0,
@@ -271,6 +272,7 @@ class ChatGPT(Plugin):
         if value is None and key in self.ChatGPT_DEFAULTS:
             value = self.ChatGPT_DEFAULTS[key]
         return value
+
     @listen_to(".+", needs_mention=True)
     async def chat(self, message: Message):
         """listen to everything and respond when mentioned"""

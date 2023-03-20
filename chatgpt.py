@@ -278,8 +278,8 @@ class ChatGPT(Plugin):
         """listen to everything and respond when mentioned"""
         if not self.is_user(message.sender_name):
             return
-        if message.is_direct_message and not self.is_admin(message.sender_name):
-            return
+        # if message.is_direct_message and not self.is_admin(message.sender_name):
+        #    return
         if message.text[0] == ".":  # ignore commands
             return
         msg = message.text

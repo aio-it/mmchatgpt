@@ -207,8 +207,10 @@ class ChatGPT(Plugin):
             if self.get_chatgpt_setting("system") != "":
                 chatlog.insert(
                     0, {"role": "system", "content": self.get_chatgpt_setting("system")})
-
-            self.driver.reply_to(message, f"Chatlog: {chatlog}")
+            chatlogmsg = ""
+            for msg in chatlog:
+                chatlogmsg += f"{msg['role']}: {msg['content']}\n"
+            self.driver.reply_to(message, chatlogmsg)
 
     @listen_to(".mkimg (.*)")
     async def mkimg(self, message: Message, text: str):

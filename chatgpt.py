@@ -153,6 +153,13 @@ class ChatGPT(Plugin):
             self.redis.sadd("admins", username)
             self.driver.reply_to(message, f"Added admin: {username}")
 
+    @listen_to(".admins remove (.*)")
+    async def admins_remove(self, message: Message, username: str):
+        """remove admin"""
+        if self.is_admin(message.sender_name):
+            self.redis.srem("admins", username)
+            self.driver.reply_to(message, f"Removed admin: {username}")
+
     @listen_to(".admins list")
     async def admins_list(self, message: Message):
         """list the admins"""

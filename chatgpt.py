@@ -208,7 +208,7 @@ class ChatGPT(Plugin):
         """use the openai module to get and image from text"""
         if self.is_user(message.sender_name):
             try:
-                with RateLimit(resource="mkimg", client=message.sender_name, max_requests=1, expire=60):
+                with RateLimit(resource="mkimg", client=message.sender_name, max_requests=1, expire=5):
                     response = openai.Image.create(
                         prompt=text,
                         n=1,
@@ -219,7 +219,7 @@ class ChatGPT(Plugin):
                     self.driver.reply_to(message, image_url)
                     self.log(f"{message.sender_name} used .mkimg")
             except TooManyRequests:
-                self.driver.reply_to(message, "Rate limit exceeded (1/60s)")
+                self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
             except openai.error.InvalidRequestError as error:
                 self.driver.reply_to(message, f"Error: {error}")
             except:

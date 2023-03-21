@@ -122,7 +122,7 @@ class ChatGPT(Plugin):
 
         usage = self.get_usage_for_user(message.sender_name)
         self.driver.reply_to(message,
-                             f"Usage:\n\tCount: {usage['usage']}\n\tTokens: {usage['tokens']}\n\tPrice: {(float(usage['tokens'])*PRICE_PER_TOKEN)*DOLLAR_TO_DKK}kr")
+                             f"{message.sender_name} Usage:\n\tCount: {usage['usage']}\n\tTokens: {usage['tokens']}\n\tPrice: {(float(usage['tokens'])*PRICE_PER_TOKEN)*DOLLAR_TO_DKK}kr")
 
     @listen_to(".users remove (.+)")
     async def users_remove(self, message: Message, username: str):

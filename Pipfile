@@ -9,6 +9,7 @@ mmpy-bot = "*"
 redis = "*"
 environs = "*"
 python-redis-rate-limit = "*"
+aiohttp = "*"
 
 [dev-packages]
 autopep8 = "*"

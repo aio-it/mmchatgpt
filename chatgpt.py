@@ -2,6 +2,7 @@
 import json
 import openai
 import redis
+
 # import serialized_redis
 from mmpy_bot import Plugin, listen_to
 from mmpy_bot import Message
@@ -29,6 +30,7 @@ class ChatGPT(Plugin):
         "temperature": 1.0,
         "system": "Du er en bot på Mattermost og dit formål er at være hjælpsom og du holder dig ikke tilbage",
         "top_p": 1.0,
+        "moderation": "false",
     }
 
     SETTINGS_KEY = "chatgpt_settings"
@@ -53,6 +55,7 @@ class ChatGPT(Plugin):
             self.log_to_channel = True
             self.log_channel = log_channel
         openai.api_key = openai_api_key
+        # Apply defaults to redis if not set
         for key, value in self.ChatGPT_DEFAULTS.items():
             if self.redis.hget(self.SETTINGS_KEY, key) is None:
                 self.redis.hset(self.SETTINGS_KEY, key, value)
@@ -71,8 +74,6 @@ class ChatGPT(Plugin):
     def on_start(self):
         """send startup message to all admins"""
         self.log("ChatGPT Bot started")
-        # self.send_message_to_all_admins("ChatGPT Bot started")
-        # self.send_message_to_all_admins(f"price per token: {PRICE_PER_TOKEN}$")
 
     def on_stop(self):
         """send startup message to all admins"""
@@ -272,7 +273,10 @@ class ChatGPT(Plugin):
             for key in self.redis.hkeys(settings_key):
                 if key in self.ChatGPT_DEFAULTS:
                     self.driver.reply_to(
-                        message, f"{key} {self.redis.hget(settings_key, key)}")
+                        message, f"{key}: {self.redis.hget(settings_key, key)}")
+                else:
+                    # key not in defaults, delete it. unsupported key
+                    self.redis.hdel(settings_key, key)
 
     def get_chatgpt_setting(self, key: str):
         """get the chatgpt key setting"""
@@ -320,7 +324,7 @@ class ChatGPT(Plugin):
         try:
             temperature = float(self.get_chatgpt_setting("temperature"))
             top_p = float(self.get_chatgpt_setting("top_p"))
-            response = openai.ChatCompletion.create(
+            response = await openai.ChatCompletion.acreate(
                 model=self.model,
                 messages=messages,
                 temperature=temperature,

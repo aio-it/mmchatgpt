@@ -419,7 +419,7 @@ class ChatGPT(Plugin):
             full_message = "@{message.sender_name}: "
             # post initial message as a reply and save the message id
             reply_msg_id = self.driver.reply_to(
-                message, f"@{message.sender_name}: ").id
+                message, f"@{message.sender_name}: ")['id']
             self.debug(f"reply_msg_id: {reply_msg_id}")
             for chunk in response:
                 collected_chunks.append(chunk)  # save the event response

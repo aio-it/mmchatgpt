@@ -403,13 +403,13 @@ class ChatGPT(Plugin):
             # create variables to collect the stream of chunks
             collected_chunks = []
             collected_messages = []
-            full_message = "@{message.sender_name}: "
+            full_message = f"@{message.sender_name}: "
             # post initial message as a reply and save the message id
             reply_msg_id = self.driver.reply_to(
-                message, f"@{message.sender_name}: ")['id']
-            self.debug(f"reply_msg_id: {reply_msg_id}")
+                message, full_message)['id']
+            # self.debug(f"reply_msg_id: {reply_msg_id}")
             for chunk in response:
-                self.debug(f"chunk: {chunk}")
+                # self.debug(f"chunk: {chunk}")
                 # check for error in the responses and send error message
                 if "error" in chunk:
                     if "message" in chunk:
@@ -434,7 +434,7 @@ class ChatGPT(Plugin):
                     # update the message with the new chunk
                     self.driver.posts.patch_post(
                         reply_msg_id, {"message": f"{full_message}"})
-                    self.debug(f"full_message: {full_message}")
+                    # self.debug(f"full_message: {full_message}")
                 # print the chunk
                 # print(
                 #    f"Message received: {chunk_message}")

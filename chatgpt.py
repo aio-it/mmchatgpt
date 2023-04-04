@@ -411,7 +411,7 @@ class ChatGPT(Plugin):
                 # add x reaction to the message that failed to show error
                 self.driver.react_to(message, "x")
                 return
-            self.debug(response)
+            # self.debug(response)
 
             # create variables to collect the stream of chunks
             collected_chunks = []
@@ -426,11 +426,13 @@ class ChatGPT(Plugin):
                 # extract the message
                 chunk_message = chunk['choices'][0]['delta']
                 collected_messages.append(chunk_message)  # save the message
+                # if the message has content, add it to the full message
                 if 'content' in chunk_message:
                     full_message += chunk_message['content']
                     # update the message with the new chunk
                     self.driver.update_message(
                         reply_msg_id, f"{full_message}")
+                    self.debug(f"full_message: {full_message}")
                 # print the chunk
                 # print(
                 #    f"Message received: {chunk_message}")

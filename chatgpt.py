@@ -452,7 +452,7 @@ class ChatGPT(Plugin):
         self.driver.reactions.delete_reaction(
             self.driver.user_id, message.id, "thought_balloon")
 
-        if "usage" in response:
+        if not stream:
             # add usage for user
             # TODO: add per model usage
             self.add_usage_for_user(message.sender_name,

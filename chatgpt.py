@@ -391,7 +391,7 @@ class ChatGPT(Plugin):
         else:
             # we are streaming baby
             # send async request to openai
-            response = openai.ChatCompletion.create(
+            response = await openai.ChatCompletion.acreate(
                 model=self.model,
                 messages=messages,
                 temperature=temperature,
@@ -452,13 +452,14 @@ class ChatGPT(Plugin):
         self.driver.reactions.delete_reaction(
             self.driver.user_id, message.id, "thought_balloon")
 
-        # add usage for user
-        # TODO: add per model usage
-        self.add_usage_for_user(message.sender_name,
-                                response['usage']['total_tokens'])
-        # log usage for user
-        self.log(
-            f"User: {message.sender_name} used {response['usage']['total_tokens']} tokens")
+        if "usage" in response:
+            # add usage for user
+            # TODO: add per model usage
+            self.add_usage_for_user(message.sender_name,
+                                    response['usage']['total_tokens'])
+            # log usage for user
+            self.log(
+                f"User: {message.sender_name} used {response['usage']['total_tokens']} tokens")
 
     def get_all_usage(self):
         """get all usage"""

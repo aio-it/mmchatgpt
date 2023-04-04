@@ -304,7 +304,7 @@ class ChatGPT(Plugin):
         return value
 
     @listen_to(".+", needs_mention=True)
-    def chat(self, message: Message):
+    async def chat(self, message: Message):
         """listen to everything and respond when mentioned"""
         if not self.is_user(message.sender_name):
             return

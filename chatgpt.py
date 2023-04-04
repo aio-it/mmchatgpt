@@ -242,7 +242,7 @@ class ChatGPT(Plugin):
             except openai.error.InvalidRequestError as error:
                 self.driver.reply_to(message, f"Error: {error}")
             except:
-                self.driver.reply_to(message, "Error")
+                self.driver.reply_to(message, "Error: OpenAI API error")
 
     @listen_to(".set chatgpt ([a-zA-Z0-9_-]+) (.*)")
     async def set_chatgpt(self, message: Message, key: str, value: str):

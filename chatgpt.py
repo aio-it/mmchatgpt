@@ -446,6 +446,18 @@ class ChatGPT(Plugin):
             self.log(
                 f"User: {message.sender_name} used {response['usage']['total_tokens']} tokens")
 
+    # eval function that allows admins to run arbitrary python code and return the result to the chat
+    @listen_to("^\.eval (.*)",)
+    def admin_eval_function(self, message, code):
+        reply = ""
+        if message.sender_name in self.admins:
+            try:
+                eval(code)
+                reply = f"Evaluated: {code}"
+            except Exception as e:
+                reply = f"Error: {e}"
+            self.driver.reply_to(message, reply)
+
     def get_all_usage(self):
         """get all usage"""
         return {"usage": self.redis.hgetall("usage"), "tokens": self.redis.hgetall("tokens")}

@@ -400,9 +400,6 @@ class ChatGPT(Plugin):
             )
             # self.debug(response)
 
-            # create variables to collect the stream of chunks
-            collected_chunks = []
-            collected_messages = []
             full_message = f"@{message.sender_name}: "
             # post initial message as a reply and save the message id
             reply_msg_id = self.driver.reply_to(
@@ -424,26 +421,14 @@ class ChatGPT(Plugin):
                     self.driver.react_to(message, "x")
                     return
 
-                collected_chunks.append(chunk)  # save the event response
                 # extract the message
                 chunk_message = chunk['choices'][0]['delta']
-                collected_messages.append(chunk_message)  # save the message
                 # if the message has content, add it to the full message
                 if 'content' in chunk_message:
                     full_message += chunk_message['content']
-                    # update the message with the new chunk
+                    # patch the message with the new chunk
                     self.driver.posts.patch_post(
                         reply_msg_id, {"message": f"{full_message}"})
-                    # self.debug(f"full_message: {full_message}")
-                # print the chunk
-                # print(
-                #    f"Message received: {chunk_message}")
-                # full_message = ''.join(
-                #    [m.get('content', '') for m in collected_messages])
-                # print(f"Full conversation received: {full_reply_content}")
-                # send full response to user
-                # self.driver.reply_to(
-                #    message, f"@{message.sender_name}: {full_reply_content}")
 
                 # add response to chatlog
                 self.append_chatlog(

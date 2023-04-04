@@ -391,7 +391,7 @@ class ChatGPT(Plugin):
         else:
             # we are streaming baby
             # send async request to openai
-            response = await openai.ChatCompletion.acreate(
+            response = openai.ChatCompletion.create(
                 model=self.model,
                 messages=messages,
                 temperature=temperature,

@@ -433,7 +433,7 @@ class ChatGPT(Plugin):
                     full_message += chunk_message['content']
                     # update the message with the new chunk
                     self.driver.posts.update_post(
-                        reply_msg_id, f"{full_message}")
+                        reply_msg_id, {"message": f"{full_message}"})
                     self.debug(f"full_message: {full_message}")
                 # print the chunk
                 # print(

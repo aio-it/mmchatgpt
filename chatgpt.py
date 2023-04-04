@@ -418,7 +418,7 @@ class ChatGPT(Plugin):
             collected_messages = []
             full_message = "@{message.sender_name}: "
             # post initial message as a reply and save the message id
-            reply_msg_id = await self.driver.reply_to(
+            reply_msg_id = self.driver.reply_to(
                 message, f"@{message.sender_name}: ")
 
             for chunk in response:
@@ -429,7 +429,7 @@ class ChatGPT(Plugin):
                 if 'content' in chunk_message:
                     full_message += chunk_message['content']
                     # update the message with the new chunk
-                    await self.driver.update_message(
+                    self.driver.update_message(
                         reply_msg_id, f"{full_message}")
                 # print the chunk
                 # print(

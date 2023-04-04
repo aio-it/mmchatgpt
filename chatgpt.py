@@ -379,7 +379,7 @@ class ChatGPT(Plugin):
                     self.driver.user_id, message.id, "thought_balloon")
                 self.driver.react_to(message, "x")
                 return
-            self.debug(response)
+            # self.debug(response)
             # send response to user
             self.driver.reply_to(
                 message, f"@{message.sender_name}: {response.choices[0].message.content}")

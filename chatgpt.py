@@ -15,6 +15,14 @@ REDIS_PREPEND = "thread_"
 PRICE_PER_TOKEN = 0.002/1000
 DOLLAR_TO_DKK = 6.5
 
+# Custom Exceptions
+
+# exception for missing api key
+
+
+class MissingApiKey(Exception):
+    """Missing API key exception"""
+
 
 class ChatGPT(Plugin):
     """mmypy chatgpt plugin"""
@@ -31,6 +39,7 @@ class ChatGPT(Plugin):
         "system": "Du er en bot på Mattermost og dit formål er at være hjælpsom og du holder dig ikke tilbage",
         "top_p": 1.0,
         "moderation": "false",
+        "stream": "false",
     }
 
     SETTINGS_KEY = "chatgpt_settings"
@@ -48,7 +57,7 @@ class ChatGPT(Plugin):
         if self.redis.scard("admins") > 0 and len(ADMINS) > 0:
             self.redis.sadd("users", *ADMINS)
         if openai_api_key is None:
-            raise Exception("No OPENAI API key provided")
+            raise MissingApiKey("No OPENAI API key provided")
         if log_channel is None:
             self.log_to_channel = False
         else:
@@ -325,14 +334,16 @@ class ChatGPT(Plugin):
                 #    {"role": role, "content": thread_post['message']}))
                 messages = self.append_chatlog(
                     thread_id, {"role": role, "content": thread_post['message']})
+        # add system message
         if self.get_chatgpt_setting("system") != "":
             messages.insert(
                 0, {"role": "system", "content": self.get_chatgpt_setting("system")})
+        # add thought balloon to show assistant is thinking
         self.driver.react_to(message, "thought_balloon")
-        self.debug(f"chat {messages}")
         try:
             temperature = float(self.get_chatgpt_setting("temperature"))
             top_p = float(self.get_chatgpt_setting("top_p"))
+            # send async request to openai
             response = await openai.ChatCompletion.acreate(
                 model=self.model,
                 messages=messages,
@@ -356,14 +367,20 @@ class ChatGPT(Plugin):
             self.driver.react_to(message, "x")
             return
         self.debug(response)
+        # add usage for user
+        # TODO: add per model usage
         self.add_usage_for_user(message.sender_name,
                                 response['usage']['total_tokens'])
+        # log usage for user
         self.log(
             f"User: {message.sender_name} used {response['usage']['total_tokens']} tokens")
+        # send response to user
         self.driver.reply_to(
             message, f"@{message.sender_name}: {response.choices[0].message.content}")
+        # remove thought balloon
         self.driver.reactions.delete_reaction(
             self.driver.user_id, message.id, "thought_balloon")
+        # add response to chatlog
         self.append_chatlog(thread_id, response.choices[0].message)
 
     def get_all_usage(self):

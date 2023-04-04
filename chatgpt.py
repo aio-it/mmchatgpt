@@ -398,19 +398,6 @@ class ChatGPT(Plugin):
                 top_p=top_p,
                 stream=stream,
             )
-            # check for error in the responses and send error message
-            if "error" in response:
-                if "message" in response:
-                    self.driver.reply_to(
-                        message, f"Error: {response['message']}")
-                else:
-                    self.driver.reply_to(message, "Error")
-                # remove thought balloon
-                self.driver.reactions.delete_reaction(
-                    self.driver.user_id, message.id, "thought_balloon")
-                # add x reaction to the message that failed to show error
-                self.driver.react_to(message, "x")
-                return
             # self.debug(response)
 
             # create variables to collect the stream of chunks
@@ -423,6 +410,20 @@ class ChatGPT(Plugin):
             self.debug(f"reply_msg_id: {reply_msg_id}")
             for chunk in response:
                 self.debug(f"chunk: {chunk}")
+                # check for error in the responses and send error message
+                if "error" in chunk:
+                    if "message" in chunk:
+                        self.driver.reply_to(
+                            message, f"Error: {response['message']}")
+                    else:
+                        self.driver.reply_to(message, "Error")
+                    # remove thought balloon
+                    self.driver.reactions.delete_reaction(
+                        self.driver.user_id, message.id, "thought_balloon")
+                    # add x reaction to the message that failed to show error
+                    self.driver.react_to(message, "x")
+                    return
+
                 collected_chunks.append(chunk)  # save the event response
                 # extract the message
                 chunk_message = chunk['choices'][0]['delta']

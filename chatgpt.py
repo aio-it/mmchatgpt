@@ -26,7 +26,8 @@ class MissingApiKey(Exception):
 
 class ChatGPT(Plugin):
     """mmypy chatgpt plugin"""
-    MODEL = "gpt-3.5-turbo-0301"
+    # MODEL = "gpt-3.5-turbo-0301"
+    DEFAULT_MODEL = "gpt-4"
     ALLOWED_MODELS = [
         "gpt-3.5-turbo-0301",
         "gpt-3.5-turbo",
@@ -47,7 +48,6 @@ class ChatGPT(Plugin):
     def __init__(self, openai_api_key=None, log_channel=None):
         super().__init__()
         self.name = "ChatGPT"
-        self.model = MODEL
         self.redis = redis.Redis(
             host="localhost", port=6379, db=0, decode_responses=True)
         if self.redis.scard("admins") <= 0 and len(ADMINS) > 0:
@@ -64,6 +64,10 @@ class ChatGPT(Plugin):
             self.log_to_channel = True
             self.log_channel = log_channel
         openai.api_key = openai_api_key
+        # Apply default model to redis if not set and set self.model
+        if self.redis.hget(self.SETTINGS_KEY, "model") is None:
+            self.redis.hset(self.SETTINGS_KEY, "model", self.DEFAULT_MODEL)
+            self.model = self.DEFAULT_MODEL
         # Apply defaults to redis if not set
         for key, value in self.ChatGPT_DEFAULTS.items():
             if self.redis.hget(self.SETTINGS_KEY, key) is None:
@@ -189,6 +193,8 @@ class ChatGPT(Plugin):
         """set the model"""
         if self.is_admin(message.sender_name):
             if model in self.ALLOWED_MODELS:
+                # save model to redis in the settings hash
+                self.redis.hset(self.SETTINGS_KEY, "model", model)
                 self.model = model
                 self.driver.reply_to(message, f"Model set to: {model}")
             else:
@@ -198,7 +204,7 @@ class ChatGPT(Plugin):
     async def model_get(self, message: Message):
         """get the model"""
         if self.is_admin(message.sender_name):
-            self.driver.reply_to(message, f"Model: {MODEL}")
+            self.driver.reply_to(message, f"Model: {self.model}")
 
     @listen_to("^\.clear")
     async def clear(self, message: Message):

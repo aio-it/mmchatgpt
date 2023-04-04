@@ -298,25 +298,32 @@ class ChatGPT(Plugin):
         msg = message.text
         thread_id = message.reply_id
         thread_key = REDIS_PREPEND+thread_id
+        # check if thread exists in redis
         if self.redis.exists(thread_key):
             self.debug(f"thread exists {thread_id}")
+            messages = self.append_chatlog(
+                thread_id, {"role": "user", "content": msg})
         else:
+            # thread does not exist, fetch all posts in thread
             self.debug(
                 f"thread does not exist {thread_id} fetching all posts in thread")
             thread = self.driver.get_post_thread(thread_id)
             for thread_index in thread['order']:
                 thread_post = thread['posts'][thread_index]
+                # remove mentions of self
                 thread_post['message'] = thread_post['message'].replace(
                     "@" + self.driver.client.username + ' ', '')
+                # if post is from self, set role to assistant
                 if self.driver.client.userid == thread_post['user_id']:
                     role = "assistant"
                 else:
+                    # post is from user, set role to user
                     role = "user"
 
-                self.redis.rpush(thread_key, self.redis_serialize_json(
-                    {"role": role, "content": thread_post['message']}))
-        messages = self.append_chatlog(
-            thread_id, {"role": "user", "content": msg})
+                # self.redis.rpush(thread_key, self.redis_serialize_json(
+                #    {"role": role, "content": thread_post['message']}))
+                messages = self.append_chatlog(
+                    thread_id, {"role": role, "content": thread_post['message']})
         if self.get_chatgpt_setting("system") != "":
             messages.insert(
                 0, {"role": "system", "content": self.get_chatgpt_setting("system")})

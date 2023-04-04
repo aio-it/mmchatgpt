@@ -299,6 +299,7 @@ class ChatGPT(Plugin):
         thread_id = message.reply_id
         thread_key = REDIS_PREPEND+thread_id
         # check if thread exists in redis
+        messages = []
         if self.redis.exists(thread_key):
             self.debug(f"thread exists {thread_id}")
             messages = self.append_chatlog(
@@ -328,6 +329,7 @@ class ChatGPT(Plugin):
             messages.insert(
                 0, {"role": "system", "content": self.get_chatgpt_setting("system")})
         self.driver.react_to(message, "thought_balloon")
+        self.debug(f"chat {messages}")
         try:
             temperature = float(self.get_chatgpt_setting("temperature"))
             top_p = float(self.get_chatgpt_setting("top_p"))

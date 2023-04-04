@@ -422,6 +422,7 @@ class ChatGPT(Plugin):
                 message, f"@{message.sender_name}: ")['id']
             self.debug(f"reply_msg_id: {reply_msg_id}")
             for chunk in response:
+                self.debug(f"chunk: {chunk}")
                 collected_chunks.append(chunk)  # save the event response
                 # extract the message
                 chunk_message = chunk['choices'][0]['delta']

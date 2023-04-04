@@ -65,7 +65,8 @@ class ChatGPT(Plugin):
             self.log_channel = log_channel
         openai.api_key = openai_api_key
         # Apply default model to redis if not set and set self.model
-        if self.redis.hget(self.SETTINGS_KEY, "model") is None:
+        self.model = self.redis.hget(self.SETTINGS_KEY, "model")
+        if self.model is None:
             self.redis.hset(self.SETTINGS_KEY, "model", self.DEFAULT_MODEL)
             self.model = self.DEFAULT_MODEL
         # Apply defaults to redis if not set

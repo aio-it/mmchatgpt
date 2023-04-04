@@ -391,7 +391,7 @@ class ChatGPT(Plugin):
         else:
             # we are streaming baby
             # send async request to openai
-            response = openai.ChatCompletion.create(
+            response = await openai.ChatCompletion.acreate(
                 model=self.model,
                 messages=messages,
                 temperature=temperature,
@@ -408,7 +408,7 @@ class ChatGPT(Plugin):
             reply_msg_id = self.driver.reply_to(
                 message, full_message)['id']
             # self.debug(f"reply_msg_id: {reply_msg_id}")
-            for chunk in response:
+            async for chunk in response:
                 # self.debug(f"chunk: {chunk}")
                 # check for error in the responses and send error message
                 if "error" in chunk:

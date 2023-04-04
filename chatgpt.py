@@ -118,7 +118,7 @@ class ChatGPT(Plugin):
         elif not self.log_to_channel and private:
             self.wall(f"DEBUG: {message}")
 
-    @listen_to(".usage")
+    @listen_to("^\.usage")
     async def usage(self, message: Message):
         """reply with usage"""
         if self.is_admin(message.sender_name):
@@ -134,7 +134,7 @@ class ChatGPT(Plugin):
         self.driver.reply_to(message,
                              f"{message.sender_name} Usage:\n\tCount: {usage['usage']}\n\tTokens: {usage['tokens']}\n\tPrice: {(float(usage['tokens'])*PRICE_PER_TOKEN)*DOLLAR_TO_DKK}kr")
 
-    @listen_to(".users remove (.+)")
+    @listen_to("^\.users remove (.+)")
     async def users_remove(self, message: Message, username: str):
         """remove user"""
         if self.is_admin(message.sender_name):
@@ -142,49 +142,49 @@ class ChatGPT(Plugin):
             self.driver.reply_to(message, f"Removed user: {username}")
             self.log(f"Removed user: {username}")
 
-    @listen_to(".users add (.+)")
+    @listen_to("^\.users add (.+)")
     async def users_add(self, message: Message, username: str):
         """add user"""
         if self.is_admin(message.sender_name):
             self.redis.sadd("users", username)
             self.driver.reply_to(message, f"Added user: {username}")
 
-    @listen_to(".users list")
+    @listen_to("^\.users list")
     async def users_list(self, message: Message):
         """list the users"""
         if self.is_admin(message.sender_name):
             self.driver.reply_to(
                 message, f"Allowed users: {self.redis.smembers('users')}")
 
-    @listen_to(".admins add (.*)")
+    @listen_to("^\.admins add (.*)")
     async def admins_add(self, message: Message, username: str):
         """add admin"""
         if self.is_admin(message.sender_name):
             self.redis.sadd("admins", username)
             self.driver.reply_to(message, f"Added admin: {username}")
 
-    @listen_to(".admins remove (.*)")
+    @listen_to("^\.admins remove (.*)")
     async def admins_remove(self, message: Message, username: str):
         """remove admin"""
         if self.is_admin(message.sender_name):
             self.redis.srem("admins", username)
             self.driver.reply_to(message, f"Removed admin: {username}")
 
-    @listen_to(".admins list")
+    @listen_to("^\.admins list")
     async def admins_list(self, message: Message):
         """list the admins"""
         if self.is_admin(message.sender_name):
             self.driver.reply_to(
                 message, f"Allowed admins: {self.redis.smembers('admins')}")
 
-    @listen_to(".models list")
+    @listen_to("^\.models list")
     async def model_list(self, message: Message):
         """list the models"""
         if self.is_admin(message.sender_name):
             self.driver.reply_to(
                 message, f"Allowed models: {self.ALLOWED_MODELS}")
 
-    @listen_to(".model set (.*)")
+    @listen_to("^\.model set (.*)")
     async def model_set(self, message: Message, model: str):
         """set the model"""
         if self.is_admin(message.sender_name):
@@ -194,19 +194,19 @@ class ChatGPT(Plugin):
             else:
                 self.driver.reply_to(message, f"Model not allowed: {model}")
 
-    @listen_to(".model get", allowed_users=["lbr"])
+    @listen_to("^\.model get", allowed_users=["lbr"])
     async def model_get(self, message: Message):
         """get the model"""
         if self.is_admin(message.sender_name):
             self.driver.reply_to(message, f"Model: {MODEL}")
 
-    @listen_to(".clear")
+    @listen_to("^\.clear")
     async def clear(self, message: Message):
         """clear the chatlog"""
         if self.is_admin(message.sender_name):
             self.driver.reply_to(message, "Chatlog cleared")
 
-    @listen_to(".getchatlog")
+    @listen_to("^\.getchatlog")
     async def getchatlog(self, message: Message):
         """get the chatlog"""
         if self.is_admin(message.sender_name):
@@ -222,7 +222,7 @@ class ChatGPT(Plugin):
                 chatlogmsg += f"{msg['role']}: {msg['content']}\n"
             self.driver.reply_to(message, chatlogmsg)
 
-    @listen_to(".mkimg (.*)")
+    @listen_to("^\.mkimg (.*)")
     async def mkimg(self, message: Message, text: str):
         """use the openai module to get and image from text"""
         if self.is_user(message.sender_name):
@@ -244,7 +244,7 @@ class ChatGPT(Plugin):
             except:
                 self.driver.reply_to(message, "Error: OpenAI API error")
 
-    @listen_to(".set chatgpt ([a-zA-Z0-9_-]+) (.*)")
+    @listen_to("^\.set chatgpt ([a-zA-Z0-9_-]+) (.*)")
     async def set_chatgpt(self, message: Message, key: str, value: str):
         """set the chatgpt key"""
         settings_key = self.SETTINGS_KEY
@@ -253,7 +253,7 @@ class ChatGPT(Plugin):
             self.redis.hset(settings_key, key, value)
             self.driver.reply_to(message, f"Set {key} to {value}")
 
-    @listen_to(".reset chatgpt ([a-zA-Z0-9_-]+)")
+    @listen_to("^\.reset chatgpt ([a-zA-Z0-9_-]+)")
     async def reset_chatgpt(self, message: Message, key: str):
         """reset the chatgpt key"""
         settings_key = self.SETTINGS_KEY
@@ -264,7 +264,7 @@ class ChatGPT(Plugin):
             self.redis.hdel(settings_key, key)
             self.driver.reply_to(message, f"Reset {key} to {value}")
 
-    @listen_to(".get chatgpt ([a-zA-Z0-9_-])")
+    @listen_to("^\.get chatgpt ([a-zA-Z0-9_-])")
     async def get_chatgpt(self, message: Message, key: str):
         """get the chatgpt key"""
         settings_key = self.SETTINGS_KEY
@@ -273,7 +273,7 @@ class ChatGPT(Plugin):
             value = self.redis.hget(settings_key, key)
             self.driver.reply_to(message, f"Set {key} to {value}")
 
-    @listen_to(".get chatgpt")
+    @listen_to("^\.get chatgpt")
     async def get_chatgpt_all(self, message: Message):
         """get all the chatgpt keys"""
         settings_key = self.SETTINGS_KEY

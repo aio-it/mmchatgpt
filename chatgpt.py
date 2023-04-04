@@ -450,7 +450,7 @@ class ChatGPT(Plugin):
     @listen_to("^\.eval (.*)",)
     def admin_eval_function(self, message, code):
         reply = ""
-        if message.sender_name in self.admins:
+        if self.is_admin(message.sender_name):
             try:
                 eval(code)
                 reply = f"Evaluated: {code}"

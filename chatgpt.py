@@ -452,8 +452,8 @@ class ChatGPT(Plugin):
         reply = ""
         if self.is_admin(message.sender_name):
             try:
-                eval(code)
-                reply = f"Evaluated: {code}"
+                resp = eval(code)
+                reply = f"Evaluated: {code} \nResult: {resp}"
             except Exception as e:
                 reply = f"Error: {e}"
             self.driver.reply_to(message, reply)

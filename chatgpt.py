@@ -312,6 +312,9 @@ class ChatGPT(Plugin):
         #    return
         if message.text[0] == ".":  # ignore commands
             return
+        # set stream using ternary
+        stream = True if self.get_chatgpt_setting(
+            "stream") == 'true' else False
         msg = message.text
         thread_id = message.reply_id
         thread_key = REDIS_PREPEND+thread_id
@@ -348,33 +351,103 @@ class ChatGPT(Plugin):
                 0, {"role": "system", "content": self.get_chatgpt_setting("system")})
         # add thought balloon to show assistant is thinking
         self.driver.react_to(message, "thought_balloon")
-        try:
-            temperature = float(self.get_chatgpt_setting("temperature"))
-            top_p = float(self.get_chatgpt_setting("top_p"))
+        temperature = float(self.get_chatgpt_setting("temperature"))
+        top_p = float(self.get_chatgpt_setting("top_p"))
+        if not stream:
+            try:
+                # send async request to openai
+                response = await openai.ChatCompletion.acreate(
+                    model=self.model,
+                    messages=messages,
+                    temperature=temperature,
+                    top_p=top_p,
+                    stream=stream,
+                )
+                # check for error in the responses and send error message
+                if "error" in response:
+                    if "message" in response:
+                        self.driver.reply_to(
+                            message, f"Error: {response['message']}")
+                    else:
+                        self.driver.reply_to(message, "Error")
+                    # remove thought balloon
+                    self.driver.reactions.delete_reaction(
+                        self.driver.user_id, message.id, "thought_balloon")
+                    # add x reaction to the message that failed to show error
+                    self.driver.react_to(message, "x")
+                    return
+            except openai.error.InvalidRequestError as error:
+                self.driver.reply_to(message, f"Error: {error}")
+                self.driver.reactions.delete_reaction(
+                    self.driver.user_id, message.id, "thought_balloon")
+                self.driver.react_to(message, "x")
+                return
+            self.debug(response)
+            # send response to user
+            self.driver.reply_to(
+                message, f"@{message.sender_name}: {response.choices[0].message.content}")
+            # add response to chatlog
+            self.append_chatlog(thread_id, response.choices[0].message)
+        else:
+            # we are streaming baby
             # send async request to openai
             response = await openai.ChatCompletion.acreate(
                 model=self.model,
                 messages=messages,
                 temperature=temperature,
                 top_p=top_p,
+                stream=stream,
             )
+            # check for error in the responses and send error message
             if "error" in response:
                 if "message" in response:
                     self.driver.reply_to(
                         message, f"Error: {response['message']}")
                 else:
                     self.driver.reply_to(message, "Error")
+                # remove thought balloon
                 self.driver.reactions.delete_reaction(
                     self.driver.user_id, message.id, "thought_balloon")
+                # add x reaction to the message that failed to show error
                 self.driver.react_to(message, "x")
                 return
-        except openai.error.InvalidRequestError as error:
-            self.driver.reply_to(message, f"Error: {error}")
-            self.driver.reactions.delete_reaction(
-                self.driver.user_id, message.id, "thought_balloon")
-            self.driver.react_to(message, "x")
-            return
-        self.debug(response)
+            self.debug(response)
+
+            # create variables to collect the stream of chunks
+            collected_chunks = []
+            collected_messages = []
+            full_message = "@{message.sender_name}: "
+            # post initial message as a reply and save the message id
+            reply_msg_id = await self.driver.reply_to(
+                message, f"@{message.sender_name}: ")
+
+            for chunk in response:
+                collected_chunks.append(chunk)  # save the event response
+                # extract the message
+                chunk_message = chunk['choices'][0]['delta']
+                collected_messages.append(chunk_message)  # save the message
+                if 'content' in chunk_message:
+                    full_message += chunk_message['content']
+                    # update the message with the new chunk
+                    await self.driver.update_message(
+                        reply_msg_id, f"{full_message}")
+                # print the chunk
+                # print(
+                #    f"Message received: {chunk_message}")
+                # full_message = ''.join(
+                #    [m.get('content', '') for m in collected_messages])
+                # print(f"Full conversation received: {full_reply_content}")
+                # send full response to user
+                # self.driver.reply_to(
+                #    message, f"@{message.sender_name}: {full_reply_content}")
+
+                # add response to chatlog
+                self.append_chatlog(
+                    thread_id, {"role": "assistant", "content": full_message})
+        # remove thought balloon after successful response
+        self.driver.reactions.delete_reaction(
+            self.driver.user_id, message.id, "thought_balloon")
+
         # add usage for user
         # TODO: add per model usage
         self.add_usage_for_user(message.sender_name,
@@ -382,14 +455,6 @@ class ChatGPT(Plugin):
         # log usage for user
         self.log(
             f"User: {message.sender_name} used {response['usage']['total_tokens']} tokens")
-        # send response to user
-        self.driver.reply_to(
-            message, f"@{message.sender_name}: {response.choices[0].message.content}")
-        # remove thought balloon
-        self.driver.reactions.delete_reaction(
-            self.driver.user_id, message.id, "thought_balloon")
-        # add response to chatlog
-        self.append_chatlog(thread_id, response.choices[0].message)
 
     def get_all_usage(self):
         """get all usage"""

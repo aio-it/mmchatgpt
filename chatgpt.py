@@ -321,13 +321,10 @@ class ChatGPT(Plugin):
         # check if thread exists in redis
         messages = []
         if self.redis.exists(thread_key):
-            self.debug(f"thread exists {thread_id}")
             messages = self.append_chatlog(
                 thread_id, {"role": "user", "content": msg})
         else:
             # thread does not exist, fetch all posts in thread
-            self.debug(
-                f"thread does not exist {thread_id} fetching all posts in thread")
             thread = self.driver.get_post_thread(thread_id)
             for thread_index in thread['order']:
                 thread_post = thread['posts'][thread_index]
@@ -445,6 +442,8 @@ class ChatGPT(Plugin):
             # log usage for user
             self.log(
                 f"User: {message.sender_name} used {response['usage']['total_tokens']} tokens")
+        else:
+            self.log(f"User: {message.sender_name} used {self.model}")
 
     # eval function that allows admins to run arbitrary python code and return the result to the chat
     @listen_to(r"^\.eval (.*)")

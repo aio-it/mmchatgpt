@@ -447,13 +447,26 @@ class ChatGPT(Plugin):
                 f"User: {message.sender_name} used {response['usage']['total_tokens']} tokens")
 
     # eval function that allows admins to run arbitrary python code and return the result to the chat
-    @listen_to("^\.eval (.*)",)
+    @listen_to(r"^\.eval (.*)")
     def admin_eval_function(self, message, code):
+        """eval function that allows admins to run arbitrary python code and return the result to the chat"""
         reply = ""
         if self.is_admin(message.sender_name):
             try:
                 resp = eval(code)
                 reply = f"Evaluated: {code} \nResult: {resp}"
+            except Exception as e:
+                reply = f"Error: {e}"
+            self.driver.reply_to(message, reply)
+
+    @listen_to(r"^\.exec (.*)")
+    def admin_exec_function(self, message, code):
+        """exec function that allows admins to run arbitrary python code and return the result to the chat"""
+        reply = ""
+        if self.is_admin(message.sender_name):
+            try:
+                resp = exec(code)
+                reply = f"Executed: {code} \nResult: {resp}"
             except Exception as e:
                 reply = f"Error: {e}"
             self.driver.reply_to(message, reply)

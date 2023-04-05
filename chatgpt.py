@@ -437,6 +437,7 @@ class ChatGPT(Plugin):
                     full_message += chunk_message['content']
                     self.debug((time.time() - last_update_time) * 1000)
                     if (time.time() - last_update_time) * 1000 > stream_update_delay_ms:
+                        self.debug("updating message")
                         # update the message
                         self.driver.posts.patch_post(
                             reply_msg_id, {"message": f"{full_message}"})

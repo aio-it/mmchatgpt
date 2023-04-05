@@ -407,10 +407,14 @@ class ChatGPT(Plugin):
             # self.debug(f"reply_msg_id: {reply_msg_id}")
             # get current time and set that as last_update_time
             last_update_time = time.time()
+            last_chunk_time = last_update_time
             # get the setting for how often to update the message
             stream_update_delay_ms = float(
                 self.get_chatgpt_setting("stream_update_delay_ms"))
             async for chunk in response:
+                self.debug("time since last chunk: " +
+                           (time.time() - last_chunk_time) * 1000)
+                last_chunk_time = time.time()
                 # self.debug(f"chunk: {chunk}")
                 # check for error in the responses and send error message
                 if "error" in chunk:

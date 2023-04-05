@@ -3,7 +3,6 @@ import time
 import json
 import openai
 import redis
-import asyncio
 
 
 # import serialized_redis
@@ -89,14 +88,14 @@ class ChatGPT(Plugin):
         """get user id from user_id"""
         return self.driver.users.get_user(user_id)
 
-    async def on_start(self):
+    def on_start(self):
         """send startup message to all admins"""
-        await self.log("ChatGPT Bot started")
-        await self.log("model: " + self.model)
+        self.log("ChatGPT Bot started")
+        self.log("model: " + self.model)
 
-    async def on_stop(self):
+    def on_stop(self):
         """send startup message to all admins"""
-        await self.log("ChatGPT Bot stopped")
+        self.log("ChatGPT Bot stopped")
 
     def print_to_console(self, message: Message):
         """print to console"""

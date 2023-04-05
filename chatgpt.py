@@ -1,7 +1,9 @@
 """ChatGPT plugin for mmpy_bot"""
+import time
 import json
 import openai
 import redis
+
 
 # import serialized_redis
 from mmpy_bot import Plugin, listen_to
@@ -41,6 +43,7 @@ class ChatGPT(Plugin):
         "top_p": 1.0,
         "moderation": "false",
         "stream": "false",
+        "stream_update_delay_ms": 200,
     }
 
     SETTINGS_KEY = "chatgpt_settings"
@@ -402,6 +405,11 @@ class ChatGPT(Plugin):
             reply_msg_id = self.driver.reply_to(
                 message, full_message)['id']
             # self.debug(f"reply_msg_id: {reply_msg_id}")
+            # get current time and set that as last_update_time
+            last_update_time = time.time()
+            # get the setting for how often to update the message
+            stream_update_delay_ms = float(
+                self.get_chatgpt_setting("stream_update_delay_ms"))
             async for chunk in response:
                 # self.debug(f"chunk: {chunk}")
                 # check for error in the responses and send error message
@@ -423,9 +431,16 @@ class ChatGPT(Plugin):
                 # if the message has content, add it to the full message
                 if 'content' in chunk_message:
                     full_message += chunk_message['content']
-                    # patch the message with the new chunk
-                    self.driver.posts.patch_post(
-                        reply_msg_id, {"message": f"{full_message}"})
+                    self.debug((time.time() - last_update_time) * 1000)
+                    if (time.time() - last_update_time) * 1000 > stream_update_delay_ms:
+                        # update the message
+                        self.driver.posts.patch_post(
+                            reply_msg_id, {"message": f"{full_message}"})
+                        # update last_update_time
+                        last_update_time = time.time()
+            # update the message a final time to make sure we have the full message
+            self.driver.posts.patch_post(
+                reply_msg_id, {"message": f"{full_message}"})
 
             # add response to chatlog
             self.append_chatlog(

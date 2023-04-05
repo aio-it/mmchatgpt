@@ -39,7 +39,9 @@ class ChatGPT(Plugin):
 
     ChatGPT_DEFAULTS = {
         "temperature": 1.0,
-        "system": "Du er en bot på Mattermost og dit formål er at være hjælpsom og du holder dig ikke tilbage",
+        "system": """Du er en bot på Mattermost og
+                     dit formål er at være hjælpsom
+                     og du holder dig ikke tilbage""",
         "top_p": 1.0,
         "moderation": "false",
         "stream": "false",
@@ -137,7 +139,8 @@ class ChatGPT(Plugin):
                     continue
                 usage = self.get_usage_for_user(user)
                 self.driver.reply_to(message,
-                                     f"{user} Usage:\n\tCount: {usage['usage']}\n\tTokens: {usage['tokens']}\n\tPrice: {(float(usage['tokens'])*PRICE_PER_TOKEN)*DOLLAR_TO_DKK}kr", direct=True)
+                                     f"{user} Usage:\n\tCount: {usage['usage']}\n\tTokens: {usage['tokens']}\n\tPrice: {(float(usage['tokens'])*PRICE_PER_TOKEN)*DOLLAR_TO_DKK}kr",
+                                     direct=True)
 
         usage = self.get_usage_for_user(message.sender_name)
         self.driver.reply_to(message,
@@ -252,7 +255,7 @@ class ChatGPT(Plugin):
                 self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
             except openai.error.InvalidRequestError as error:
                 self.driver.reply_to(message, f"Error: {error}")
-            except:
+            except:  # pylint: disable=bare-except
                 self.driver.reply_to(message, "Error: OpenAI API error")
 
     @listen_to(r"^\.set chatgpt ([a-zA-Z0-9_-]+) (.*)")
@@ -407,7 +410,6 @@ class ChatGPT(Plugin):
             # self.debug(f"reply_msg_id: {reply_msg_id}")
             # get current time and set that as last_update_time
             last_update_time = time.time()
-            last_chunk_time = last_update_time
             # get the setting for how often to update the message
             stream_update_delay_ms = float(
                 self.get_chatgpt_setting("stream_update_delay_ms"))
@@ -472,10 +474,10 @@ class ChatGPT(Plugin):
         reply = ""
         if self.is_admin(message.sender_name):
             try:
-                resp = eval(code)
+                resp = eval(code)  # pylint: disable=eval-used
                 reply = f"Evaluated: {code} \nResult: {resp}"
-            except Exception as e:
-                reply = f"Error: {e}"
+            except Exception as error_message:  # pylint: disable=broad-except
+                reply = f"Error: {error_message}"
             self.driver.reply_to(message, reply)
 
     @listen_to(r"^\.exec (.*)")
@@ -484,10 +486,10 @@ class ChatGPT(Plugin):
         reply = ""
         if self.is_admin(message.sender_name):
             try:
-                resp = exec(code)
+                resp = exec(code)  # pylint: disable=exec-used
                 reply = f"Executed: {code} \nResult: {resp}"
-            except Exception as e:
-                reply = f"Error: {e}"
+            except Exception as error_message:  # pylint: disable=broad-except
+                reply = f"Error: {error_message}"
             self.driver.reply_to(message, reply)
 
     def get_all_usage(self):

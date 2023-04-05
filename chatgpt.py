@@ -412,9 +412,9 @@ class ChatGPT(Plugin):
             stream_update_delay_ms = float(
                 self.get_chatgpt_setting("stream_update_delay_ms"))
             async for chunk in response:
-                await self.debug(
-                    f"time since last chunk: {(time.time() - last_chunk_time) * 1000}")
-                last_chunk_time = time.time()
+                # await self.debug(
+                #    f"time since last chunk: {(time.time() - last_chunk_time) * 1000}")
+                # last_chunk_time = time.time()
                 # self.debug(f"chunk: {chunk}")
                 # check for error in the responses and send error message
                 if "error" in chunk:
@@ -435,9 +435,9 @@ class ChatGPT(Plugin):
                 # if the message has content, add it to the full message
                 if 'content' in chunk_message:
                     full_message += chunk_message['content']
-                    await self.debug((time.time() - last_update_time) * 1000)
+                    # await self.debug((time.time() - last_update_time) * 1000)
                     if (time.time() - last_update_time) * 1000 > stream_update_delay_ms:
-                        await self.debug("updating message")
+                        # await self.debug("updating message")
                         # update the message
                         self.driver.posts.patch_post(
                             reply_msg_id, {"message": f"{full_message}"})

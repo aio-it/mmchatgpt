@@ -3,6 +3,7 @@ import time
 import json
 import openai
 import redis
+import asyncio
 
 
 # import serialized_redis
@@ -88,14 +89,14 @@ class ChatGPT(Plugin):
         """get user id from user_id"""
         return self.driver.users.get_user(user_id)
 
-    def on_start(self):
+    async def on_start(self):
         """send startup message to all admins"""
-        self.log("ChatGPT Bot started")
-        self.log("model: " + self.model)
+        await self.log("ChatGPT Bot started")
+        await self.log("model: " + self.model)
 
-    def on_stop(self):
+    async def on_stop(self):
         """send startup message to all admins"""
-        self.log("ChatGPT Bot stopped")
+        await self.log("ChatGPT Bot stopped")
 
     def print_to_console(self, message: Message):
         """print to console"""
@@ -109,23 +110,23 @@ class ChatGPT(Plugin):
         """check if user is admin"""
         return True if username in self.redis.smembers("admins") else False
 
-    def wall(self, message):
+    async def wall(self, message):
         """send message to all admins"""
         for admin in self.redis.smembers("admins"):
-            self.driver.direct_message(receiver_id=self.get_user_by_username(admin)['id'],
-                                       message=message)
+            await self.driver.direct_message(receiver_id=self.get_user_by_username(admin)['id'],
+                                             message=message)
 
-    def log(self, message: str):
+    async def log(self, message: str):
         """send message to log channel"""
         if self.log_to_channel:
-            self.driver.create_post(self.log_channel, message)
+            await self.driver.create_post(self.log_channel, message)
 
-    def debug(self, message: str, private: bool = False):
+    async def debug(self, message: str, private: bool = False):
         """send debug message to log channel. if private is true send to all admins"""
         if self.log_to_channel and not private:
-            self.log(f"DEBUG: {message}")
+            await self.log(f"DEBUG: {message}")
         elif not self.log_to_channel and private:
-            self.wall(f"DEBUG: {message}")
+            await self.wall(f"DEBUG: {message}")
 
     @listen_to(r"^\.usage")
     async def usage(self, message: Message):
@@ -136,33 +137,33 @@ class ChatGPT(Plugin):
                 if user == message.sender_name:
                     continue
                 usage = self.get_usage_for_user(user)
-                self.driver.reply_to(message,
-                                     f"{user} Usage:\n\tCount: {usage['usage']}\n\tTokens: {usage['tokens']}\n\tPrice: {(float(usage['tokens'])*PRICE_PER_TOKEN)*DOLLAR_TO_DKK}kr", direct=True)
+                await self.driver.reply_to(message,
+                                           f"{user} Usage:\n\tCount: {usage['usage']}\n\tTokens: {usage['tokens']}\n\tPrice: {(float(usage['tokens'])*PRICE_PER_TOKEN)*DOLLAR_TO_DKK}kr", direct=True)
 
         usage = self.get_usage_for_user(message.sender_name)
-        self.driver.reply_to(message,
-                             f"{message.sender_name} Usage:\n\tCount: {usage['usage']}\n\tTokens: {usage['tokens']}\n\tPrice: {(float(usage['tokens'])*PRICE_PER_TOKEN)*DOLLAR_TO_DKK}kr")
+        await self.driver.reply_to(message,
+                                   f"{message.sender_name} Usage:\n\tCount: {usage['usage']}\n\tTokens: {usage['tokens']}\n\tPrice: {(float(usage['tokens'])*PRICE_PER_TOKEN)*DOLLAR_TO_DKK}kr")
 
     @listen_to(r"^\.users remove (.+)")
     async def users_remove(self, message: Message, username: str):
         """remove user"""
         if self.is_admin(message.sender_name):
             self.redis.srem("users", username)
-            self.driver.reply_to(message, f"Removed user: {username}")
-            self.log(f"Removed user: {username}")
+            await self.driver.reply_to(message, f"Removed user: {username}")
+            await self.log(f"Removed user: {username}")
 
     @listen_to(r"^\.users add (.+)")
     async def users_add(self, message: Message, username: str):
         """add user"""
         if self.is_admin(message.sender_name):
             self.redis.sadd("users", username)
-            self.driver.reply_to(message, f"Added user: {username}")
+            await self.driver.reply_to(message, f"Added user: {username}")
 
     @listen_to(r"^\.users list")
     async def users_list(self, message: Message):
         """list the users"""
         if self.is_admin(message.sender_name):
-            self.driver.reply_to(
+            await self.driver.reply_to(
                 message, f"Allowed users: {self.redis.smembers('users')}")
 
     @listen_to(r"^\.admins add (.*)")
@@ -170,27 +171,27 @@ class ChatGPT(Plugin):
         """add admin"""
         if self.is_admin(message.sender_name):
             self.redis.sadd("admins", username)
-            self.driver.reply_to(message, f"Added admin: {username}")
+            await self.driver.reply_to(message, f"Added admin: {username}")
 
     @listen_to(r"^\.admins remove (.*)")
     async def admins_remove(self, message: Message, username: str):
         """remove admin"""
         if self.is_admin(message.sender_name):
             self.redis.srem("admins", username)
-            self.driver.reply_to(message, f"Removed admin: {username}")
+            await self.driver.reply_to(message, f"Removed admin: {username}")
 
     @listen_to(r"^\.admins list")
     async def admins_list(self, message: Message):
         """list the admins"""
         if self.is_admin(message.sender_name):
-            self.driver.reply_to(
+            await self.driver.reply_to(
                 message, f"Allowed admins: {self.redis.smembers('admins')}")
 
     @listen_to(r"^\.models list")
     async def model_list(self, message: Message):
         """list the models"""
         if self.is_admin(message.sender_name):
-            self.driver.reply_to(
+            await self.driver.reply_to(
                 message, f"Allowed models: {self.ALLOWED_MODELS}")
 
     @listen_to(r"^\.model set (.*)")
@@ -201,21 +202,21 @@ class ChatGPT(Plugin):
                 # save model to redis in the settings hash
                 self.redis.hset(self.SETTINGS_KEY, "model", model)
                 self.model = model
-                self.driver.reply_to(message, f"Model set to: {model}")
+                await self.driver.reply_to(message, f"Model set to: {model}")
             else:
-                self.driver.reply_to(message, f"Model not allowed: {model}")
+                await self.driver.reply_to(message, f"Model not allowed: {model}")
 
     @listen_to(r"^\.model get", allowed_users=["lbr"])
     async def model_get(self, message: Message):
         """get the model"""
         if self.is_admin(message.sender_name):
-            self.driver.reply_to(message, f"Model: {self.model}")
+            await self.driver.reply_to(message, f"Model: {self.model}")
 
     @listen_to(r"^\.clear")
     async def clear(self, message: Message):
         """clear the chatlog"""
         if self.is_admin(message.sender_name):
-            self.driver.reply_to(message, "Chatlog cleared")
+            await self.driver.reply_to(message, "Chatlog cleared")
 
     @listen_to(r"^\.getchatlog")
     async def getchatlog(self, message: Message):
@@ -231,7 +232,7 @@ class ChatGPT(Plugin):
             chatlogmsg = ""
             for msg in chatlog:
                 chatlogmsg += f"{msg['role']}: {msg['content']}\n"
-            self.driver.reply_to(message, chatlogmsg)
+            await self.driver.reply_to(message, chatlogmsg)
 
     @listen_to(r"^\.mkimg (.*)")
     async def mkimg(self, message: Message, text: str):
@@ -245,24 +246,24 @@ class ChatGPT(Plugin):
                         size="1024x1024"
                     )
                     image_url = response['data'][0]['url']
-                    self.debug(response)
-                    self.driver.reply_to(message, image_url)
-                    self.log(f"{message.sender_name} used .mkimg")
+                    await self.debug(response)
+                    await self.driver.reply_to(message, image_url)
+                    await self.log(f"{message.sender_name} used .mkimg")
             except TooManyRequests:
-                self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
+                await self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
             except openai.error.InvalidRequestError as error:
-                self.driver.reply_to(message, f"Error: {error}")
+                await self.driver.reply_to(message, f"Error: {error}")
             except:
-                self.driver.reply_to(message, "Error: OpenAI API error")
+                await self.driver.reply_to(message, "Error: OpenAI API error")
 
     @listen_to(r"^\.set chatgpt ([a-zA-Z0-9_-]+) (.*)")
     async def set_chatgpt(self, message: Message, key: str, value: str):
         """set the chatgpt key"""
         settings_key = self.SETTINGS_KEY
-        self.debug(f"set_chatgpt {key} {value}")
+        await self.debug(f"set_chatgpt {key} {value}")
         if self.is_admin(message.sender_name):
             self.redis.hset(settings_key, key, value)
-            self.driver.reply_to(message, f"Set {key} to {value}")
+            await self.driver.reply_to(message, f"Set {key} to {value}")
 
     @listen_to(r"^\.reset chatgpt ([a-zA-Z0-9_-]+)")
     async def reset_chatgpt(self, message: Message, key: str):
@@ -270,29 +271,29 @@ class ChatGPT(Plugin):
         settings_key = self.SETTINGS_KEY
         if self.is_admin(message.sender_name) and key in self.ChatGPT_DEFAULTS:
             value = self.ChatGPT_DEFAULTS[key]
-            self.debug(f"reset_chatgpt {key} {value}")
+            await self.debug(f"reset_chatgpt {key} {value}")
             self.redis.hset(settings_key, key, self.ChatGPT_DEFAULTS[key])
             self.redis.hdel(settings_key, key)
-            self.driver.reply_to(message, f"Reset {key} to {value}")
+            await self.driver.reply_to(message, f"Reset {key} to {value}")
 
     @listen_to(r"^\.get chatgpt ([a-zA-Z0-9_-])")
     async def get_chatgpt(self, message: Message, key: str):
         """get the chatgpt key"""
         settings_key = self.SETTINGS_KEY
-        self.debug(f"get_chatgpt {key}")
+        await self.debug(f"get_chatgpt {key}")
         if self.is_admin(message.sender_name):
             value = self.redis.hget(settings_key, key)
-            self.driver.reply_to(message, f"Set {key} to {value}")
+            await self.driver.reply_to(message, f"Set {key} to {value}")
 
     @listen_to(r"^\.get chatgpt")
     async def get_chatgpt_all(self, message: Message):
         """get all the chatgpt keys"""
         settings_key = self.SETTINGS_KEY
-        self.debug("get_chatgpt_all")
+        await self.debug("get_chatgpt_all")
         if self.is_admin(message.sender_name):
             for key in self.redis.hkeys(settings_key):
                 if key in self.ChatGPT_DEFAULTS:
-                    self.driver.reply_to(
+                    await self.driver.reply_to(
                         message, f"{key}: {self.redis.hget(settings_key, key)}")
                 else:
                     # key not in defaults, delete it. unsupported key
@@ -366,10 +367,10 @@ class ChatGPT(Plugin):
                 # check for error in the responses and send error message
                 if "error" in response:
                     if "message" in response:
-                        self.driver.reply_to(
+                        await self.driver.reply_to(
                             message, f"Error: {response['message']}")
                     else:
-                        self.driver.reply_to(message, "Error")
+                        await self.driver.reply_to(message, "Error")
                     # remove thought balloon
                     self.driver.reactions.delete_reaction(
                         self.driver.user_id, message.id, "thought_balloon")
@@ -377,14 +378,14 @@ class ChatGPT(Plugin):
                     self.driver.react_to(message, "x")
                     return
             except openai.error.InvalidRequestError as error:
-                self.driver.reply_to(message, f"Error: {error}")
+                await self.driver.reply_to(message, f"Error: {error}")
                 self.driver.reactions.delete_reaction(
                     self.driver.user_id, message.id, "thought_balloon")
                 self.driver.react_to(message, "x")
                 return
             # self.debug(response)
             # send response to user
-            self.driver.reply_to(
+            await self.driver.reply_to(
                 message, f"@{message.sender_name}: {response.choices[0].message.content}")
             # add response to chatlog
             self.append_chatlog(thread_id, response.choices[0].message)
@@ -412,17 +413,17 @@ class ChatGPT(Plugin):
             stream_update_delay_ms = float(
                 self.get_chatgpt_setting("stream_update_delay_ms"))
             async for chunk in response:
-                self.debug(
+                await self.debug(
                     f"time since last chunk: {(time.time() - last_chunk_time) * 1000}")
                 last_chunk_time = time.time()
                 # self.debug(f"chunk: {chunk}")
                 # check for error in the responses and send error message
                 if "error" in chunk:
                     if "message" in chunk:
-                        self.driver.reply_to(
+                        await self.driver.reply_to(
                             message, f"Error: {response['message']}")
                     else:
-                        self.driver.reply_to(message, "Error")
+                        await self.driver.reply_to(message, "Error")
                     # remove thought balloon
                     self.driver.reactions.delete_reaction(
                         self.driver.user_id, message.id, "thought_balloon")
@@ -435,16 +436,16 @@ class ChatGPT(Plugin):
                 # if the message has content, add it to the full message
                 if 'content' in chunk_message:
                     full_message += chunk_message['content']
-                    self.debug((time.time() - last_update_time) * 1000)
+                    await self.debug((time.time() - last_update_time) * 1000)
                     if (time.time() - last_update_time) * 1000 > stream_update_delay_ms:
-                        self.debug("updating message")
+                        await self.debug("updating message")
                         # update the message
-                        self.driver.posts.patch_post(
+                        await self.driver.posts.patch_post(
                             reply_msg_id, {"message": f"{full_message}"})
                         # update last_update_time
                         last_update_time = time.time()
             # update the message a final time to make sure we have the full message
-            self.driver.posts.patch_post(
+            await self.driver.posts.patch_post(
                 reply_msg_id, {"message": f"{full_message}"})
 
             # add response to chatlog
@@ -460,14 +461,14 @@ class ChatGPT(Plugin):
             self.add_usage_for_user(message.sender_name,
                                     response['usage']['total_tokens'])
             # log usage for user
-            self.log(
+            await self.log(
                 f"User: {message.sender_name} used {response['usage']['total_tokens']} tokens")
         else:
-            self.log(f"User: {message.sender_name} used {self.model}")
+            await self.log(f"User: {message.sender_name} used {self.model}")
 
     # eval function that allows admins to run arbitrary python code and return the result to the chat
     @listen_to(r"^\.eval (.*)")
-    def admin_eval_function(self, message, code):
+    async def admin_eval_function(self, message, code):
         """eval function that allows admins to run arbitrary python code and return the result to the chat"""
         reply = ""
         if self.is_admin(message.sender_name):
@@ -476,10 +477,10 @@ class ChatGPT(Plugin):
                 reply = f"Evaluated: {code} \nResult: {resp}"
             except Exception as e:
                 reply = f"Error: {e}"
-            self.driver.reply_to(message, reply)
+            await self.driver.reply_to(message, reply)
 
     @listen_to(r"^\.exec (.*)")
-    def admin_exec_function(self, message, code):
+    async def admin_exec_function(self, message, code):
         """exec function that allows admins to run arbitrary python code and return the result to the chat"""
         reply = ""
         if self.is_admin(message.sender_name):
@@ -488,7 +489,7 @@ class ChatGPT(Plugin):
                 reply = f"Executed: {code} \nResult: {resp}"
             except Exception as e:
                 reply = f"Error: {e}"
-            self.driver.reply_to(message, reply)
+            await self.driver.reply_to(message, reply)
 
     def get_all_usage(self):
         """get all usage"""

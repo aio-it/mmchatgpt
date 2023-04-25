@@ -407,6 +407,7 @@ class ChatGPT(Plugin):
                 self.driver.reactions.delete_reaction(
                     self.driver.user_id, message.id, "thought_balloon")
                 self.driver.react_to(message, "x")
+                return
             # self.debug(response)
 
             full_message = ""

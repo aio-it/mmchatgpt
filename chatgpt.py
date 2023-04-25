@@ -413,7 +413,7 @@ class ChatGPT(Plugin):
                     top_p=top_p,
                     stream=stream,
                 )
-            except openai.error.RateLimitError as error:
+            except (openai.error.RateLimitError, openai.error.APIError) as error:
                 # update the message
                 self.driver.posts.patch_post(
                     reply_msg_id, {"message": f"Error: {error}"})

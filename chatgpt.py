@@ -399,6 +399,11 @@ class ChatGPT(Plugin):
             self.append_chatlog(thread_id, response.choices[0].message)
         else:
             # we are streaming baby
+            full_message = ""
+            post_prefix = f"@{message.sender_name}: "
+            # post initial message as a reply and save the message id
+            reply_msg_id = self.driver.reply_to(
+                message, full_message)['id']
             # send async request to openai
             try:
                 response = await openai.ChatCompletion.acreate(
@@ -416,11 +421,6 @@ class ChatGPT(Plugin):
                 return
             # self.debug(response)
 
-            full_message = ""
-            post_prefix = f"@{message.sender_name}: "
-            # post initial message as a reply and save the message id
-            reply_msg_id = self.driver.reply_to(
-                message, full_message)['id']
             # self.debug(f"reply_msg_id: {reply_msg_id}")
             # get current time and set that as last_update_time
             last_update_time = time.time()

@@ -403,7 +403,8 @@ class ChatGPT(Plugin):
             )
             # self.debug(response)
 
-            full_message = f"@{message.sender_name}: "
+            full_message = ""
+            post_prefix = f"@{message.sender_name}: "
             # post initial message as a reply and save the message id
             reply_msg_id = self.driver.reply_to(
                 message, full_message)['id']
@@ -442,12 +443,12 @@ class ChatGPT(Plugin):
                         # await self.debug("updating message")
                         # update the message
                         self.driver.posts.patch_post(
-                            reply_msg_id, {"message": f"{full_message}"})
+                            reply_msg_id, {"message": f"{post_prefix}{full_message}"})
                         # update last_update_time
                         last_update_time = time.time()
             # update the message a final time to make sure we have the full message
             self.driver.posts.patch_post(
-                reply_msg_id, {"message": f"{full_message}"})
+                reply_msg_id, {"message": f"{post_prefix}{full_message}"})
 
             # add response to chatlog
             self.append_chatlog(

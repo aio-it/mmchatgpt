@@ -414,7 +414,9 @@ class ChatGPT(Plugin):
                     stream=stream,
                 )
             except openai.error.RateLimitError as error:
-                self.driver.reply_to(message, f"Error: {error}")
+                # update the message
+                self.driver.posts.patch_post(
+                    reply_msg_id, {"message": f"Error: {error}"})
                 self.driver.reactions.delete_reaction(
                     self.driver.user_id, message.id, "thought_balloon")
                 self.driver.react_to(message, "x")

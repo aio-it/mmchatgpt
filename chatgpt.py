@@ -385,6 +385,12 @@ class ChatGPT(Plugin):
                     self.driver.user_id, message.id, "thought_balloon")
                 self.driver.react_to(message, "x")
                 return
+            except openai.error.RateLimitError as error:
+                self.driver.reply_to(message, f"Error: {error}")
+                self.driver.reactions.delete_reaction(
+                    self.driver.user_id, message.id, "thought_balloon")
+                self.driver.react_to(message, "x")
+                return
             # self.debug(response)
             # send response to user
             self.driver.reply_to(

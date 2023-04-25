@@ -394,13 +394,19 @@ class ChatGPT(Plugin):
         else:
             # we are streaming baby
             # send async request to openai
-            response = await openai.ChatCompletion.acreate(
-                model=self.model,
-                messages=messages,
-                temperature=temperature,
-                top_p=top_p,
-                stream=stream,
-            )
+            try:
+                response = await openai.ChatCompletion.acreate(
+                    model=self.model,
+                    messages=messages,
+                    temperature=temperature,
+                    top_p=top_p,
+                    stream=stream,
+                )
+            except openai.error.RateLimitError as error:
+                self.driver.reply_to(message, f"Error: {error}")
+                self.driver.reactions.delete_reaction(
+                    self.driver.user_id, message.id, "thought_balloon")
+                self.driver.react_to(message, "x")
             # self.debug(response)
 
             full_message = ""

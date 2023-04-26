@@ -6,7 +6,7 @@ import redis
 import aiohttp.client_exceptions as aiohttp_client_exceptions
 
 # import serialized_redis
-# from tiktoken import Tokenizer
+from tiktoken import Tokenizer
 from mmpy_bot import Plugin, listen_to
 from mmpy_bot import Message
 from redis_rate_limit import RateLimit, TooManyRequests

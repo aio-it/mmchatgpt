@@ -120,7 +120,7 @@ class ChatGPT(Plugin):
                 string length: {len(string)}\n\
                 original string: {string}\n\
                 string length from tokens: {len(string_from_tokens)}\n\
-                string from tokens:{string_from_tokens}",
+                string from tokens: {string_from_tokens}",
         )
 
     def string_to_tokens(self, string, model):

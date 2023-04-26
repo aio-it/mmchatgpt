@@ -133,32 +133,6 @@ class ChatGPT(Plugin):
         dec = tiktoken.encoding_for_model(model)
         return dec.decode(tokens)
 
-    def string_length_to_tokens_lenght(self, string_length, avg_chars_per_token=4):
-        """
-        Convert the string length to an estimated number of tokens.
-
-        Args:
-            string_length (int): The length of the string in characters.
-            avg_chars_per_token (int): The average number of characters per token (default: 4).
-
-        Returns:
-            int: The estimated number of tokens for the given string length.
-        """
-        return string_length // avg_chars_per_token
-
-    def tokens_length_to_string_length(self, token_length, avg_chars_per_token=4):
-        """
-        Convert the token length to an estimated string length.
-
-        Args:
-            token_length (int): The number of tokens.
-            avg_chars_per_token (int): The average number of characters per token (default: 4).
-
-        Returns:
-            int: The estimated string length for the given token length.
-        """
-        return token_length * avg_chars_per_token
-
     def get_user_by_username(self, username):
         """get user id from username"""
         return self.driver.users.get_user_by_username(username)

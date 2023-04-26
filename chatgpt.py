@@ -87,23 +87,50 @@ class ChatGPT(Plugin):
         print(f"Allowed admins: {self.redis.smembers('admins')}")
         print(f"Allowed models: {self.ALLOWED_MODELS}")
 
-    def return_last_x_messages(self, messages, max_length):
-        """return last x messages from list of messages limited by max_length"""
+    def return_last_x_messages(self, messages, max_length_in_tokens):
+        """return last x messages from list of messages limited by max_length_in_tokens"""
         limited_messages = []
-        current_length = 0
+        current_length_in_tokens = 0
 
         for message_obj in reversed(messages):
             if 'content' in message_obj:
-                message = message_obj["content"]
-                message_length = len(message)
+                content = message_obj["content"]
+                message_length_in_tokens = self.string_length_to_tokens(
+                    len(content))
 
-                if current_length + message_length <= max_length:
-                    current_length += message_length
+                if current_length_in_tokens + message_length_in_tokens <= max_length_in_tokens:
+                    current_length_in_tokens += message_length_in_tokens
                     limited_messages.append(message_obj)
                 else:
                     break
 
         return list(reversed(limited_messages))
+
+    def string_length_to_tokens(self, string_length, avg_chars_per_token=4):
+        """
+        Convert the string length to an estimated number of tokens.
+
+        Args:
+            string_length (int): The length of the string in characters.
+            avg_chars_per_token (int): The average number of characters per token (default: 4).
+
+        Returns:
+            int: The estimated number of tokens for the given string length.
+        """
+        return string_length // avg_chars_per_token
+
+    def tokens_to_string_length(self, token_length, avg_chars_per_token=4):
+        """
+        Convert the token length to an estimated string length.
+
+        Args:
+            token_length (int): The number of tokens.
+            avg_chars_per_token (int): The average number of characters per token (default: 4).
+
+        Returns:
+            int: The estimated string length for the given token length.
+        """
+        return token_length * avg_chars_per_token
 
     def get_user_by_username(self, username):
         """get user id from username"""

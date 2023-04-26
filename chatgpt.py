@@ -384,7 +384,8 @@ class ChatGPT(Plugin):
                 # send async request to openai
                 response = await openai.ChatCompletion.acreate(
                     model=self.model,
-                    messages=messages,
+                    messages=self.return_last_x_messages(
+                        messages, self.MAX_TOKENS_PER_MODEL[self.model]),
                     temperature=temperature,
                     top_p=top_p,
                     stream=stream,
@@ -431,7 +432,8 @@ class ChatGPT(Plugin):
             try:
                 response = await openai.ChatCompletion.acreate(
                     model=self.model,
-                    messages=messages,
+                    messages=self.return_last_x_messages(
+                        messages, self.MAX_TOKENS_PER_MODEL[self.model]),
                     temperature=temperature,
                     top_p=top_p,
                     stream=stream,

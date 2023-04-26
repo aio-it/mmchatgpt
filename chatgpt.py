@@ -97,8 +97,7 @@ class ChatGPT(Plugin):
         for message_obj in reversed(messages):
             if 'content' in message_obj:
                 content = message_obj["content"]
-                message_length_in_tokens = self.string_length_to_tokens_lenght(
-                    len(content))
+                message_length_in_tokens = len(self.string_to_tokens(content))
 
                 if current_length_in_tokens + message_length_in_tokens <= max_length_in_tokens:
                     current_length_in_tokens += message_length_in_tokens

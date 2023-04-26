@@ -108,7 +108,7 @@ class ChatGPT(Plugin):
 
         return list(reversed(limited_messages))
 
-    @listen_to(r"^\.s2t ([a-z0-9.-]+) (.*)", re.MULTILINE)
+    @listen_to(r"^\.s2t ([a-z0-9.-]+) (.*)", re.MULTILINE | re.IGNORECASE)
     async def string_to_tokens_bot(self, message, model, string):
         """convert a string to tokens"""
         tokens = self.string_to_tokens(string, model)

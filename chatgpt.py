@@ -113,7 +113,7 @@ class ChatGPT(Plugin):
         """convert a string to tokens"""
         tokens = self.string_to_tokens(string, model=self.model)
         self.driver.reply_to(
-            message, f"length: {len(tokens)}\ntokens:{tokens}")
+            message, f"tokenlength: {len(tokens)}\ntokens:{tokens}\nstring length:{len(string)}\nstring:{string}")
 
     def string_to_tokens(self, string, model):
         """function that converts a string to tokens using tiktoken module from openai"""

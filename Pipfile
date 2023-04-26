@@ -10,6 +10,7 @@ redis = "*"
 environs = "*"
 python-redis-rate-limit = "*"
 aiohttp = "*"
+tiktoken = "*"
 
 [dev-packages]
 autopep8 = "*"

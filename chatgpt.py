@@ -118,6 +118,7 @@ class ChatGPT(Plugin):
             message,
             f"tokens length: {len(tokens)}\n\
                 tokens: {tokens}\n\
+                tokens to list of strings: {tokens_to_list_of_strings}\n\
                 string length: {len(string)}\n\
                 original string: {string}\n\
                 string length from tokens: {len(string_from_tokens)}\n\

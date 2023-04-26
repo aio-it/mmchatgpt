@@ -93,13 +93,13 @@ class ChatGPT(Plugin):
         current_length = 0
 
         for message_obj in reversed(messages):
-            if 'message' in message_obj:
-                message = message_obj["message"]
+            if 'content' in message_obj:
+                message = message_obj["content"]
                 message_length = len(message)
 
                 if current_length + message_length <= max_length:
                     current_length += message_length
-                    limited_messages.append({"message": message})
+                    limited_messages.append(message_obj)
                 else:
                     break
 

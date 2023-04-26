@@ -120,6 +120,11 @@ class ChatGPT(Plugin):
         enc = tiktoken.encoding_for_model(model)
         return enc.encode(string)
 
+    def tokens_to_string(self, tokens, model):
+        """function that converts a string to tokens using tiktoken module from openai"""
+        dec = tiktoken.encoding_for_model(model)
+        return dec.decode(tokens)
+
     def string_length_to_tokens_lenght(self, string_length, avg_chars_per_token=4):
         """
         Convert the string length to an estimated number of tokens.

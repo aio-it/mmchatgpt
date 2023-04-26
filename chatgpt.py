@@ -108,7 +108,7 @@ class ChatGPT(Plugin):
         return list(reversed(limited_messages))
 
     @listen_to("s2t ([a-z0-9-]) (.*)")
-    def string_to_tokens_bot(self, message, model, string):
+    async def string_to_tokens_bot(self, message, model, string):
         """convert a string to tokens"""
         if model not in self.ALLOWED_MODELS:
             message.reply("Model not allowed")

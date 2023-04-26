@@ -116,9 +116,10 @@ class ChatGPT(Plugin):
         self.driver.reply_to(
             message,
             f"tokens length: {len(tokens)}\n\
-                tokens:{tokens}\n\
-                string length:{len(string)}\n\
-                original string:{string}\n\
+                tokens: {tokens}\n\
+                string length: {len(string)}\n\
+                original string: {string}\n\
+                string length from tokens: {len(string_from_tokens)}\n\
                 string from tokens:{string_from_tokens}",
         )
 

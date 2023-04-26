@@ -113,7 +113,7 @@ class ChatGPT(Plugin):
         if model not in self.ALLOWED_MODELS:
             message.reply("Model not allowed")
             return
-        tokens = self.string_to_tokens(model, string)
+        tokens = self.string_to_tokens(string, model)
         message.reply(f"{tokens}")
 
     def string_to_tokens(self, string, model):

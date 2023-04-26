@@ -5,6 +5,7 @@ import openai
 import redis
 import aiohttp.client_exceptions as aiohttp_client_exceptions
 import tiktoken
+import regex as re
 
 # import serialized_redis
 from mmpy_bot import Plugin, listen_to
@@ -107,6 +108,7 @@ class ChatGPT(Plugin):
 
         return list(reversed(limited_messages))
 
+    @listen_to(r"^\.s2t model=([a-z0-9.-]+) (.*)", re.MULTILINE)
     @listen_to(r"^\.s2t ([a-z0-9.-]+) (.*)")
     async def string_to_tokens_bot(self, message, model, string):
         """convert a string to tokens"""

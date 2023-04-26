@@ -87,7 +87,8 @@ class ChatGPT(Plugin):
         print(f"Allowed admins: {self.redis.smembers('admins')}")
         print(f"Allowed models: {self.ALLOWED_MODELS}")
 
-    def limit_messages_length(messages, max_length):
+    def return_last_x_messages(self, messages, max_length):
+        """return last x messages from list of messages limited by max_length"""
         limited_messages = []
         current_length = 0
 

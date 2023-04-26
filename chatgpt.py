@@ -114,7 +114,8 @@ class ChatGPT(Plugin):
             self.driver.reply_to(message, "Model not allowed")
             return
         tokens = self.string_to_tokens(string, model)
-        self.driver.reply_to(message, f"{tokens}")
+        self.driver.reply_to(
+            message, f"length: {len(tokens)}\ntokens:{tokens}")
 
     def string_to_tokens(self, string, model):
         """function that converts a string to tokens using tiktoken module from openai"""

@@ -107,8 +107,11 @@ class ChatGPT(Plugin):
 
         return list(reversed(limited_messages))
 
-    def string_to_tokens(self, string, avg_chars_per_token=4):
+    @listen_to("s2t ([a-z0-9-]) (.*)")
+    def string_to_tokens(self, model, string):
         """function that converts a string to tokens using tiktoken module from openai"""
+        enc = tiktoken.encoding_for_model(model)
+        return enc.encode(string)
 
     def string_length_to_tokens(self, string_length, avg_chars_per_token=4):
         """

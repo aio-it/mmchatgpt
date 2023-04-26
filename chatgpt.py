@@ -113,6 +113,7 @@ class ChatGPT(Plugin):
         """convert a string to tokens"""
         tokens = self.string_to_tokens(string, model=self.model)
         string_from_tokens = self.tokens_to_string(tokens, model=self.model)
+        tokens_to_list_of_strings = self.tokens_to_list_of_strings(tokens)
         self.driver.reply_to(
             message,
             f"tokens length: {len(tokens)}\n\
@@ -122,6 +123,11 @@ class ChatGPT(Plugin):
                 string length from tokens: {len(string_from_tokens)}\n\
                 string from tokens: {string_from_tokens}",
         )
+
+    def tokens_to_list_of_strings(self, tokens):
+        """convert a list of tokens to a list of strings"""
+        encoding = tiktoken.encoding_for_model(self.model)
+        return [encoding.decode_single_token_bytes(token) for token in tokens]
 
     def string_to_tokens(self, string, model):
         """function that converts a string to tokens using tiktoken module from openai"""

@@ -111,10 +111,10 @@ class ChatGPT(Plugin):
     async def string_to_tokens_bot(self, message, model, string):
         """convert a string to tokens"""
         if model not in self.ALLOWED_MODELS:
-            message.reply("Model not allowed")
+            self.driver.reply_to(message, "Model not allowed")
             return
         tokens = self.string_to_tokens(string, model)
-        message.reply(f"{tokens}")
+        self.driver.reply_to(message, f"{tokens}")
 
     def string_to_tokens(self, string, model):
         """function that converts a string to tokens using tiktoken module from openai"""
@@ -216,7 +216,7 @@ class ChatGPT(Plugin):
         """remove user"""
         if self.is_admin(message.sender_name):
             self.redis.srem("users", username)
-            self.driver.reply_to(message, f"Removed user: {username}")
+            self.driver.ry_toepl(message, f"Removed user: {username}")
             await self.log(f"Removed user: {username}")
 
     @listen_to(r"^\.users add (.+)")

@@ -36,7 +36,12 @@ class ChatGPT(Plugin):
         "gpt-4",
         "gpt-4-32k",
     ]
-
+    MAX_TOKENS_PER_MODEL = {
+        "gpt-3.5-turbo-0301": 3000,
+        "gpt-3.5-turbo": 3000,
+        "gpt-4": 7000,
+        "gpt-4-32k": 7000,
+    }
     ChatGPT_DEFAULTS = {
         "temperature": 1.0,
         "system": """Du er en bot på Mattermost og
@@ -81,6 +86,23 @@ class ChatGPT(Plugin):
         print(f"Allowed users: {self.redis.smembers('users')}")
         print(f"Allowed admins: {self.redis.smembers('admins')}")
         print(f"Allowed models: {self.ALLOWED_MODELS}")
+
+    def limit_messages_length(messages, max_length):
+        limited_messages = []
+        current_length = 0
+
+        for message_obj in reversed(messages):
+            if 'message' in message_obj:
+                message = message_obj["message"]
+                message_length = len(message)
+
+                if current_length + message_length <= max_length:
+                    current_length += message_length
+                    limited_messages.append({"message": message})
+                else:
+                    break
+
+        return list(reversed(limited_messages))
 
     def get_user_by_username(self, username):
         """get user id from username"""

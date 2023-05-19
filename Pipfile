@@ -11,6 +11,7 @@ environs = "*"
 python-redis-rate-limit = "*"
 aiohttp = "*"
 tiktoken = "*"
+asyncio = "*"
 
 [dev-packages]
 autopep8 = "*"

@@ -1,5 +1,6 @@
 """ChatGPT plugin for mmpy_bot"""
 import os
+import asyncio
 import subprocess
 import time
 import json
@@ -586,11 +587,12 @@ class ChatGPT(Plugin):
         reply = ""
         if self.is_admin(message.sender_name):
             try:
-                resp = await subprocess.run(
-                    code, shell=True, text=True, capture_output=True, timeout=60)
-                reply = f"Executed: {code} \nResult: {resp.returncode} \nOutput:\n{resp.stdout}"
-                if resp.returncode != 0:
-                    reply += f"\nError:\n{resp.stderr}"
+                proc = asyncio.create_subprocess_exec(
+                    code, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                stdout, stderr = await proc.communicate()
+                reply = f"Executed: {code} \nResult: {proc.returncode} \nOutput:\n{stdout}"
+                if proc.returncode != 0:
+                    reply += f"\nError:\n{stderr}"
             except Exception as error_message:
                 reply = f"Error: {error_message}"
             self.driver.reply_to(message, reply)

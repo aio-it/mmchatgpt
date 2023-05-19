@@ -586,12 +586,12 @@ class ChatGPT(Plugin):
     async def admin_shell_function(self, message, code):
         """shell function that allows admins to run arbitrary shell commands and return the result to the chat"""
         reply = ""
-        shellcode = f"docker run --rm lbr/ubuntu:utils {code}"
+        shellcode = shlex.split(f"docker run --rm lbr/ubuntu:utils {code}")
         if self.is_admin(message.sender_name):
             try:
                 self.driver.react_to(message, "runner")
                 proc = await asyncio.create_subprocess_shell(
-                    shellcode, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+                    *shellcode, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
                 stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=120)
                 stdout = stdout.decode("utf-8")
                 stderr = stderr.decode("utf-8")

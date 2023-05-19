@@ -585,7 +585,7 @@ class ChatGPT(Plugin):
 
     @listen_to(r"^\.shell (.*)")
     async def admin_shell_function(self, message, code):
-        """shell function that allows admins to run arbitrary shell commands and return the result to the chat"""
+        """shell function that allows admins to run arbitrary shell commands and return the result to the chat admin only"""
         reply = ""
         if self.is_admin(message.sender_name):
             try:

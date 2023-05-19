@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "93d70799186f6b6bc5eea7596448bdcaa9aa2e989c02350cdb5bdc8bdbdbef46"
+            "sha256": "8bcb9ddbcdd87cc895c622375fafe7c41ad38523618fc0b6ed3b22b9648966ad"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -799,6 +799,13 @@
             ],
             "markers": "python_version >= '3.5'",
             "version": "==1.1.5"
+        },
+        "subprocess.run": {
+            "hashes": [
+                "sha256:5760270139acc4cc4058184e539f5b613dbe0073d84ee43247c2e0fc5c04db4e"
+            ],
+            "index": "pypi",
+            "version": "==0.0.8"
         },
         "tiktoken": {
             "hashes": [

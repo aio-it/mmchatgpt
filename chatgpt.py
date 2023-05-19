@@ -1,10 +1,13 @@
 """ChatGPT plugin for mmpy_bot"""
+import os
+import subprocess
 import time
 import json
 import openai
 import redis
 import aiohttp.client_exceptions as aiohttp_client_exceptions
 import tiktoken
+
 import ping3
 import ipaddress
 import regex as re
@@ -584,10 +587,12 @@ class ChatGPT(Plugin):
     async def admin_shell_function(self, message, code):
         """shell function that allows admins to run arbitrary shell commands and return the result to the chat"""
         reply = ""
+        code = code.split(" ")
         if self.is_admin(message.sender_name):
             try:
-                resp = exec(code)  # pylint: disable=exec-used
-                reply = f"Executed: {code} \nResult: {resp}"
+                resp = subprocess.run(
+                    code, shell=True, text=True)
+                reply = f"Executed: {code} \nResult: {resp.returncode} \nOutput: {resp.stdout} \nError: {resp.stderr}"
             except Exception as error_message:
                 reply = f"Error: {error_message}"
             self.driver.reply_to(message, reply)

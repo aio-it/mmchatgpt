@@ -13,6 +13,7 @@ aiohttp = "*"
 tiktoken = "*"
 ipaddress = "*"
 ping3 = "*"
+"subprocess.run" = "*"
 
 [dev-packages]
 autopep8 = "*"

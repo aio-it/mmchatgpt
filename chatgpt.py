@@ -7,9 +7,6 @@ import openai
 import redis
 import aiohttp.client_exceptions as aiohttp_client_exceptions
 import tiktoken
-
-import ping3
-import ipaddress
 import regex as re
 
 # import serialized_redis

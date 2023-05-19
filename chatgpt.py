@@ -586,7 +586,7 @@ class ChatGPT(Plugin):
     async def admin_shell_function(self, message, code):
         """shell function that allows admins to run arbitrary shell commands and return the result to the chat"""
         reply = ""
-        shellcode = shlex.split(f"docker run --rm lbr/ubuntu:utils {code}")
+        shellcode = f"docker run --rm lbr/ubuntu:utils {code}"
         if self.is_admin(message.sender_name):
             try:
                 self.driver.react_to(message, "runner")

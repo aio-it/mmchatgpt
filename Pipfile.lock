@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "8bcb9ddbcdd87cc895c622375fafe7c41ad38523618fc0b6ed3b22b9648966ad"
+            "sha256": "79cd77a40e14e54f7a30255936961c01c5079707f1ab37f5a5e7170fdf954dbd"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -390,14 +390,6 @@
             "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
             "version": "==1.4.1"
         },
-        "ipaddress": {
-            "hashes": [
-                "sha256:6e0f4a39e66cb5bb9a137b00276a2eff74f93b71dcbdad6f10ff7df9d3557fcc",
-                "sha256:b7f8e0369580bb4a24d5ba1d7cc29660a4a6987763faf1d8a8046830e020e7e2"
-            ],
-            "index": "pypi",
-            "version": "==1.0.23"
-        },
         "jinja2": {
             "hashes": [
                 "sha256:31351a702a408a9e7595a8fc6150fc3f43bb6bf7e319770cbc0db9df9437e852",
@@ -579,14 +571,6 @@
             ],
             "markers": "python_version >= '3.7'",
             "version": "==23.1"
-        },
-        "ping3": {
-            "hashes": [
-                "sha256:1ea12acf6752d4666616341fd7c6393c664cffc510c693ef06f736fb267a13ba",
-                "sha256:dd8439ced69d6fec5885c8d4faefb055aacffb5a20f5e38a78459a5b18cc5e5a"
-            ],
-            "index": "pypi",
-            "version": "==4.0.4"
         },
         "pygments": {
             "hashes": [
@@ -799,13 +783,6 @@
             ],
             "markers": "python_version >= '3.5'",
             "version": "==1.1.5"
-        },
-        "subprocess.run": {
-            "hashes": [
-                "sha256:5760270139acc4cc4058184e539f5b613dbe0073d84ee43247c2e0fc5c04db4e"
-            ],
-            "index": "pypi",
-            "version": "==0.0.8"
         },
         "tiktoken": {
             "hashes": [

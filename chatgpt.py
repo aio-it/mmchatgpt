@@ -601,7 +601,7 @@ class ChatGPT(Plugin):
                     self.driver.react_to(message, "x")
                 else:
                     self.driver.react_to(message, "white_check_mark")
-            except Exception as error_message:
+            except asyncio.TimeoutError as error_message:
                 reply = f"Error: {error_message}"
             self.driver.reply_to(message, reply)
             # remove thought balloon

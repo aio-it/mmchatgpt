@@ -154,7 +154,7 @@ class ChatGPT(Plugin):
 
     def on_start(self):
         """send startup message to all admins"""
-        self.log("ChatGPT Bot started")
+        # self.log("ChatGPT Bot started")
         # self.log("model: " + self.model)
 
     def on_stop(self):

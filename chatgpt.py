@@ -580,7 +580,7 @@ class ChatGPT(Plugin):
                 reply = f"Error: {error_message}"
             self.driver.reply_to(message, reply)
 
-    @listen_to(r"^|.shell (.*)")
+    @listen_to(r"^\.shell (.*)")
     async def admin_shell_function(self, message, code):
         """shell function that allows admins to run arbitrary shell commands and return the result to the chat"""
         reply = ""

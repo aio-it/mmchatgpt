@@ -590,7 +590,7 @@ class ChatGPT(Plugin):
         if self.is_admin(message.sender_name):
             try:
                 resp = subprocess.run(
-                    code, shell=True, text=True)
+                    code, shell=True, text=True, capture_output=True)
                 reply = f"Executed: {code} \nResult: {resp.returncode} \nOutput: {resp.stdout} \nError: {resp.stderr}"
             except Exception as error_message:
                 reply = f"Error: {error_message}"

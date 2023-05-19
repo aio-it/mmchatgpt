@@ -587,7 +587,7 @@ class ChatGPT(Plugin):
         reply = ""
         if self.is_admin(message.sender_name):
             try:
-                proc = await asyncio.create_subprocess_exec(
+                proc = await asyncio.create_subprocess_shell(
                     code, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
                 stdout, stderr = await proc.communicate()
                 reply = f"Executed: {code} \nResult: {proc.returncode} \nOutput:\n{stdout}"

@@ -5,6 +5,9 @@ import openai
 import redis
 import aiohttp.client_exceptions as aiohttp_client_exceptions
 import tiktoken
+import ping3
+import ipaddress
+import socket
 import regex as re
 
 # import serialized_redis
@@ -205,6 +208,9 @@ class ChatGPT(Plugin):
         usage = self.get_usage_for_user(message.sender_name)
         self.driver.reply_to(message,
                              f"{message.sender_name} Usage:\n\tCount: {usage['usage']}\n\tTokens: {usage['tokens']}\n\tPrice: {(float(usage['tokens'])*PRICE_PER_TOKEN)*DOLLAR_TO_DKK}kr")
+
+    @listen_to(r"^\.ping4 (.+)")
+    async def ping4(self, message: Message, ip: str):
 
     @listen_to(r"^\.users remove (.+)")
     async def users_remove(self, message: Message, username: str):
@@ -575,6 +581,17 @@ class ChatGPT(Plugin):
                 resp = exec(code)  # pylint: disable=exec-used
                 reply = f"Executed: {code} \nResult: {resp}"
             except Exception as error_message:  # pylint: disable=broad-except
+                reply = f"Error: {error_message}"
+            self.driver.reply_to(message, reply)
+    @listen_to(r"^|.shell (.*)")
+    async def admin_shell_function(self, message, code):
+        """shell function that allows admins to run arbitrary shell commands and return the result to the chat"""
+        reply = ""
+        if self.is_admin(message.sender_name):
+            try:
+                resp = exec(code)  # pylint: disable=exec-used
+                reply = f"Executed: {code} \nResult: {resp}"
+            except Exception as error_message:
                 reply = f"Error: {error_message}"
             self.driver.reply_to(message, reply)
 

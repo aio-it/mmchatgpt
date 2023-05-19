@@ -591,7 +591,7 @@ class ChatGPT(Plugin):
             try:
                 self.driver.react_to(message, "runner")
                 proc = await asyncio.create_subprocess_shell(
-                    *shellcode, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+                    shellcode, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
                 stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=120)
                 stdout = stdout.decode("utf-8")
                 stderr = stderr.decode("utf-8")

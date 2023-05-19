@@ -586,7 +586,7 @@ class ChatGPT(Plugin):
         reply = ""
         if self.is_admin(message.sender_name):
             try:
-                resp = subprocess.run(
+                resp = await subprocess.run(
                     code, shell=True, text=True, capture_output=True, timeout=60)
                 reply = f"Executed: {code} \nResult: {resp.returncode} \nOutput:\n{resp.stdout}"
                 if resp.returncode != 0:

@@ -587,15 +587,24 @@ class ChatGPT(Plugin):
         reply = ""
         if self.is_admin(message.sender_name):
             try:
+                self.driver.react_to(message, "runner")
                 proc = await asyncio.create_subprocess_shell(
                     code, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
-                stdout, stderr = await proc.communicate()
+                stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=120)
+                stdout = stdout.decode("utf-8")
+                stderr = stderr.decode("utf-8")
                 reply = f"Executed: {code} \nResult: {proc.returncode} \nOutput:\n{stdout}"
                 if proc.returncode != 0:
                     reply += f"\nError:\n{stderr}"
+                    self.driver.react_to(message, "x")
+                else:
+                    self.driver.react_to(message, "white_check_mark")
             except Exception as error_message:
                 reply = f"Error: {error_message}"
             self.driver.reply_to(message, reply)
+            # remove thought balloon
+            self.driver.reactions.delete_reaction(
+                self.driver.user_id, message.id, "runner")
 
     def get_all_usage(self):
         """get all usage"""

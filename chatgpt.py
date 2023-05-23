@@ -1,15 +1,11 @@
 """ChatGPT plugin for mmpy_bot"""
-import os
-import shlex
 import asyncio
-import subprocess
 import time
 import json
 import openai
 import redis
 import aiohttp.client_exceptions as aiohttp_client_exceptions
 import tiktoken
-import regex as re
 
 # import serialized_redis
 from mmpy_bot import Plugin, listen_to

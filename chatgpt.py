@@ -403,7 +403,7 @@ class ChatGPT(Plugin):
                     self.remove_reaction(message, "speaking_head_in_silhouette")
                     self.driver.reply_to(message, msg_txt, file_paths=[filename])
                     # delete the audio file
-                    self.remove_downloaded_file(filename)
+                    self.delete_downloaded_file(filename)
                     await self.log(f"{message.sender_name} used .drtts")
 
             except TooManyRequests:

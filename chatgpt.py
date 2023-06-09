@@ -668,33 +668,36 @@ class ChatGPT(Plugin):
     async def help_function(self, message):
         """help function that returns a list of commands"""
         commands = [
-            "commands:",
+            "Commands:",
             ".help - returns this list of commands (this)",
             f"@{self.driver.client.username} - returns a response from the chatgpt model",
             ".mkimg <text> - text to image using DALL-E2; returns an image",
             ".drtts <text> - text to speech using DR TTS; returns an audio file",
         ]
         commands_admin = [
-            "admin commands:",
+            "Admin commands:",
             ".get chatgpt <setting> - get a setting for chatgpt",
             ".set chatgpt <setting> <value> - set a setting for chatgpt",
             ".model get - get the model to use for chatgpt",
             ".model set <model> - set the model to use for chatgpt",
             ".reset chatgpt <setting> - reset a setting for chatgpt",
+            ".users list/add/remove [<username>] - list/add/remove users",
+            ".admins list/add/remove [<username>] - list/add/remove admins",
             ".eval <code> - run arbitrary python code and return the result to the chat",
             ".exec <code> - run arbitrary python code and return the result to the chat",
             ".getchatlog: get the chatlog for the current thread",
             ".s2t <text>: convert text to token - convert a string to a tokens (for debugging)",
             "settings:",
         ]
+        self.add_reaction(message, "robot_face")
+        txt = "\n".join(commands)
+        self.driver.reply_to(message, f"```\n{txt}\n```")
         if self.is_admin(message.sender_name):
-            commands += commands_admin
             settings_key = self.SETTINGS_KEY
             for key in self.redis.hkeys(settings_key):
                 commands_admin.append(f" - {key}")
-
-        txt = "\n".join(commands)
-        self.driver.reply_to(message, f"```\n{txt}\n```")
+            txt = "\n".join(commands_admin)
+            self.driver.reply_to(message, f"```\n{txt}\n```", direct=True)
 
     # eval function that allows admins to run arbitrary python code and return the result to the chat
     @listen_to(r"^\.eval (.*)")

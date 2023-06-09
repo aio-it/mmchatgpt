@@ -124,7 +124,7 @@ class ChatGPT(Plugin):
             bytestring.decode("utf-8") for bytestring in tokens_to_list_of_bytestrings
         ]
 
-        await self.driver.reply_to(
+        self.driver.reply_to(
             message,
             f"tokens length: {len(tokens)}\n\
                 tokens: {tokens}\n\

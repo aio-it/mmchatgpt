@@ -685,8 +685,9 @@ class ChatGPT(Plugin):
             ".s2t <text>: convert text to token - convert a string to a tokens (for debugging)",
             "settings:",
         ]
-        for setting in self.CHATGPT_SETTINGS:
-            commands_admin.append(f"{setting} {self.get_chatgpt_setting(setting)}")
+        settings_key = self.SETTINGS_KEY
+        for key in self.redis.hkeys(settings_key):
+            commands_admin.append(f"{key}")
 
         if self.is_admin(message.sender_name):
             commands += commands_admin

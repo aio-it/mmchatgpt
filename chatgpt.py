@@ -672,12 +672,14 @@ class ChatGPT(Plugin):
     async def help_function(self, message):
         """help function that returns a list of commands"""
         commands = [
+            "commands:",
             ".help - returns this list of commands (this)",
             f"@{self.driver.user_name} - returns a response from the chatgpt model",
             ".mkimg <text> - text to image using DALL-E2; returns an image",
             ".drtts <text> - text to speech using DR TTS; returns an audio file",
         ]
         commands_admin = [
+            "admin commands:",
             ".set <setting> <value> - set a setting for chatgpt",
             ".get <setting> - get a setting for chatgpt",
             ".eval <code> - run arbitrary python code and return the result to the chat",

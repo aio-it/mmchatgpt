@@ -14,6 +14,7 @@ tiktoken = "*"
 asyncio = "*"
 uuid = "*"
 requests = "*"
+tts = "*"
 
 [dev-packages]
 autopep8 = "*"

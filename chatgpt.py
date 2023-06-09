@@ -10,6 +10,7 @@ import aiohttp.client_exceptions as aiohttp_client_exceptions
 import tiktoken
 import urllib
 import uuid
+from TTS.api import TTS
 
 
 # import serialized_redis

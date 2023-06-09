@@ -392,11 +392,10 @@ class ChatGPT(Plugin):
                     # delete the audio file
                     os.remove(filename)
                     # debug:
-                    await self.debug(f"{message.sender_name} used .drtts")
+                    await self.log(f"{message.sender_name} used .drtts")
                     await self.debug(f"audio_url: {audio_url}")
                     await self.debug(f"filename: {filename}")
 
-                    await self.log(f"{message.sender_name} used .mkimg")
             except TooManyRequests:
                 self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
 

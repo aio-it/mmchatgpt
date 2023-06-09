@@ -359,12 +359,21 @@ class ChatGPT(Plugin):
         filename = self.create_tmp_filename(extension)
         return self.download_file(url, filename)
 
+    def delete_downloaded_file(self, filename: str):
+        """delete the downloaded file"""
+        import os
+
+        if (
+            os.path.exists(filename)
+            and os.path.isfile(filename)
+            and filename.startswith("/tmp")
+        ):
+            os.remove(filename)
+
     @listen_to(r"^\.drtts (.*)")
     async def drtts(self, message: Message, text: str):
         """use the dr tts website to get an audio clip from text"""
-        import requests
         import os
-        import uuid
         import urllib
 
         if self.is_user(message.sender_name):
@@ -378,9 +387,11 @@ class ChatGPT(Plugin):
                     # get the audio from dr tts website https://www.dr.dk/tjenester/tts?text=<text> using the requests module urlencode the text
                     self.add_reaction(message, "speaking_head_in_silhouette")
                     # replace newlines with spaces
+                    await self.debug(f"text: {text}")
                     text = text.replace("\n", " ")
-                    self.log(text)
+                    await self.debug(f"text newline replaced: {text}")
                     urlencoded_text = urllib.parse.quote_plus(text)
+                    await self.debug(f"urlencoded_text: {urlencoded_text}")
                     audio_url = (
                         f"https://www.dr.dk/tjenester/tts?text={urlencoded_text}"
                     )

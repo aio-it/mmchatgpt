@@ -11,6 +11,7 @@ import tiktoken
 import urllib
 import uuid
 import pyttsx3
+from typing import Tuple, List
 
 
 # import serialized_redis
@@ -406,9 +407,20 @@ class ChatGPT(Plugin):
             except TooManyRequests:
                 self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
 
+    async def create_tts_audio(
+        self, text: str, filename: str
+    ) -> Tuple[List, int, float]:
+        loop = asyncio.get_event_loop()
+        engine = pyttsx3.init()
+        await loop.run_in_executor(None, engine.save_to_file, text, filename)
+        await loop.run_in_executor(None, engine.runAndWait)
+        voices = engine.getProperty("voices")
+        rate = engine.getProperty("rate")
+        volume = engine.getProperty("volume")
+        return voices, rate, volume
+
     @listen_to(r"^\.tts ([\s\S]*)")
     async def tts(self, message: Message, text: str):
-        """use the tss package to get an audio clip from text"""
         if self.is_user(message.sender_name):
             try:
                 with RateLimit(
@@ -418,29 +430,18 @@ class ChatGPT(Plugin):
                     expire=5,
                 ):
                     self.add_reaction(message, "speaking_head_in_silhouette")
-                    # replace newlines with spaces
                     text = text.replace("\n", " ")
-                    # create a tmp filename
                     filename = self.create_tmp_filename("mp3")
-                    # init the engine
-                    engine = pyttsx3.init()
-                    engine.save_to_file(text, filename)
-                    engine.runAndWait()
+                    voices, rate, volume = await self.create_tts_audio(text, filename)
                     await asyncio.sleep(5)
 
-                    # debug
-                    await self.debug(f"voices: {engine.getProperty('voices')}")
-                    await self.debug(f"rate: {engine.getProperty('rate')}")
-                    await self.debug(f"volume: {engine.getProperty('volume')}")
-                    # save to file
-                    # send response
-                    self.driver.reply_to(message, f"tts: {text}", file_paths=[filename])
-                    # remove reaction
-                    self.remove_reaction(message, "speaking_head_in_silhouette")
-                    # delete the audio file
-                    # self.delete_downloaded_file(filename)
-                    await self.log(f"{message.sender_name} used .tts")
+                    await self.debug(f"voices: {voices}")
+                    await self.debug(f"rate: {rate}")
+                    await self.debug(f"volume: {volume}")
 
+                    self.driver.reply_to(message, f"tts: {text}", file_paths=[filename])
+                    self.remove_reaction(message, "speaking_head_in_silhouette")
+                    await self.log(f"{message.sender_name} used .tts")
             except TooManyRequests:
                 self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
 

@@ -426,7 +426,7 @@ class ChatGPT(Plugin):
                     engine = pyttsx3.init()
                     engine.save_to_file(text, filename)
                     engine.runAndWait()
-                    asyncio.sleep(5)
+                    await asyncio.sleep(5)
 
                     # debug
                     await self.debug(f"voices: {engine.getProperty('voices')}")

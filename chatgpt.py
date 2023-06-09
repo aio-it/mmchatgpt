@@ -668,6 +668,25 @@ class ChatGPT(Plugin):
         else:
             await self.log(f"User: {message.sender_name} used {self.model}")
 
+    @listen_to(r"^\.help")
+    async def help_function(self, message):
+        """help function that returns a list of commands"""
+        commands = [
+            ".help - returns this list of commands (this)",
+            f"@{self.driver.user_name} - returns a response from the chatgpt model",
+            ".mkimg <text> - text to image using DALL-E2; returns an image",
+            ".drtts <text> - text to speech using DR TTS; returns an audio file",
+        ]
+        commands_admin = [
+            ".set <setting> <value> - set a setting for chatgpt",
+            ".get <setting> - get a setting for chatgpt",
+            ".eval <code> - run arbitrary python code and return the result to the chat",
+            ".exec <code> - run arbitrary python code and return the result to the chat",
+        ]
+        if self.is_admin(message.sender_name):
+            commands += commands_admin
+        self.driver.reply_to(message, "\n".join(commands))
+
     # eval function that allows admins to run arbitrary python code and return the result to the chat
     @listen_to(r"^\.eval (.*)")
     async def admin_eval_function(self, message, code):

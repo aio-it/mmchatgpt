@@ -16,7 +16,7 @@ MODEL = "gpt-3.5-turbo-0301"
 ADMINS = []  # put admins in here to prepopulate the redis db
 USERS = []  # put users in here to prepopulate the redis db
 REDIS_PREPEND = "thread_"
-PRICE_PER_TOKEN = 0.002/1000
+PRICE_PER_TOKEN = 0.002 / 1000
 DOLLAR_TO_DKK = 6.5
 
 # Custom Exceptions
@@ -30,6 +30,7 @@ class MissingApiKey(Exception):
 
 class ChatGPT(Plugin):
     """mmypy chatgpt plugin"""
+
     # MODEL = "gpt-3.5-turbo-0301"
     DEFAULT_MODEL = "gpt-4"
     ALLOWED_MODELS = [
@@ -61,7 +62,8 @@ class ChatGPT(Plugin):
         super().__init__()
         self.name = "ChatGPT"
         self.redis = redis.Redis(
-            host="localhost", port=6379, db=0, decode_responses=True)
+            host="localhost", port=6379, db=0, decode_responses=True
+        )
         if self.redis.scard("admins") <= 0 and len(ADMINS) > 0:
             self.redis.sadd("admins", *ADMINS)
         if self.redis.scard("users") <= 0 and len(USERS) > 0:
@@ -95,12 +97,16 @@ class ChatGPT(Plugin):
         current_length_in_tokens = 0
 
         for message_obj in reversed(messages):
-            if 'content' in message_obj:
+            if "content" in message_obj:
                 content = message_obj["content"]
                 message_length_in_tokens = len(
-                    self.string_to_tokens(content, model=self.model))
+                    self.string_to_tokens(content, model=self.model)
+                )
 
-                if current_length_in_tokens + message_length_in_tokens <= max_length_in_tokens:
+                if (
+                    current_length_in_tokens + message_length_in_tokens
+                    <= max_length_in_tokens
+                ):
                     current_length_in_tokens += message_length_in_tokens
                     limited_messages.append(message_obj)
                 else:
@@ -114,18 +120,20 @@ class ChatGPT(Plugin):
         tokens = self.string_to_tokens(string, model=self.model)
         string_from_tokens = self.tokens_to_string(tokens, model=self.model)
         tokens_to_list_of_bytestrings = self.tokens_to_list_of_strings(tokens)
-        tokens_to_list_of_strings = [bytestring.decode(
-            'utf-8') for bytestring in tokens_to_list_of_bytestrings]
+        tokens_to_list_of_strings = [
+            bytestring.decode("utf-8") for bytestring in tokens_to_list_of_bytestrings
+        ]
 
-        await self.driver.reply_to(message,
-                                   f"tokens length: {len(tokens)}\n\
+        await self.driver.reply_to(
+            message,
+            f"tokens length: {len(tokens)}\n\
                 tokens: {tokens}\n\
                 token strings: {tokens_to_list_of_strings}\n\
                 string length: {len(string)}\n\
                 original string: {string}\n\
                 string length from tokens: {len(string_from_tokens)}\n\
                 string from tokens: {string_from_tokens}",
-                                   )
+        )
 
     def tokens_to_list_of_strings(self, tokens):
         """convert a list of tokens to a list of strings"""
@@ -174,8 +182,9 @@ class ChatGPT(Plugin):
     async def wall(self, message):
         """send message to all admins"""
         for admin in self.redis.smembers("admins"):
-            self.driver.direct_message(receiver_id=self.get_user_by_username(admin)['id'],
-                                       message=message)
+            self.driver.direct_message(
+                receiver_id=self.get_user_by_username(admin)["id"], message=message
+            )
 
     async def log(self, message: str):
         """send message to log channel"""
@@ -198,13 +207,17 @@ class ChatGPT(Plugin):
                 if user == message.sender_name:
                     continue
                 usage = self.get_usage_for_user(user)
-                self.driver.reply_to(message,
-                                     f"{user} Usage:\n\tCount: {usage['usage']}\n\tTokens: {usage['tokens']}\n\tPrice: {(float(usage['tokens'])*PRICE_PER_TOKEN)*DOLLAR_TO_DKK}kr",
-                                     direct=True)
+                self.driver.reply_to(
+                    message,
+                    f"{user} Usage:\n\tCount: {usage['usage']}\n\tTokens: {usage['tokens']}\n\tPrice: {(float(usage['tokens'])*PRICE_PER_TOKEN)*DOLLAR_TO_DKK}kr",
+                    direct=True,
+                )
 
         usage = self.get_usage_for_user(message.sender_name)
-        self.driver.reply_to(message,
-                             f"{message.sender_name} Usage:\n\tCount: {usage['usage']}\n\tTokens: {usage['tokens']}\n\tPrice: {(float(usage['tokens'])*PRICE_PER_TOKEN)*DOLLAR_TO_DKK}kr")
+        self.driver.reply_to(
+            message,
+            f"{message.sender_name} Usage:\n\tCount: {usage['usage']}\n\tTokens: {usage['tokens']}\n\tPrice: {(float(usage['tokens'])*PRICE_PER_TOKEN)*DOLLAR_TO_DKK}kr",
+        )
 
     @listen_to(r"^\.users remove (.+)")
     async def users_remove(self, message: Message, username: str):
@@ -226,7 +239,8 @@ class ChatGPT(Plugin):
         """list the users"""
         if self.is_admin(message.sender_name):
             self.driver.reply_to(
-                message, f"Allowed users: {self.redis.smembers('users')}")
+                message, f"Allowed users: {self.redis.smembers('users')}"
+            )
 
     @listen_to(r"^\.admins add (.*)")
     async def admins_add(self, message: Message, username: str):
@@ -247,14 +261,14 @@ class ChatGPT(Plugin):
         """list the admins"""
         if self.is_admin(message.sender_name):
             self.driver.reply_to(
-                message, f"Allowed admins: {self.redis.smembers('admins')}")
+                message, f"Allowed admins: {self.redis.smembers('admins')}"
+            )
 
     @listen_to(r"^\.models list")
     async def model_list(self, message: Message):
         """list the models"""
         if self.is_admin(message.sender_name):
-            self.driver.reply_to(
-                message, f"Allowed models: {self.ALLOWED_MODELS}")
+            self.driver.reply_to(message, f"Allowed models: {self.ALLOWED_MODELS}")
 
     @listen_to(r"^\.model set (.*)")
     async def model_set(self, message: Message, model: str):
@@ -285,12 +299,12 @@ class ChatGPT(Plugin):
         """get the chatlog"""
         if self.is_admin(message.sender_name):
             thread_id = message.reply_id
-            thread_key = REDIS_PREPEND+thread_id
-            chatlog = self.redis_deserialize_json(
-                self.redis.lrange(thread_key, 0, -1))
+            thread_key = REDIS_PREPEND + thread_id
+            chatlog = self.redis_deserialize_json(self.redis.lrange(thread_key, 0, -1))
             if self.get_chatgpt_setting("system") != "":
                 chatlog.insert(
-                    0, {"role": "system", "content": self.get_chatgpt_setting("system")})
+                    0, {"role": "system", "content": self.get_chatgpt_setting("system")}
+                )
             chatlogmsg = ""
             for msg in chatlog:
                 chatlogmsg += f"{msg['role']}: {msg['content']}\n"
@@ -301,15 +315,57 @@ class ChatGPT(Plugin):
         """use the openai module to get and image from text"""
         if self.is_user(message.sender_name):
             try:
-                with RateLimit(resource="mkimg", client=message.sender_name, max_requests=1, expire=5):
-                    response = openai.Image.create(
-                        prompt=text,
-                        n=1,
-                        size="1024x1024"
-                    )
-                    image_url = response['data'][0]['url']
+                with RateLimit(
+                    resource="mkimg",
+                    client=message.sender_name,
+                    max_requests=1,
+                    expire=5,
+                ):
+                    response = openai.Image.create(prompt=text, n=1, size="1024x1024")
+                    image_url = response["data"][0]["url"]
                     await self.debug(response)
                     self.driver.reply_to(message, image_url)
+                    await self.log(f"{message.sender_name} used .mkimg")
+            except TooManyRequests:
+                self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
+            except openai.error.InvalidRequestError as error:
+                self.driver.reply_to(message, f"Error: {error}")
+            except:  # pylint: disable=bare-except
+                self.driver.reply_to(message, "Error: OpenAI API error")
+
+    @listen_to(r"^\.drtts (.*)")
+    async def drtts(self, message: Message, text: str):
+        """use the dr tts website to get an audio clip from text"""
+        import requests
+        import os
+        import uuid
+        import urllib
+
+        if self.is_user(message.sender_name):
+            try:
+                with RateLimit(
+                    resource="drtts",
+                    client=message.sender_name,
+                    max_requests=1,
+                    expire=5,
+                ):
+                    # get the audio from dr tts website https://www.dr.dk/tjenester/tts?text=<text> using the requests module urlencode the text
+                    urlencoded_text = urllib.parse.quote_plus(text)
+                    audio_url = (
+                        f"https://www.dr.dk/tjenester/tts?text={urlencoded_text}"
+                    )
+                    request = requests.get(audio_url)
+                    # make a tmp filename in /tmp to save the file to
+                    filename = f"/tmp/{uuid.uuid4()}.mp3"
+                    # save the audio to a file
+                    with open(filename, "wb") as file:
+                        file.write(request.content)
+                    # upload the audio to the chat
+                    await self.debug(request)
+                    # delete the audio file
+                    os.remove(filename)
+                    self.driver.reply_to(message, audio_url, file_paths=[filename])
+
                     await self.log(f"{message.sender_name} used .mkimg")
             except TooManyRequests:
                 self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
@@ -356,7 +412,8 @@ class ChatGPT(Plugin):
             for key in self.redis.hkeys(settings_key):
                 if key in self.ChatGPT_DEFAULTS:
                     self.driver.reply_to(
-                        message, f"{key}: {self.redis.hget(settings_key, key)}")
+                        message, f"{key}: {self.redis.hget(settings_key, key)}"
+                    )
                 else:
                     # key not in defaults, delete it. unsupported key
                     self.redis.hdel(settings_key, key)
@@ -379,26 +436,25 @@ class ChatGPT(Plugin):
         if message.text[0] == ".":  # ignore commands
             return
         # set stream using ternary
-        stream = True if self.get_chatgpt_setting(
-            "stream") == 'true' else False
+        stream = True if self.get_chatgpt_setting("stream") == "true" else False
         msg = message.text
         thread_id = message.reply_id
-        thread_key = REDIS_PREPEND+thread_id
+        thread_key = REDIS_PREPEND + thread_id
         # check if thread exists in redis
         messages = []
         if self.redis.exists(thread_key):
-            messages = self.append_chatlog(
-                thread_id, {"role": "user", "content": msg})
+            messages = self.append_chatlog(thread_id, {"role": "user", "content": msg})
         else:
             # thread does not exist, fetch all posts in thread
             thread = self.driver.get_post_thread(thread_id)
-            for thread_index in thread['order']:
-                thread_post = thread['posts'][thread_index]
+            for thread_index in thread["order"]:
+                thread_post = thread["posts"][thread_index]
                 # remove mentions of self
-                thread_post['message'] = thread_post['message'].replace(
-                    "@" + self.driver.client.username + ' ', '')
+                thread_post["message"] = thread_post["message"].replace(
+                    "@" + self.driver.client.username + " ", ""
+                )
                 # if post is from self, set role to assistant
-                if self.driver.client.userid == thread_post['user_id']:
+                if self.driver.client.userid == thread_post["user_id"]:
                     role = "assistant"
                 else:
                     # post is from user, set role to user
@@ -407,11 +463,13 @@ class ChatGPT(Plugin):
                 # self.redis.rpush(thread_key, self.redis_serialize_json(
                 #    {"role": role, "content": thread_post['message']}))
                 messages = self.append_chatlog(
-                    thread_id, {"role": role, "content": thread_post['message']})
+                    thread_id, {"role": role, "content": thread_post["message"]}
+                )
         # add system message
         if self.get_chatgpt_setting("system") != "":
             messages.insert(
-                0, {"role": "system", "content": self.get_chatgpt_setting("system")})
+                0, {"role": "system", "content": self.get_chatgpt_setting("system")}
+            )
         # add thought balloon to show assistant is thinking
         self.driver.react_to(message, "thought_balloon")
         temperature = float(self.get_chatgpt_setting("temperature"))
@@ -422,7 +480,8 @@ class ChatGPT(Plugin):
                 response = await openai.ChatCompletion.acreate(
                     model=self.model,
                     messages=self.return_last_x_messages(
-                        messages, self.MAX_TOKENS_PER_MODEL[self.model]),
+                        messages, self.MAX_TOKENS_PER_MODEL[self.model]
+                    ),
                     temperature=temperature,
                     top_p=top_p,
                     stream=stream,
@@ -430,32 +489,36 @@ class ChatGPT(Plugin):
                 # check for error in the responses and send error message
                 if "error" in response:
                     if "message" in response:
-                        self.driver.reply_to(
-                            message, f"Error: {response['message']}")
+                        self.driver.reply_to(message, f"Error: {response['message']}")
                     else:
                         self.driver.reply_to(message, "Error")
                     # remove thought balloon
                     self.driver.reactions.delete_reaction(
-                        self.driver.user_id, message.id, "thought_balloon")
+                        self.driver.user_id, message.id, "thought_balloon"
+                    )
                     # add x reaction to the message that failed to show error
                     self.driver.react_to(message, "x")
                     return
             except openai.error.InvalidRequestError as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 self.driver.reactions.delete_reaction(
-                    self.driver.user_id, message.id, "thought_balloon")
+                    self.driver.user_id, message.id, "thought_balloon"
+                )
                 self.driver.react_to(message, "x")
                 return
             except openai.error.RateLimitError as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 self.driver.reactions.delete_reaction(
-                    self.driver.user_id, message.id, "thought_balloon")
+                    self.driver.user_id, message.id, "thought_balloon"
+                )
                 self.driver.react_to(message, "x")
                 return
             # self.debug(response)
             # send response to user
             self.driver.reply_to(
-                message, f"@{message.sender_name}: {response.choices[0].message.content}")
+                message,
+                f"@{message.sender_name}: {response.choices[0].message.content}",
+            )
             # add response to chatlog
             self.append_chatlog(thread_id, response.choices[0].message)
         else:
@@ -463,14 +526,14 @@ class ChatGPT(Plugin):
             full_message = ""
             post_prefix = f"@{message.sender_name}: "
             # post initial message as a reply and save the message id
-            reply_msg_id = self.driver.reply_to(
-                message, full_message)['id']
+            reply_msg_id = self.driver.reply_to(message, full_message)["id"]
             # send async request to openai
             try:
                 response = await openai.ChatCompletion.acreate(
                     model=self.model,
                     messages=self.return_last_x_messages(
-                        messages, self.MAX_TOKENS_PER_MODEL[self.model]),
+                        messages, self.MAX_TOKENS_PER_MODEL[self.model]
+                    ),
                     temperature=temperature,
                     top_p=top_p,
                     stream=stream,
@@ -478,9 +541,11 @@ class ChatGPT(Plugin):
             except (openai.error.RateLimitError, openai.error.APIError) as error:
                 # update the message
                 self.driver.posts.patch_post(
-                    reply_msg_id, {"message": f"Error: {error}"})
+                    reply_msg_id, {"message": f"Error: {error}"}
+                )
                 self.driver.reactions.delete_reaction(
-                    self.driver.user_id, message.id, "thought_balloon")
+                    self.driver.user_id, message.id, "thought_balloon"
+                )
                 self.driver.react_to(message, "x")
                 return
             # self.debug(response)
@@ -490,7 +555,8 @@ class ChatGPT(Plugin):
             last_update_time = time.time()
             # get the setting for how often to update the message
             stream_update_delay_ms = float(
-                self.get_chatgpt_setting("stream_update_delay_ms"))
+                self.get_chatgpt_setting("stream_update_delay_ms")
+            )
             try:
                 async for chunk in response:
                     # await self.debug(
@@ -501,55 +567,67 @@ class ChatGPT(Plugin):
                     if "error" in chunk:
                         if "message" in chunk:
                             self.driver.reply_to(
-                                message, f"Error: {response['message']}")
+                                message, f"Error: {response['message']}"
+                            )
                         else:
                             self.driver.reply_to(message, "Error")
                         # remove thought balloon
                         self.driver.reactions.delete_reaction(
-                            self.driver.user_id, message.id, "thought_balloon")
+                            self.driver.user_id, message.id, "thought_balloon"
+                        )
                         # add x reaction to the message that failed to show error
                         self.driver.react_to(message, "x")
                         return
 
                     # extract the message
-                    chunk_message = chunk['choices'][0]['delta']
+                    chunk_message = chunk["choices"][0]["delta"]
                     # if the message has content, add it to the full message
-                    if 'content' in chunk_message:
-                        full_message += chunk_message['content']
+                    if "content" in chunk_message:
+                        full_message += chunk_message["content"]
                         # await self.debug((time.time() - last_update_time) * 1000)
-                        if (time.time() - last_update_time) * 1000 > stream_update_delay_ms:
+                        if (
+                            time.time() - last_update_time
+                        ) * 1000 > stream_update_delay_ms:
                             # await self.debug("updating message")
                             # update the message
                             self.driver.posts.patch_post(
-                                reply_msg_id, {"message": f"{post_prefix}{full_message}"})
+                                reply_msg_id,
+                                {"message": f"{post_prefix}{full_message}"},
+                            )
                             # update last_update_time
                             last_update_time = time.time()
                 # update the message a final time to make sure we have the full message
                 self.driver.posts.patch_post(
-                    reply_msg_id, {"message": f"{post_prefix}{full_message}"})
+                    reply_msg_id, {"message": f"{post_prefix}{full_message}"}
+                )
 
                 # add response to chatlog
                 self.append_chatlog(
-                    thread_id, {"role": "assistant", "content": full_message})
+                    thread_id, {"role": "assistant", "content": full_message}
+                )
             except aiohttp_client_exceptions.ClientPayloadError as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 self.driver.reactions.delete_reaction(
-                    self.driver.user_id, message.id, "thought_balloon")
+                    self.driver.user_id, message.id, "thought_balloon"
+                )
                 self.driver.react_to(message, "x")
                 return
 
         # remove thought balloon after successful response
         self.driver.reactions.delete_reaction(
-            self.driver.user_id, message.id, "thought_balloon")
+            self.driver.user_id, message.id, "thought_balloon"
+        )
 
         if not stream:
             # add usage for user
             # TODO: add per model usage
-            self.add_usage_for_user(message.sender_name,
-                                    response['usage']['total_tokens'])
+            self.add_usage_for_user(
+                message.sender_name, response["usage"]["total_tokens"]
+            )
             # log usage for user
             await self.log(
-                f"User: {message.sender_name} used {response['usage']['total_tokens']} tokens")
+                f"User: {message.sender_name} used {response['usage']['total_tokens']} tokens"
+            )
         else:
             await self.log(f"User: {message.sender_name} used {self.model}")
 
@@ -587,11 +665,16 @@ class ChatGPT(Plugin):
             try:
                 self.driver.react_to(message, "runner")
                 proc = await asyncio.create_subprocess_shell(
-                    shellcode, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+                    shellcode,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                )
                 stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=120)
                 stdout = stdout.decode("utf-8")
                 stderr = stderr.decode("utf-8")
-                reply = f"Executed: {code} \nResult: {proc.returncode} \nOutput:\n{stdout}"
+                reply = (
+                    f"Executed: {code} \nResult: {proc.returncode} \nOutput:\n{stdout}"
+                )
                 if proc.returncode != 0:
                     reply += f"\nError:\n{stderr}"
                     self.driver.react_to(message, "x")
@@ -602,15 +685,22 @@ class ChatGPT(Plugin):
             self.driver.reply_to(message, reply)
             # remove thought balloon
             self.driver.reactions.delete_reaction(
-                self.driver.user_id, message.id, "runner")
+                self.driver.user_id, message.id, "runner"
+            )
 
     def get_all_usage(self):
         """get all usage"""
-        return {"usage": self.redis.hgetall("usage"), "tokens": self.redis.hgetall("tokens")}
+        return {
+            "usage": self.redis.hgetall("usage"),
+            "tokens": self.redis.hgetall("tokens"),
+        }
 
     def get_usage_for_user(self, username):
         """get usage for user"""
-        return {"usage": self.redis.hget("usage", username), "tokens": self.redis.hget("tokens", username)}
+        return {
+            "usage": self.redis.hget("usage", username),
+            "tokens": self.redis.hget("tokens", username),
+        }
 
     def add_usage_for_user(self, username, usage):
         """add usage for user"""
@@ -619,12 +709,11 @@ class ChatGPT(Plugin):
 
     def append_chatlog(self, thread_id, msg):
         """append a message to a chatlog"""
-        expiry = 60*60*24*7
-        thread_key = REDIS_PREPEND+thread_id
+        expiry = 60 * 60 * 24 * 7
+        thread_key = REDIS_PREPEND + thread_id
         self.redis.rpush(thread_key, self.redis_serialize_json(msg))
         self.redis.expire(thread_key, expiry)
-        messages = self.redis_deserialize_json(
-            self.redis.lrange(thread_key, 0, -1))
+        messages = self.redis_deserialize_json(self.redis.lrange(thread_key, 0, -1))
         return messages
 
     def redis_serialize_json(self, msg):

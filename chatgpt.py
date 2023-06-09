@@ -363,7 +363,7 @@ class ChatGPT(Plugin):
                     # upload the audio to the chat
                     await self.debug(request)
                     # format the link in mattermost markdown
-                    msg_txt = f"![drtts]({audio_url})"
+                    msg_txt = f"[drtts]({audio_url})"
                     self.driver.reply_to(message, msg_txt, file_paths=[filename])
                     # delete the audio file
                     os.remove(filename)

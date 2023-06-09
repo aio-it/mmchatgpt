@@ -195,9 +195,9 @@ class ChatGPT(Plugin):
         """send debug message to log channel. if private is true send to all admins"""
         print(f"DEBUG: {message}")
         if self.log_to_channel and not private:
-            self.log(f"DEBUG: {message}")
+            await self.log(f"DEBUG: {message}")
         elif not self.log_to_channel and private:
-            self.wall(f"DEBUG: {message}")
+            await self.wall(f"DEBUG: {message}")
 
     @listen_to(r"^\.usage")
     async def usage(self, message: Message):

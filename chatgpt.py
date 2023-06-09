@@ -305,7 +305,7 @@ class ChatGPT(Plugin):
                 chatlogmsg += f"{msg['role']}: {msg['content']}\n"
             self.driver.reply_to(message, chatlogmsg)
 
-    @listen_to(r"^\.mkimg (.*)")
+    @listen_to(r"^\.mkimg ([\s\S]*)")
     async def mkimg(self, message: Message, text: str):
         """use the openai module to get and image from text"""
         import os

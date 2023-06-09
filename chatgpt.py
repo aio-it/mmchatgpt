@@ -424,16 +424,19 @@ class ChatGPT(Plugin):
                     filename = self.create_tmp_filename("mp3")
                     # init the engine
                     engine = pyttsx3.init()
+                    loop = asyncio.get_event_loop()
+
+                    def _speak():
+                        engine.save_to_file(text, filename)
+                        engine.runAndWait()
+
+                    await loop.run_in_executor(None, _speak)
+
                     # debug
                     await self.debug(f"voices: {engine.getProperty('voices')}")
                     await self.debug(f"rate: {engine.getProperty('rate')}")
                     await self.debug(f"volume: {engine.getProperty('volume')}")
                     # save to file
-                    engine.save_to_file(text, filename)
-                    await engine.runAndWait()
-                    # wait for the file to be created
-                    while not os.path.exists(filename):
-                        await asyncio.sleep(0.1)
                     # send response
                     self.driver.reply_to(message, f"tts: {text}", file_paths=[filename])
                     # remove reaction

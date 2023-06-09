@@ -372,7 +372,7 @@ class ChatGPT(Plugin):
 
     import re
 
-    @listen_to(r"^\.drtts (.*)", re.MULTILINE)
+    @listen_to(r"^\.drtts ([\s\S]*)", re.MULTILINE)
     async def drtts(self, message: Message, text: str):
         """use the dr tts website to get an audio clip from text"""
         import os

@@ -319,6 +319,8 @@ class ChatGPT(Plugin):
                     expire=5,
                 ):
                     self.add_reaction(message, "frame_with_picture")
+                    text = text.replace("\n", " ")
+                    await self.log(f"mkimg: {text}")
                     response = openai.Image.create(prompt=text, n=1, size="1024x1024")
                     image_url = response["data"][0]["url"]
                     # download the image using the url
@@ -389,18 +391,16 @@ class ChatGPT(Plugin):
                     # get the audio from dr tts website https://www.dr.dk/tjenester/tts?text=<text> using the requests module urlencode the text
                     self.add_reaction(message, "speaking_head_in_silhouette")
                     # replace newlines with spaces
-                    await self.debug(f"text: {text}")
+                    await self.log(f"drtts: {text}")
                     text = text.replace("\n", " ")
-                    await self.debug(f"text newline replaced: {text}")
                     urlencoded_text = urllib.parse.quote_plus(text)
-                    await self.debug(f"urlencoded_text: {urlencoded_text}")
                     audio_url = (
                         f"https://www.dr.dk/tjenester/tts?text={urlencoded_text}"
                     )
                     # download the audio using the url
                     filename = self.download_file_to_tmp(audio_url, "mp3")
                     # format the link in mattermost markdown
-                    msg_txt = f"[drtts]({audio_url})"
+                    msg_txt = f"link: [drtts]({audio_url})"
                     self.remove_reaction(message, "speaking_head_in_silhouette")
                     self.driver.reply_to(message, msg_txt, file_paths=[filename])
                     # delete the audio file

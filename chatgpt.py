@@ -438,7 +438,7 @@ class ChatGPT(Plugin):
                     # remove reaction
                     self.remove_reaction(message, "speaking_head_in_silhouette")
                     # delete the audio file
-                    self.delete_downloaded_file(filename)
+                    # self.delete_downloaded_file(filename)
                     await self.log(f"{message.sender_name} used .tts")
 
             except TooManyRequests:

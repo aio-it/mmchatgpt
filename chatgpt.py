@@ -432,7 +432,7 @@ class ChatGPT(Plugin):
                     engine.save_to_file(text, filename)
                     engine.runAndWait()
                     # send response
-                    self.reply_to(message, f"tts: {text}", file_paths=[filename])
+                    self.driver.reply_to(message, f"tts: {text}", file_paths=[filename])
                     # remove reaction
                     self.remove_reaction(message, "speaking_head_in_silhouette")
                     # delete the audio file

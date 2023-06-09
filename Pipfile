@@ -12,6 +12,8 @@ python-redis-rate-limit = "*"
 aiohttp = "*"
 tiktoken = "*"
 asyncio = "*"
+uuid = "*"
+requests = "*"
 
 [dev-packages]
 autopep8 = "*"

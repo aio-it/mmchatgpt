@@ -328,9 +328,10 @@ class ChatGPT(Plugin):
                     # download the image using the url
                     filename = self.download_file_to_tmp(image_url, "png")
                     # format the image_url as mattermost markdown
-                    image_url_txt = f"![{filename}]({image_url})"
+                    image_url_txt = f"![img]({image_url})"
                     await self.debug(response)
                     self.driver.reply_to(message, image_url_txt, file_paths=[filename])
+                    self.driver.reply_to(message, "", file_paths=[filename])
                     os.remove(filename)
                     await self.log(f"{message.sender_name} used .mkimg")
             except TooManyRequests:

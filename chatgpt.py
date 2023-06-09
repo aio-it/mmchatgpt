@@ -128,10 +128,10 @@ class ChatGPT(Plugin):
         tokens_to_list_of_strings = [
             bytestring.decode("utf-8") for bytestring in tokens_to_list_of_bytestrings
         ]
-        text = f"tokens length: {len(tokens)}\n\
-                tokens: {tokens}\n\
-                token strings: {tokens_to_list_of_strings}\n\
-                string length: {len(string)}\n"
+        text = f"string length: {len(string)}\n\
+            token count: {len(tokens)}\n\
+            token strings: {tokens_to_list_of_strings}\n\
+            tokens raw: {tokens}"
 
         self.driver.reply_to(message, text)
 

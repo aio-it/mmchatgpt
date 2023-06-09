@@ -15,6 +15,7 @@ asyncio = "*"
 uuid = "*"
 requests = "*"
 pyttsx3 = "*"
+wheel = "*"
 
 [dev-packages]
 autopep8 = "*"

@@ -288,12 +288,6 @@ class ChatGPT(Plugin):
         if self.is_admin(message.sender_name):
             self.driver.reply_to(message, f"Model: {self.model}")
 
-    @listen_to(r"^\.clear")
-    async def clear(self, message: Message):
-        """clear the chatlog"""
-        if self.is_admin(message.sender_name):
-            self.driver.reply_to(message, "Chatlog cleared")
-
     @listen_to(r"^\.getchatlog")
     async def getchatlog(self, message: Message):
         """get the chatlog"""
@@ -680,8 +674,10 @@ class ChatGPT(Plugin):
         ]
         commands_admin = [
             "admin commands:",
-            ".set chatgpt <setting> <value> - set a setting for chatgpt",
             ".get chatgpt <setting> - get a setting for chatgpt",
+            ".set chatgpt <setting> <value> - set a setting for chatgpt",
+            ".model get - get the model to use for chatgpt",
+            ".model set <model> - set the model to use for chatgpt",
             ".reset chatgpt <setting> - reset a setting for chatgpt",
             ".eval <code> - run arbitrary python code and return the result to the chat",
             ".exec <code> - run arbitrary python code and return the result to the chat",

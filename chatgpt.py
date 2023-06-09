@@ -433,7 +433,6 @@ class ChatGPT(Plugin):
                     text = text.replace("\n", " ")
                     filename = self.create_tmp_filename("mp3")
                     voices, rate, volume = await self.create_tts_audio(text, filename)
-                    await asyncio.sleep(5)
 
                     await self.debug(f"voices: {voices}")
                     await self.debug(f"rate: {rate}")

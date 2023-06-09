@@ -685,13 +685,14 @@ class ChatGPT(Plugin):
             ".s2t <text>: convert text to token - convert a string to a tokens (for debugging)",
             "settings:",
         ]
-        settings_key = self.SETTINGS_KEY
-        for key in self.redis.hkeys(settings_key):
-            commands_admin.append(f"{key}")
-
         if self.is_admin(message.sender_name):
             commands += commands_admin
-        self.driver.reply_to(message, "\n".join(commands))
+            settings_key = self.SETTINGS_KEY
+            for key in self.redis.hkeys(settings_key):
+                commands_admin.append(f" - {key}")
+
+        txt = "\n".join(commands)
+        self.driver.reply_to(message, f"```{txt}```")
 
     # eval function that allows admins to run arbitrary python code and return the result to the chat
     @listen_to(r"^\.eval (.*)")

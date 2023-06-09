@@ -313,6 +313,8 @@ class ChatGPT(Plugin):
     @listen_to(r"^\.mkimg (.*)")
     async def mkimg(self, message: Message, text: str):
         """use the openai module to get and image from text"""
+        import os
+
         if self.is_user(message.sender_name):
             try:
                 with RateLimit(
@@ -323,8 +325,13 @@ class ChatGPT(Plugin):
                 ):
                     response = openai.Image.create(prompt=text, n=1, size="1024x1024")
                     image_url = response["data"][0]["url"]
+                    # download the image using the url
+                    filename = self.download_file_to_tmp(image_url, "png")
+                    # format the image_url as mattermost markdown
+                    image_url_txt = f"![{filename}]({image_url})"
                     await self.debug(response)
-                    self.driver.reply_to(message, image_url)
+                    self.driver.reply_to(message, image_url_txt, file_paths=[filename])
+                    os.remove(filename)
                     await self.log(f"{message.sender_name} used .mkimg")
             except TooManyRequests:
                 self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
@@ -332,6 +339,27 @@ class ChatGPT(Plugin):
                 self.driver.reply_to(message, f"Error: {error}")
             except:  # pylint: disable=bare-except
                 self.driver.reply_to(message, "Error: OpenAI API error")
+
+    def create_tmp_filename(self, extension: str) -> str:
+        """create a tmp filename"""
+        import uuid
+
+        return f"/tmp/{uuid.uuid4()}.{extension}"
+
+    def download_file(self, url: str, filename: str) -> str:
+        """download file from url using requests and return the filename/location"""
+        import requests
+
+        request = requests.get(url, allow_redirects=True)
+        with open(filename, "wb") as file:
+            file.write(request.content)
+        return filename
+
+    def download_file_to_tmp(self, url: str, extension: str) -> str:
+        """download file using requests and return the filename/location"""
+
+        filename = self.create_tmp_filename(extension)
+        return self.download_file(url, filename)
 
     @listen_to(r"^\.drtts (.*)")
     async def drtts(self, message: Message, text: str):
@@ -354,14 +382,8 @@ class ChatGPT(Plugin):
                     audio_url = (
                         f"https://www.dr.dk/tjenester/tts?text={urlencoded_text}"
                     )
-                    request = requests.get(audio_url)
-                    # make a tmp filename in /tmp to save the file to
-                    filename = f"/tmp/{uuid.uuid4()}.mp3"
-                    # save the audio to a file
-                    with open(filename, "wb") as file:
-                        file.write(request.content)
-                    # upload the audio to the chat
-                    await self.debug(request)
+                    # download the audio using the url
+                    filename = self.download_file_to_tmp(audio_url, "mp3")
                     # format the link in mattermost markdown
                     msg_txt = f"[drtts]({audio_url})"
                     self.driver.reply_to(message, msg_txt, file_paths=[filename])

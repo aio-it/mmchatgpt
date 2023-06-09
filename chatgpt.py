@@ -365,14 +365,14 @@ class ChatGPT(Plugin):
                     # delete the audio file
                     os.remove(filename)
                     self.driver.reply_to(message, audio_url, file_paths=[filename])
+                    # debug:
+                    await self.debug(f"{message.sender_name} used .drtts")
+                    await self.debug(f"audio_url: {audio_url}")
+                    await self.debug(f"filename: {filename}")
 
                     await self.log(f"{message.sender_name} used .mkimg")
             except TooManyRequests:
                 self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
-            except openai.error.InvalidRequestError as error:
-                self.driver.reply_to(message, f"Error: {error}")
-            except:  # pylint: disable=bare-except
-                self.driver.reply_to(message, "Error: OpenAI API error")
 
     @listen_to(r"^\.set chatgpt ([a-zA-Z0-9_-]+) (.*)")
     async def set_chatgpt(self, message: Message, key: str, value: str):

@@ -670,7 +670,7 @@ class ChatGPT(Plugin):
         commands = [
             "#### Commands:",
             "**.help** - returns this list of commands (this)",
-            f"**@{self.driver.client.username} <text>**- returns a response from the chatgpt model",
+            f"**@{self.driver.client.username} <text>** - returns a response from the chatgpt model",
             "**.mkimg <text>** - text to image using DALL-E2; returns an image",
             "**.drtts <text>** - text to speech using DR TTS; returns an audio file",
         ]
@@ -693,7 +693,7 @@ class ChatGPT(Plugin):
 
         self.add_reaction(message, "robot_face")
         txt = "\n".join(commands)
-        self.driver.reply_to(message, f"### Help:\n{txt}\n\n)")
+        self.driver.reply_to(message, f"### Help:\n{txt}\n\n")
         if self.is_admin(message.sender_name):
             settings_key = self.SETTINGS_KEY
             for key in self.redis.hkeys(settings_key):

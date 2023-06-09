@@ -431,6 +431,9 @@ class ChatGPT(Plugin):
                     # save to file
                     engine.save_to_file(text, filename)
                     engine.runAndWait()
+                    # wait for the file to be created
+                    while not os.path.exists(filename):
+                        await asyncio.sleep(0.1)
                     # send response
                     self.driver.reply_to(message, f"tts: {text}", file_paths=[filename])
                     # remove reaction

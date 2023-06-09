@@ -697,7 +697,7 @@ class ChatGPT(Plugin):
             for key in self.redis.hkeys(settings_key):
                 commands_admin.append(f" - {key}")
             txt = "\n".join(commands_admin)
-            self.driver.reply_to(message, f"```\n{txt}\n```", direct=True)
+            self.driver.reply_to(message, f"\n\n\n```\n{txt}\n```", direct=True)
 
     # eval function that allows admins to run arbitrary python code and return the result to the chat
     @listen_to(r"^\.eval (.*)")

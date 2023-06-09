@@ -430,7 +430,7 @@ class ChatGPT(Plugin):
                     await self.debug(f"volume: {engine.getProperty('volume')}")
                     # save to file
                     engine.save_to_file(text, filename)
-                    engine.runAndWait()
+                    await engine.runAndWait()
                     # wait for the file to be created
                     while not os.path.exists(filename):
                         await asyncio.sleep(0.1)

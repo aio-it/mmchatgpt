@@ -680,11 +680,18 @@ class ChatGPT(Plugin):
         ]
         commands_admin = [
             "admin commands:",
-            ".set <setting> <value> - set a setting for chatgpt",
-            ".get <setting> - get a setting for chatgpt",
+            ".set chatgpt <setting> <value> - set a setting for chatgpt",
+            ".get chatgpt <setting> - get a setting for chatgpt",
+            ".reset chatgpt <setting> - reset a setting for chatgpt",
             ".eval <code> - run arbitrary python code and return the result to the chat",
             ".exec <code> - run arbitrary python code and return the result to the chat",
+            ".getchatlog: get the chatlog for the current thread",
+            ".s2t <text>: convert text to token - convert a string to a tokens (for debugging)",
+            "settings:",
         ]
+        for setting in self.CHATGPT_SETTINGS:
+            commands_admin.append(f"{setting} {self.get_chatgpt_setting(setting)}")
+
         if self.is_admin(message.sender_name):
             commands += commands_admin
         self.driver.reply_to(message, "\n".join(commands))

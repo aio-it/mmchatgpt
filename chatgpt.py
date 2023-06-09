@@ -417,6 +417,14 @@ class ChatGPT(Plugin):
                     max_requests=1,
                     expire=5,
                 ):
+
+                    async def save_speech_to_file(engine, text, filename):
+                        loop = asyncio.get_event_loop()
+                        await loop.run_in_executor(
+                            None, engine.save_to_file, text, filename
+                        )
+                        await loop.run_in_executor(None, engine.runAndWait)
+
                     self.add_reaction(message, "speaking_head_in_silhouette")
                     # replace newlines with spaces
                     text = text.replace("\n", " ")
@@ -424,15 +432,12 @@ class ChatGPT(Plugin):
                     filename = self.create_tmp_filename("mp3")
                     # init the engine
                     engine = pyttsx3.init()
-                    engine.save_to_file(text, filename)
-                    engine.runAndWait()
-
+                    await save_speech_to_file(engine, text, filename)
 
                     # debug
                     await self.debug(f"voices: {engine.getProperty('voices')}")
                     await self.debug(f"rate: {engine.getProperty('rate')}")
                     await self.debug(f"volume: {engine.getProperty('volume')}")
-                    # save to file
                     # send response
                     self.driver.reply_to(message, f"tts: {text}", file_paths=[filename])
                     # remove reaction

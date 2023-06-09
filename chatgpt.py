@@ -196,7 +196,7 @@ class ChatGPT(Plugin):
         print(f"DEBUG: {message}")
         if self.log_to_channel and not private:
             await self.log(f"DEBUG: {message}")
-        elif not self.log_to_channel and private:
+        elif private:
             await self.wall(f"DEBUG: {message}")
 
     @listen_to(r"^\.usage")

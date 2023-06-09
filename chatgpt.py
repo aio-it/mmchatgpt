@@ -668,16 +668,17 @@ class ChatGPT(Plugin):
     async def help_function(self, message):
         """help function that returns a list of commands"""
         commands = [
-            "#### Commands:",
-            "**.help** - returns this list of commands (this)",
+            "### Commands:",
+            "---",
+            "**.help** - returns this list of commands and usage",
             f"**@{self.driver.client.username} <text>** - returns a response from the chatgpt model",
             "**.mkimg <text>** - text to image using DALL-E2; returns an image",
             "**.drtts <text>** - text to speech using DR TTS; returns an audio file",
         ]
 
         commands_admin = [
-            "#### Admin commands:",
-            "**.get chatgpt <setting>** - get a setting for chatgpt",
+            "### Admin commands",
+            "---" "**.get chatgpt <setting>** - get a setting for chatgpt",
             "**.set chatgpt <setting> <value>** - set a setting for chatgpt",
             "**.model get** - get the model to use for chatgpt",
             "**.model set <model>** - set the model to use for chatgpt",
@@ -693,7 +694,7 @@ class ChatGPT(Plugin):
 
         self.add_reaction(message, "robot_face")
         txt = "\n".join(commands)
-        self.driver.reply_to(message, f"### Help:\n{txt}\n\n")
+        self.driver.reply_to(message, f"## :robot_face: Help:\n{txt}\n\n")
         if self.is_admin(message.sender_name):
             settings_key = self.SETTINGS_KEY
             for key in self.redis.hkeys(settings_key):

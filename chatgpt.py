@@ -423,7 +423,7 @@ class ChatGPT(Plugin):
                     # create a tmp filename
                     filename = self.create_tmp_filename("mp3")
                     # init the engine
-                    engine = pyttsx3.init(driverName="espeak")
+                    engine = pyttsx3.init()
                     # debug
                     await self.debug(f"voices: {engine.getProperty('voices')}")
                     await self.debug(f"rate: {engine.getProperty('rate')}")

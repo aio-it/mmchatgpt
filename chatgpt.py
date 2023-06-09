@@ -379,7 +379,7 @@ class ChatGPT(Plugin):
                     self.add_reaction(message, "speaking_head_in_silhouette")
                     # replace newlines with spaces
                     text = text.replace("\n", " ")
-                    print(text)
+                    self.log(text)
                     urlencoded_text = urllib.parse.quote_plus(text)
                     audio_url = (
                         f"https://www.dr.dk/tjenester/tts?text={urlencoded_text}"

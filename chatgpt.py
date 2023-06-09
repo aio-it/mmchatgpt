@@ -376,6 +376,8 @@ class ChatGPT(Plugin):
                 ):
                     # get the audio from dr tts website https://www.dr.dk/tjenester/tts?text=<text> using the requests module urlencode the text
                     self.add_reaction(message, "speaking_head_in_silhouette")
+                    # replace newlines with spaces
+                    text = text.replace("\n", " ")
                     urlencoded_text = urllib.parse.quote_plus(text)
                     audio_url = (
                         f"https://www.dr.dk/tjenester/tts?text={urlencoded_text}"
@@ -692,7 +694,7 @@ class ChatGPT(Plugin):
                 commands_admin.append(f" - {key}")
 
         txt = "\n".join(commands)
-        self.driver.reply_to(message, f"```{txt}```")
+        self.driver.reply_to(message, f"```\n{txt}\n```")
 
     # eval function that allows admins to run arbitrary python code and return the result to the chat
     @listen_to(r"^\.eval (.*)")

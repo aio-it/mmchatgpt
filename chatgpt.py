@@ -668,7 +668,7 @@ class ChatGPT(Plugin):
         commands = [
             "commands:",
             ".help - returns this list of commands (this)",
-            f"@{self.driver.user_name} - returns a response from the chatgpt model",
+            f"@{self.driver.client.username} - returns a response from the chatgpt model",
             ".mkimg <text> - text to image using DALL-E2; returns an image",
             ".drtts <text> - text to speech using DR TTS; returns an audio file",
         ]

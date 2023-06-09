@@ -323,6 +323,7 @@ class ChatGPT(Plugin):
                     max_requests=1,
                     expire=5,
                 ):
+                    self.add_reaction(message, "frame_with_picture")
                     response = openai.Image.create(prompt=text, n=1, size="1024x1024")
                     image_url = response["data"][0]["url"]
                     # download the image using the url
@@ -331,6 +332,7 @@ class ChatGPT(Plugin):
                     # image_url_txt = f"![img]({image_url})"
                     # await self.debug(response)
                     # self.driver.reply_to(message, image_url_txt, file_paths=[filename])
+                    self.remove_reaction(message, "frame_with_picture")
                     self.driver.reply_to(message, "", file_paths=[filename])
                     os.remove(filename)
                     await self.log(f"{message.sender_name} used .mkimg")
@@ -379,7 +381,7 @@ class ChatGPT(Plugin):
                     expire=5,
                 ):
                     # get the audio from dr tts website https://www.dr.dk/tjenester/tts?text=<text> using the requests module urlencode the text
-                    await self.add_reaction(message, "hourglass")
+                    self.add_reaction(message, "speaking_head_in_silhouette")
                     urlencoded_text = urllib.parse.quote_plus(text)
                     audio_url = (
                         f"https://www.dr.dk/tjenester/tts?text={urlencoded_text}"
@@ -388,7 +390,7 @@ class ChatGPT(Plugin):
                     filename = self.download_file_to_tmp(audio_url, "mp3")
                     # format the link in mattermost markdown
                     msg_txt = f"[drtts]({audio_url})"
-                    await self.remove_reaction(message, "hourglass")
+                    self.remove_reaction(message, "speaking_head_in_silhouette")
                     self.driver.reply_to(message, msg_txt, file_paths=[filename])
                     # delete the audio file
                     os.remove(filename)
@@ -453,17 +455,13 @@ class ChatGPT(Plugin):
             value = self.ChatGPT_DEFAULTS[key]
         return value
 
-    async def add_reaction(self, message: Message, reaction: str = "thought_balloon"):
+    def add_reaction(self, message: Message, reaction: str = "thought_balloon"):
         """set the thread to in progress by adding a reaction to the thread"""
-        await self.driver.react_to(message, reaction)
+        self.driver.react_to(message, reaction)
 
-    async def remove_reaction(
-        self, message: Message, reaction: str = "thought_balloon"
-    ):
+    def remove_reaction(self, message: Message, reaction: str = "thought_balloon"):
         """set the thread to in progress by removing the reaction from the thread"""
-        await self.driver.reactions.delete_reaction(
-            self.driver.user_id, message.id, reaction
-        )
+        self.driver.reactions.delete_reaction(self.driver.user_id, message.id, reaction)
 
     @listen_to(".+", needs_mention=True)
     async def chat(self, message: Message):

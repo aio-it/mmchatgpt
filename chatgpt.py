@@ -128,17 +128,12 @@ class ChatGPT(Plugin):
         tokens_to_list_of_strings = [
             bytestring.decode("utf-8") for bytestring in tokens_to_list_of_bytestrings
         ]
-
-        self.driver.reply_to(
-            message,
-            f"tokens length: {len(tokens)}\n\
+        text = f"tokens length: {len(tokens)}\n\
                 tokens: {tokens}\n\
                 token strings: {tokens_to_list_of_strings}\n\
-                string length: {len(string)}\n\
-                original string: {string}\n\
-                string length from tokens: {len(string_from_tokens)}\n\
-                string from tokens: {string_from_tokens}",
-        )
+                string length: {len(string)}\n"
+
+        self.driver.reply_to(message, text)
 
     def tokens_to_list_of_strings(self, tokens):
         """convert a list of tokens to a list of strings"""

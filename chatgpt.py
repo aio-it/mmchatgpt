@@ -1,11 +1,16 @@
 """ChatGPT plugin for mmpy_bot"""
+import os
 import asyncio
+import requests
 import time
 import json
 import openai
 import redis
 import aiohttp.client_exceptions as aiohttp_client_exceptions
 import tiktoken
+import urllib
+import uuid
+
 
 # import serialized_redis
 from mmpy_bot import Plugin, listen_to
@@ -308,8 +313,6 @@ class ChatGPT(Plugin):
     @listen_to(r"^\.mkimg ([\s\S]*)")
     async def mkimg(self, message: Message, text: str):
         """use the openai module to get and image from text"""
-        import os
-
         if self.is_user(message.sender_name):
             try:
                 with RateLimit(
@@ -320,7 +323,6 @@ class ChatGPT(Plugin):
                 ):
                     self.add_reaction(message, "frame_with_picture")
                     text = text.replace("\n", " ")
-                    await self.log(f"mkimg: {text}")
                     response = openai.Image.create(prompt=text, n=1, size="1024x1024")
                     image_url = response["data"][0]["url"]
                     # download the image using the url
@@ -331,7 +333,7 @@ class ChatGPT(Plugin):
                     # self.driver.reply_to(message, image_url_txt, file_paths=[filename])
                     self.remove_reaction(message, "frame_with_picture")
                     self.driver.reply_to(message, "", file_paths=[filename])
-                    os.remove(filename)
+                    self.delete_downloaded_file(filename)
                     await self.log(f"{message.sender_name} used .mkimg")
             except TooManyRequests:
                 self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
@@ -342,13 +344,11 @@ class ChatGPT(Plugin):
 
     def create_tmp_filename(self, extension: str) -> str:
         """create a tmp filename"""
-        import uuid
 
         return f"/tmp/{uuid.uuid4()}.{extension}"
 
     def download_file(self, url: str, filename: str) -> str:
         """download file from url using requests and return the filename/location"""
-        import requests
 
         request = requests.get(url, allow_redirects=True)
         with open(filename, "wb") as file:
@@ -363,7 +363,6 @@ class ChatGPT(Plugin):
 
     def delete_downloaded_file(self, filename: str):
         """delete the downloaded file"""
-        import os
 
         if (
             os.path.exists(filename)
@@ -372,13 +371,14 @@ class ChatGPT(Plugin):
         ):
             os.remove(filename)
 
-    import re
+    def urlencode_text(self, text: str) -> str:
+        """urlencode the text"""
+
+        return urllib.parse.quote_plus(text)
 
     @listen_to(r"^\.drtts ([\s\S]*)")
     async def drtts(self, message: Message, text: str):
         """use the dr tts website to get an audio clip from text"""
-        import os
-        import urllib
 
         if self.is_user(message.sender_name):
             try:
@@ -391,9 +391,8 @@ class ChatGPT(Plugin):
                     # get the audio from dr tts website https://www.dr.dk/tjenester/tts?text=<text> using the requests module urlencode the text
                     self.add_reaction(message, "speaking_head_in_silhouette")
                     # replace newlines with spaces
-                    await self.log(f"drtts: {text}")
                     text = text.replace("\n", " ")
-                    urlencoded_text = urllib.parse.quote_plus(text)
+                    urlencoded_text = self.urlencode_text(text)
                     audio_url = (
                         f"https://www.dr.dk/tjenester/tts?text={urlencoded_text}"
                     )
@@ -404,11 +403,8 @@ class ChatGPT(Plugin):
                     self.remove_reaction(message, "speaking_head_in_silhouette")
                     self.driver.reply_to(message, msg_txt, file_paths=[filename])
                     # delete the audio file
-                    os.remove(filename)
-                    # debug:
+                    self.remove_downloaded_file(filename)
                     await self.log(f"{message.sender_name} used .drtts")
-                    await self.debug(f"audio_url: {audio_url}")
-                    await self.debug(f"filename: {filename}")
 
             except TooManyRequests:
                 self.driver.reply_to(message, "Rate limit exceeded (1/5s)")

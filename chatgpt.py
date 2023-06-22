@@ -11,6 +11,7 @@ import tiktoken
 import urllib
 import uuid
 import pyttsx3
+import shlex
 from typing import Tuple, List
 
 
@@ -776,7 +777,10 @@ class ChatGPT(Plugin):
     async def admin_shell_function(self, message, code):
         """shell function that allows admins to run arbitrary shell commands and return the result to the chat"""
         reply = ""
-        shellcode = f"docker run --rm lbr/ubuntu:utils {code}"
+        shellescaped_code = shlex.quote(code)
+        shellcode = (
+            f'docker run --rm -it lbr/ubuntu:utils /bin/bash -c "{shellescaped_code}"'
+        )
         if self.is_admin(message.sender_name):
             try:
                 self.driver.react_to(message, "runner")

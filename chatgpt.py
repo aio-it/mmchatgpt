@@ -778,14 +778,15 @@ class ChatGPT(Plugin):
         """shell function that allows admins to run arbitrary shell commands and return the result to the chat"""
         reply = ""
         shellescaped_code = shlex.quote(code)
-        shellcode = (
-            f'docker run --rm lbr/ubuntu:utils /bin/bash -c "{shellescaped_code}"'
-        )
+        shell_part= f'docker run --rm lbr/ubuntu:utils /bin/bash -c '
+        shellcode =  f'docker run --rm lbr/ubuntu:utils /bin/bash -c "{shellescaped_code}"'
+        command = f'{shell_part} {shellcode}'
+        command_parts= shlex.split(command)
         if self.is_admin(message.sender_name):
             try:
                 self.driver.react_to(message, "runner")
-                proc = await asyncio.create_subprocess_shell(
-                    shellcode,
+                proc = await asyncio.create_subprocess_exec(
+                    *command_parts
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
                 )

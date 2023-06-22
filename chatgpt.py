@@ -784,11 +784,13 @@ class ChatGPT(Plugin):
         )
         command = f"{shell_part} {shellcode}"
         command_parts = shlex.split(command)
+        c=command_parts[0]
+        c_rest = command_parts[1:]
         if self.is_admin(message.sender_name):
             try:
                 self.driver.react_to(message, "runner")
                 proc = await asyncio.create_subprocess_exec(
-                    *command_parts,
+                    c, *command_parts
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
                 )

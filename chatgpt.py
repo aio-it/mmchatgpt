@@ -792,9 +792,7 @@ class ChatGPT(Plugin):
                 stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=120)
                 stdout = stdout.decode("utf-8")
                 stderr = stderr.decode("utf-8")
-                reply = (
-                    f"Executed: {code} \nResult: {proc.returncode} \nOutput:\n{stdout}"
-                )
+                reply = f"Executed: {code}\t\n{shellcode} \nResult: {proc.returncode} \nOutput:\n{stdout}"
                 if proc.returncode != 0:
                     reply += f"\nError:\n{stderr}"
                     self.driver.react_to(message, "x")

@@ -779,7 +779,7 @@ class ChatGPT(Plugin):
         reply = ""
         shellescaped_code = shlex.quote(code)
         shellcode = (
-            f'docker run --rm -it lbr/ubuntu:utils /bin/bash -c "{shellescaped_code}"'
+            f'docker run --rm lbr/ubuntu:utils /bin/bash -c "{shellescaped_code}"'
         )
         if self.is_admin(message.sender_name):
             try:

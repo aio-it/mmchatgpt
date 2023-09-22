@@ -525,15 +525,7 @@ class ChatGPT(Plugin):
             pushups = self.redis.get(key)
             self.driver.reply_to(message, f"{message.sender_name} has done {pushups} pushups total")
 
-    @listen_to(r"^\.pushups score")
-    async def pushups_score(self, message: Message):
-        """pushups score"""
-        if self.is_user(message.sender_name):
-            #get pushups in redis per user
-            key = f"pushupstotal:{message.sender_name}"
-            pushups = self.redis.get(key)
-            self.driver.reply_to(message, f"{message.sender_name} has done {pushups} pushups total")
-    @listen_to(r"^\.pushups scores")
+    @listen_to(r"^\.pushups scores$")
     async def pushups_scores(self, message: Message):
         """pushups scores for all users"""
         if self.is_user(message.sender_name):
@@ -543,6 +535,14 @@ class ChatGPT(Plugin):
                 pushups = self.redis.get(key)
                 key = key.decode("utf-8").split(":")[1]
                 self.driver.reply_to(message, f"{key} has done {pushups} pushups total")
+    @listen_to(r"^\.pushups score$")
+    async def pushups_score(self, message: Message):
+        """pushups score"""
+        if self.is_user(message.sender_name):
+            #get pushups in redis per user
+            key = f"pushupstotal:{message.sender_name}"
+            pushups = self.redis.get(key)
+            self.driver.reply_to(message, f"{message.sender_name} has done {pushups} pushups total")
     @listen_to(".+", needs_mention=True)
     async def chat(self, message: Message):
         """listen to everything and respond when mentioned"""

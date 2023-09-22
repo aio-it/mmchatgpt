@@ -534,7 +534,8 @@ class ChatGPT(Plugin):
                 top5.append((user, score))
             top5.sort(key=lambda x: x[1], reverse=True)
             for i in range(5):
-                messagetxt += f"{top5[i][0]}: {top5[i][1]}\n"
+                if i < len(top5):
+                    messagetxt += f"{top5[i][0]}: {top5[i][1]}\n"
             self.driver.reply_to(message, messagetxt)
     async def pushups_return_score_string(self, user):
         """return score string for user"""

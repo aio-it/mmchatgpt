@@ -525,7 +525,7 @@ class ChatGPT(Plugin):
         """pushups scores for all users"""
         if self.is_user(message.sender_name):
             #print help message
-            messagetxt = f"Top 5 pushups scores:\n"
+            messagetxt = f"Top 5 pushups scores :weight_lifter:\n"
             #get top 5
             top5 = []
             for key in self.redis.scan_iter("pushupsdaily:*"):
@@ -607,10 +607,25 @@ class ChatGPT(Plugin):
     async def pushups_score(self, message: Message):
         """pushups score"""
         if self.is_user(message.sender_name):
-            #get pushups in redis per user
-            key = f"pushupstotal:{message.sender_name}"
-            pushups = self.redis.get(key)
-            self.driver.reply_to(message, f"{message.sender_name} has done {pushups} pushups total")
+            #get pushups for last 7 days and print them and a sum of those 7 days and a total
+            messagetxt = ""
+            today = datetime.datetime.now()
+            totals_for_last_7_days = 0
+            for i in range(7):
+                day = today - datetime.timedelta(days=i)
+                day = day.strftime("%Y-%m-%d")
+                key = f"pushupsdaily:{message.sender_name}:{day}"
+                pushups = self.redis.get(key)
+                totals_for_last_7_days += int(pushups)
+                messagetxt += f"{day}: {pushups}\n"
+            messagetxt += f"Total for last 7 days: {totals_for_last_7_days}\n"
+            self.driver.reply_to(message, messagetxt)
+            #get total pushups
+            total = 0
+            for key in self.redis.scan_iter(f"pushupsdaily:{message.sender_name}:*"):
+                total += int(self.redis.get(key))
+            messagetxt = f"Total: {total}\n"
+            self.driver.reply_to(message, messagetxt)
 
     @listen_to(".+", needs_mention=True)
     async def chat(self, message: Message):

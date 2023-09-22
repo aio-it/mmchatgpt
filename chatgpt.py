@@ -507,20 +507,21 @@ class ChatGPT(Plugin):
         self.driver.reactions.delete_reaction(self.driver.user_id, message.id, reaction)
 
     @listen_to(r"^\.pushups ([0-9]+)") # pushups
-    async def pushups(self, message: Message):
+    async def pushups(self, message: Message, pushups_add):
         """pushups"""
         if self.is_user(message.sender_name):
-            self.driver.reply_to(message, f"{message.sender_name} did 10 pushups")
-            await self.log(f"{message.sender_name} did 10 pushups")
+            pushups_add = int(pushups_add)
+            self.driver.reply_to(message, f"{message.sender_name} did {pushups_add} pushups")
+            await self.log(f"{message.sender_name} did {pushups_add} pushups")
             #store pushups in redis per day
             today = datetime.datetime.now().strftime("%Y-%m-%d")
             key = f"pushups:{today}"
-            self.redis.incr(key)
+            self.redis.incr(key, pushups_add)
             pushups = self.redis.get(key)
             self.driver.reply_to(message, f"{message.sender_name} has done {pushups} pushups today")
             #store pushups in redis per user
             key = f"pushups:{message.sender_name}"
-            self.redis.incr(key)
+            self.redis.incr(key, pushups_add)
             pushups = self.redis.get(key)
             self.driver.reply_to(message, f"{message.sender_name} has done {pushups} pushups total")
 

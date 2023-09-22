@@ -535,19 +535,19 @@ class ChatGPT(Plugin):
         """pushups substract"""
         if self.is_user(message.sender_name):
             pushups_sub = int(pushups_sub)
-            self.driver.reply_to(message, f"{message.sender_name} substracted {pushups_sub} pushups")
-            await self.log(f"{message.sender_name} substracted {pushups_sub} pushups")
+            messagetxt = f"{message.sender_name} substracted {pushups_sub} pushups\n"
+            await self.log(messagetxt)
             #store pushups in redis per day
             today = datetime.datetime.now().strftime("%Y-%m-%d")
             key = f"pushupsdaily:{message.sender_name}:{today}"
             self.redis.decr(key, pushups_sub)
             pushups_today = self.redis.get(key)
-            messagetxt = f"{message.sender_name} has {pushups_today} pushups today"
+            messagetxt += f"{message.sender_name} has {pushups_today} pushups today\n"
             #store pushups in redis total
             key = f"pushupstotal:{message.sender_name}"
             self.redis.decr(key, pushups_sub)
             pushups_total = self.redis.get(key)
-            messagetxt += f"{message.sender_name} has {pushups_total} pushups total"
+            messagetxt += f"{message.sender_name} has {pushups_total} pushups total\n"
             self.driver.reply_to(message, messagetxt)
 
     @listen_to(r"^\.pushups ([0-9]+)") # pushups
@@ -556,19 +556,20 @@ class ChatGPT(Plugin):
         """pushups"""
         if self.is_user(message.sender_name):
             pushups_add = int(pushups_add)
-            self.driver.reply_to(message, f"{message.sender_name} did {pushups_add} pushups")
+            messagetxt = f"{message.sender_name} did {pushups_add} pushups\n"
             await self.log(f"{message.sender_name} did {pushups_add} pushups")
             #store pushups in redis per day
             today = datetime.datetime.now().strftime("%Y-%m-%d")
             key = f"pushupsdaily:{message.sender_name}:{today}"
             self.redis.incr(key, pushups_add)
             pushups = self.redis.get(key)
-            self.driver.reply_to(message, f"{message.sender_name} has done {pushups} pushups today")
+            messagetxt += f"{message.sender_name} has done {pushups} pushups today\n"
             #store pushups in redis per user
             key = f"pushupstotal:{message.sender_name}"
             self.redis.incr(key, pushups_add)
             pushups = self.redis.get(key)
-            self.driver.reply_to(message, f"{message.sender_name} has done {pushups} pushups total")
+            messagetxt += f"{message.sender_name} has done {pushups} pushups total\n"
+            self.driver.reply_to(message, messagetxt)
 
     @listen_to(r"^\.pushups scores$")
     async def pushups_scores(self, message: Message):

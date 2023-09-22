@@ -506,6 +506,18 @@ class ChatGPT(Plugin):
         """set the thread to in progress by removing the reaction from the thread"""
         self.driver.reactions.delete_reaction(self.driver.user_id, message.id, reaction)
 
+    @listen_to(r"^\.pushups$")
+    @listen_to(r"^\.pushups help$")
+    async def pushups_scores(self, message: Message):
+        """pushups scores for all users"""
+        if self.is_user(message.sender_name):
+            #print help message
+            messagetxt = f".pushups scores - scores for all users"
+            messagetxt += f".pushups score - score for own user"
+            messagetxt += f".pushups add <number> - add pushups for own user"
+            messagetxt += f".pushups reset - reset pushups for own user"
+            self.driver.reply_to(message, messagetxt)
+
     @listen_to(r"^\.pushups ([0-9]+)") # pushups
     async def pushups(self, message: Message, pushups_add):
         """pushups"""

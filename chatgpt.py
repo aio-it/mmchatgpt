@@ -12,6 +12,7 @@ import urllib
 import uuid
 import pyttsx3
 import shlex
+import datetime
 from typing import Tuple, List
 
 
@@ -505,6 +506,41 @@ class ChatGPT(Plugin):
         """set the thread to in progress by removing the reaction from the thread"""
         self.driver.reactions.delete_reaction(self.driver.user_id, message.id, reaction)
 
+    @listen_to(r"^\.pushups ([0-9]+)") # pushups
+    async def pushups(self, message: Message):
+        """pushups"""
+        if self.is_user(message.sender_name):
+            self.driver.reply_to(message, f"{message.sender_name} did 10 pushups")
+            await self.log(f"{message.sender_name} did 10 pushups")
+            #store pushups in redis per day
+            today = datetime.datetime.now().strftime("%Y-%m-%d")
+            key = f"pushups:{today}"
+            self.redis.incr(key)
+            pushups = self.redis.get(key)
+            self.driver.reply_to(message, f"{message.sender_name} has done {pushups} pushups today")
+            #store pushups in redis per user
+            key = f"pushups:{message.sender_name}"
+            self.redis.incr(key)
+            pushups = self.redis.get(key)
+            self.driver.reply_to(message, f"{message.sender_name} has done {pushups} pushups total")
+
+    @listen_to(r"^\.pushups score")
+    async def pushups_score(self, message: Message):
+        """pushups score"""
+        if self.is_user(message.sender_name):
+            #get pushups in redis per user
+            key = f"pushups:{message.sender_name}"
+            pushups = self.redis.get(key)
+            self.driver.reply_to(message, f"{message.sender_name} has done {pushups} pushups total")
+    @listen_to(r"^\.pushups scores")
+    async def pushups_score(self, message: Message):
+        """pushups scores for all users"""
+        if self.is_user(message.sender_name):
+            #get pushups in redis per user
+            keys = self.redis.keys("pushups:*")
+            for key in keys:
+                pushups = self.redis.get(key)
+                self.driver.reply_to(message, f"{key} has done {pushups} pushups total")
     @listen_to(".+", needs_mention=True)
     async def chat(self, message: Message):
         """listen to everything and respond when mentioned"""

@@ -533,7 +533,7 @@ class ChatGPT(Plugin):
             keys = self.redis.keys("pushupstotal:*")
             for key in keys:
                 pushups = self.redis.get(key)
-                key = key.decode("utf-8").split(":")[1]
+                key = key.split(":")[1]
                 self.driver.reply_to(message, f"{key} has done {pushups} pushups total")
     @listen_to(r"^\.pushups score$")
     async def pushups_score(self, message: Message):

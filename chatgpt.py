@@ -620,6 +620,10 @@ class ChatGPT(Plugin):
                     pushups = 0
                 totals_for_last_7_days += int(pushups)
                 messagetxt += f"{day}: {pushups}\n"
+            # reverse the lines
+            messagetxt = messagetxt.split("\n")
+            messagetxt = messagetxt[::-1]
+            messagetxt = "\n".join(messagetxt)
             messagetxt += f"Total for last 7 days: {totals_for_last_7_days}\n"
             self.driver.reply_to(message, messagetxt)
             #get total pushups

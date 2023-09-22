@@ -514,9 +514,10 @@ class ChatGPT(Plugin):
             #print help message
             messagetxt = f".pushups scores - scores for all users\n"
             messagetxt += f".pushups score - score for own user\n"
+            messagetxt += f".pushups <number> - add pushups for own user\n"
             messagetxt += f".pushups add <number> - add pushups for own user\n"
             messagetxt += f".pushups sub <number> - substract pushups for own user for today and total\n"
-            messagetxt += f".pushups reset - reset pushups for own user\n"
+            #messagetxt += f".pushups reset - reset pushups for own user\n"
             self.driver.reply_to(message, messagetxt)
     async def pushups_return_score_string(self, user):
         """return score string for user"""

@@ -515,12 +515,44 @@ class ChatGPT(Plugin):
             messagetxt = f".pushups scores - scores for all users"
             messagetxt += f".pushups score - score for own user"
             messagetxt += f".pushups add <number> - add pushups for own user"
+            messagetxt += f".pushups sub <number> - substract pushups for own user for today and total"
             messagetxt += f".pushups reset - reset pushups for own user"
+            self.driver.reply_to(message, messagetxt)
+    async def pushups_return_score_string(self, user):
+        """return score string for user"""
+        #get total pushups
+        total = 0
+        for key in self.redis.scan_iter(f"pushupsdaily:{user}:*"):
+            total += int(self.redis.get(key))
+        #get today pushups
+        today = datetime.datetime.now().strftime("%Y-%m-%d")
+        today_key = f"pushupsdaily:{user}:{today}"
+        today_pushups = int(self.redis.get(today_key))
+        return f"{user} has {today_pushups} pushups today and {total} pushups total"
+    
+    @listen_to(r"^\.pushups sub ([0-9]+)") # pushups
+    async def pushups_sub(self, message: Message, pushups_sub):
+        """pushups substract"""
+        if self.is_user(message.sender_name):
+            pushups_sub = int(pushups_sub)
+            self.driver.reply_to(message, f"{message.sender_name} substracted {pushups_sub} pushups")
+            await self.log(f"{message.sender_name} substracted {pushups_sub} pushups")
+            #store pushups in redis per day
+            today = datetime.datetime.now().strftime("%Y-%m-%d")
+            key = f"pushupsdaily:{message.sender_name}:{today}"
+            self.redis.decr(key, pushups_sub)
+            pushups_today = self.redis.get(key)
+            messagetxt = f"{message.sender_name} has {pushups_today} pushups today"
+            #store pushups in redis total
+            key = f"pushupstotal:{message.sender_name}"
+            self.redis.decr(key, pushups_sub)
+            pushups_total = self.redis.get(key)
+            messagetxt += f"{message.sender_name} has {pushups_total} pushups total"
             self.driver.reply_to(message, messagetxt)
 
     @listen_to(r"^\.pushups ([0-9]+)") # pushups
     @listen_to(r"^\.pushups add ([0-9]+)") # pushups
-    async def pushups(self, message: Message, pushups_add):
+    async def pushups_add(self, message: Message, pushups_add):
         """pushups"""
         if self.is_user(message.sender_name):
             pushups_add = int(pushups_add)
@@ -544,10 +576,13 @@ class ChatGPT(Plugin):
         if self.is_user(message.sender_name):
             #get pushups in redis per user
             keys = self.redis.keys("pushupstotal:*")
+            messagetxt = ""
             for key in keys:
                 pushups = self.redis.get(key)
                 key = key.split(":")[1]
-                self.driver.reply_to(message, f"{key} has done {pushups} pushups total")
+                messagetxt += f"{key} has done {pushups} pushups total\n"
+            self.driver.reply_to(message, messagetxt)
+            
     @listen_to(r"^\.pushups score$")
     async def pushups_score(self, message: Message):
         """pushups score"""
@@ -556,6 +591,7 @@ class ChatGPT(Plugin):
             key = f"pushupstotal:{message.sender_name}"
             pushups = self.redis.get(key)
             self.driver.reply_to(message, f"{message.sender_name} has done {pushups} pushups total")
+
     @listen_to(".+", needs_mention=True)
     async def chat(self, message: Message):
         """listen to everything and respond when mentioned"""

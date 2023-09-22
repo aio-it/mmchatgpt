@@ -512,12 +512,29 @@ class ChatGPT(Plugin):
         """pushups scores for all users"""
         if self.is_user(message.sender_name):
             #print help message
-            messagetxt = f".pushups scores - scores for all users\n"
-            messagetxt += f".pushups score - score for own user\n"
-            messagetxt += f".pushups <number> - add pushups for own user\n"
+            messagetxt = f".pushups <number> - add pushups for own user\n"
             messagetxt += f".pushups add <number> - add pushups for own user\n"
             messagetxt += f".pushups sub <number> - substract pushups for own user for today and total\n"
+            messagetxt += f".pushups top5 - top 5 pushups scores\n"
+            messagetxt += f".pushups scores - scores for all users\n"
+            messagetxt += f".pushups score - score for own user\n"
             #messagetxt += f".pushups reset - reset pushups for own user\n"
+            self.driver.reply_to(message, messagetxt)
+    @listen_to(r"^.pushups top5")
+    async def pushups_top5(self, message: Message):
+        """pushups scores for all users"""
+        if self.is_user(message.sender_name):
+            #print help message
+            messagetxt = f"Top 5 pushups scores:\n"
+            #get top 5
+            top5 = []
+            for key in self.redis.scan_iter("pushupsdaily:*"):
+                user = key.split(":")[1]
+                score = int(self.redis.get(key))
+                top5.append((user, score))
+            top5.sort(key=lambda x: x[1], reverse=True)
+            for i in range(5):
+                messagetxt += f"{top5[i][0]}: {top5[i][1]}\n"
             self.driver.reply_to(message, messagetxt)
     async def pushups_return_score_string(self, user):
         """return score string for user"""

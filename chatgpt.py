@@ -624,13 +624,12 @@ class ChatGPT(Plugin):
             messagetxt = messagetxt.split("\n")
             messagetxt = messagetxt[::-1]
             messagetxt = "\n".join(messagetxt)
-            messagetxt += f"Total for last 7 days: {totals_for_last_7_days}\n"
-            self.driver.reply_to(message, messagetxt)
+            messagetxt += f"\nTotal for last 7 days: {totals_for_last_7_days}\n"
             #get total pushups
             total = 0
             for key in self.redis.scan_iter(f"pushupsdaily:{message.sender_name}:*"):
                 total += int(self.redis.get(key))
-            messagetxt = f"Total: {total}\n"
+            messagetxt += f":weight_lifter: Alltime Total: {total}\n"
             self.driver.reply_to(message, messagetxt)
 
     @listen_to(".+", needs_mention=True)

@@ -616,6 +616,8 @@ class ChatGPT(Plugin):
                 day = day.strftime("%Y-%m-%d")
                 key = f"pushupsdaily:{message.sender_name}:{day}"
                 pushups = self.redis.get(key)
+                if pushups is None:
+                    pushups = 0
                 totals_for_last_7_days += int(pushups)
                 messagetxt += f"{day}: {pushups}\n"
             messagetxt += f"Total for last 7 days: {totals_for_last_7_days}\n"

@@ -505,7 +505,10 @@ class ChatGPT(Plugin):
     def remove_reaction(self, message: Message, reaction: str = "thought_balloon"):
         """set the thread to in progress by removing the reaction from the thread"""
         self.driver.reactions.delete_reaction(self.driver.user_id, message.id, reaction)
-
+    def nohl(self, user):
+        """prevent highlighting the user by adding a zero width space to the username after the first letter"""
+        return user[0] + "\u200B" + user[1:]
+    
     @listen_to(r"^\.pushups$")
     @listen_to(r"^\.pushups help$")
     async def pushups_helps(self, message: Message):
@@ -542,7 +545,7 @@ class ChatGPT(Plugin):
             top5.sort(key=lambda x: x[1], reverse=True)
             for i in range(5):
                 if i < len(top5):
-                    messagetxt += f"{top5[i][0]}: {top5[i][1]}\n"
+                    messagetxt += f"{self.nohl(top5[i][0])}: {top5[i][1]}\n"
             self.driver.reply_to(message, messagetxt)
     async def pushups_return_score_string(self, user):
         """return score string for user"""

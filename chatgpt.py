@@ -527,10 +527,17 @@ class ChatGPT(Plugin):
             #print help message
             messagetxt = f"Top 5 pushups scores :weight_lifter:\n"
             #get top 5
-            top5 = []
+            scores = {}
             for key in self.redis.scan_iter("pushupsdaily:*"):
                 user = key.split(":")[1]
                 score = int(self.redis.get(key))
+                if user in scores:
+                    scores[user] += score
+                else:
+                    scores[user] = score
+
+            top5 = []
+            for user, score in scores.items():
                 top5.append((user, score))
             top5.sort(key=lambda x: x[1], reverse=True)
             for i in range(5):

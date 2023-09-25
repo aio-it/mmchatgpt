@@ -67,7 +67,7 @@ class ChatGPT(Plugin):
 
     SETTINGS_KEY = "chatgpt_settings"
 
-    def __init__(self, openai_api_key=None, log_channel=None):
+    def __init__(self, openai_api_key=None, log_channel=None, **kwargs):
         super().__init__()
         self.name = "ChatGPT"
         self.redis = redis.Redis(
@@ -87,6 +87,10 @@ class ChatGPT(Plugin):
             self.log_to_channel = True
             self.log_channel = log_channel
         openai.api_key = openai_api_key
+        if (kwargs['giphy_api_key']):
+            self.giphy_api_key = kwargs['giphy_api_key']
+        else:
+            self.giphy_api_key = None
         # Apply default model to redis if not set and set self.model
         self.model = self.redis.hget(self.SETTINGS_KEY, "model")
         if self.model is None:
@@ -421,6 +425,47 @@ class ChatGPT(Plugin):
         """urlencode the text"""
 
         return urllib.parse.quote_plus(text)
+    @listen_to(r"^\.gif ([\s\S]*)")
+    async def gif(self, message: Message, text: str):
+        """fetch gif from giphy api"""
+        if self.giphy_api_key is None:
+            return
+        if self.is_user(message.sender_name):
+            url = "https://api.giphy.com/v1/gifs/search"
+            params = {
+                "api_key": self.giphy_api_key,
+                "q": text,
+                "limit": 1,
+                "offset": 0,
+                "rating": "g",
+                "lang": "en",
+            }
+            try:
+                with RateLimit(
+                    resource="gif",
+                    client=message.sender_name,
+                    max_requests=1,
+                    expire=5,
+                ):
+                    self.add_reaction(message, "frame_with_picture")
+                    # get the gif from giphy api
+                    response = requests.get(url, params=params)
+                    # get the url from the response
+                    gif_url = response.json()["data"][0]["images"]["original"]["url"]
+                    # download the gif using the url
+                    filename = self.download_file_to_tmp(gif_url, "gif")
+                    # format the gif_url as mattermost markdown
+                    gif_url_txt = f"![gif]({gif_url})"
+                    self.remove_reaction(message, "frame_with_picture")
+                    self.driver.reply_to(message, gif_url_txt, file_paths=[filename])
+                    # delete the gif file
+                    self.delete_downloaded_file(filename)
+                    await self.log(f"{message.sender_name} used .gif with {text}")
+            except TooManyRequests:
+                self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
+            except:  # pylint: disable=bare-except
+                self.driver.reply_to(message, "Error: Giphy API error")
+
     @listen_to(r"^\.calc$")
     async def calc_help(self, message: Message):
         """calc help"""

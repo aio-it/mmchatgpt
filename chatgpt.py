@@ -521,7 +521,7 @@ class ChatGPT(Plugin):
             messagetxt += f".pushups top5 - top 5 pushups scores\n"
             messagetxt += f".pushups scores - scores for all users\n"
             messagetxt += f".pushups score - score for own user\n"
-            messagetxt += f".pushups reset - reset pushups for own user\n"
+            messagetxt += f".pushups reset <user> - reset pushups for user (admin-only)\n"
             self.driver.reply_to(message, messagetxt)
     @listen_to(r"^.pushups top5")
     async def pushups_top5(self, message: Message):

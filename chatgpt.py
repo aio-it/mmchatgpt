@@ -453,6 +453,7 @@ class ChatGPT(Plugin):
                         f"https://api.mathjs.org/v4/?expr={urlencoded_text}"
                     )
                     # format the result in mattermost markdown
+                    msg_txt = f"query: {text}\n"
                     msg_txt = f"result: {response.text}"
                     self.remove_reaction(message, "abacus")
                     self.driver.reply_to(message, msg_txt)

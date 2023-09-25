@@ -230,7 +230,7 @@ class ChatGPT(Plugin):
         """remove user"""
         if self.is_admin(message.sender_name):
             self.redis.srem("users", username)
-            self.driver.ry_toepl(message, f"Removed user: {username}")
+            self.driver.reply_to(message, f"Removed user: {username}")
             await self.log(f"Removed user: {username}")
 
     @listen_to(r"^\.users add (.+)")

@@ -456,6 +456,7 @@ class ChatGPT(Plugin):
                     filename = self.download_file_to_tmp(gif_url, "gif")
                     # format the gif_url as mattermost markdown
                     gif_url_txt = f"![gif]({gif_url})"
+                    gif_url_txt = ""
                     self.remove_reaction(message, "frame_with_picture")
                     self.driver.reply_to(message, gif_url_txt, file_paths=[filename])
                     # delete the gif file

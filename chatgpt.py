@@ -1040,6 +1040,14 @@ class ChatGPT(Plugin):
         encode = True if method == "en" else False
         decode = True if method == "de" else False
         if self.is_user(message.sender_name):
+            if text == "" or encoding == "" or encoding == "help":
+                # print help message
+                messagetxt = f".encode <encoding> <text> - encode text using an encoding\n"
+                messagetxt += f".decode <encoding> <text> - decode text using an encoding\n"
+                messagetxt += f"Supported encodings: {' '.join(supported_encodings)}\n"
+                self.driver.reply_to(message, messagetxt)
+                return
+            # check if encoding is supported
             if encoding not in supported_encodings:
                 self.driver.reply_to(message, f"Error: {encoding} not supported. only {supported_encodings} is supported")
                 return
@@ -1050,7 +1058,7 @@ class ChatGPT(Plugin):
                         text = base64.b64decode(text).decode("utf-8")
                     if encode:
                         text = base64.b64encode(text.encode("utf-8")).decode("utf-8")
-                    self.driver.reply_to(message, f"Result: {text}")
+                    self.driver.reply_to(message, f"Result:\n{text}")
                 except Exception as error:
                     self.driver.reply_to(message, f"Error: {error}")
                     return
@@ -1061,10 +1069,10 @@ class ChatGPT(Plugin):
                         text = urllib.parse.unquote(text)
                     if encode:
                         text = urllib.parse.quote(text)
-                    self.driver.reply_to(message, f"Result: {text}")
                 except Exception as error:
                     self.driver.reply_to(message, f"Error: {error}")
                     return
+            self.driver.reply_to(message, f"Result:\n{text}")
     @listen_to(r"^\.help")
     async def help_function(self, message):
         """help function that returns a list of commands"""

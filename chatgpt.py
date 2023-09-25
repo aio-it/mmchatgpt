@@ -131,11 +131,11 @@ class ChatGPT(Plugin):
             for key in self.redis.scan_iter("ban:*"):
                 # get time left for ban
                 user = key.split(":")[1]
+                time = self.redis.get(key)
                 timeleft = self.redis.ttl(key)
                 if timeleft > 0:
                     # convert seconds to timeleft string
                     timeleft = str(datetime.timedelta(seconds=timeleft))
-                    time = self.redis.get(key)
                     bans += f"{user} ban: {time} days.  left: {timeleft}\n"
                 else:
                     bans += f"{user} - permanent\n"

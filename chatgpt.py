@@ -455,7 +455,7 @@ class ChatGPT(Plugin):
                     # download the gif using the url
                     filename = self.download_file_to_tmp(gif_url, "gif")
                     # format the gif_url as mattermost markdown
-                    gif_url_txt = f"![gif]({gif_url})"
+                    #gif_url_txt = f"![gif]({gif_url})"
                     gif_url_txt = ""
                     self.remove_reaction(message, "frame_with_picture")
                     self.driver.reply_to(message, gif_url_txt, file_paths=[filename])
@@ -1041,9 +1041,13 @@ class ChatGPT(Plugin):
             "### Commands:",
             "---",
             "**.help** - returns this list of commands and usage",
-            f"**@{self.driver.client.username} <text>** - returns a response from the chatgpt model",
+            f"**@{self.driver.client.username} <text>** - returns a response from the chatgpt model (reply to a message to use the context of that thread)",
             "**.mkimg <text>** - text to image using DALL-E2; returns an image",
             "**.drtts <text>** - text to speech using DR TTS; returns an audio file",
+            "**.tts <text>** - text to speech using pyttsx3; returns an audio file",
+            "**.pushups** - pushups help",
+            "**.gif <text>** - text to gif using GIPHY; returns a gif",
+            "**.calc <expression>** - calculate an expression using mathjs(lol) api returns the result",
         ]
 
         commands_admin = [
@@ -1059,6 +1063,15 @@ class ChatGPT(Plugin):
             "**.exec <code>** - run arbitrary python code and return the result to the chat",
             "**.getchatlog**- get the chatlog for the current thread",
             "**.s2t <text>**: convert text to token - convert a string to a tokens (for debugging)",
+            "**.shell <command>**: run a shell command and return the result to the chat",
+            "**.redis search <key>**: search redis for a key",
+            "**.redis get <key>**: get a key from redis",
+            "**.redis set <key> <value>**: set a key in redis",
+            "**.redis del <key>**: delete a key from redis",
+            "**.ban <username>** - ban a user from using the bot (permanent)",
+            "**.ban <username> <days>** - ban a user from using the bot (for x days)"
+            "**.unban <username>** - unban a user from using the bot",
+            "**.banlist** - list banned users",
             "#### Settings:",
         ]
 

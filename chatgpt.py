@@ -1072,6 +1072,26 @@ class ChatGPT(Plugin):
                     self.driver.reply_to(message, f"Error: {error}")
                     return
             self.driver.reply_to(message, f"Result:\n{text}")
+    @listen_to(r"^\.dig (.*)")
+    async def dig(self, message: Message, url: str):
+        """dig a url"""
+        if self.is_admin(message.sender_name):
+            if url == "" or url == "help":
+                # print help message
+                messagetxt = f".dig <url> - dig a url\n"
+                self.driver.reply_to(message, messagetxt)
+                return
+            try:
+                import subprocess
+                import shlex
+                cmd = shlex.split(f"dig {url}")
+                process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+                output, error = process.communicate()
+                output = output.decode("utf-8")
+                self.driver.reply_to(message, f"Result:\n```{output}```")
+            except Exception as error:
+                self.driver.reply_to(message, f"Error: {error}")
+                return
     @listen_to(r"^\.ping6 (.*)")
     async def ping6(self, message: Message, url: str):
         """ping6 a ip or hostname"""
@@ -1088,7 +1108,7 @@ class ChatGPT(Plugin):
                 process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
                 output, error = process.communicate()
                 output = output.decode("utf-8")
-                self.driver.reply_to(message, f"Result:\n{output}")
+                self.driver.reply_to(message, f"Result:\n```{output}```")
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 return
@@ -1108,7 +1128,7 @@ class ChatGPT(Plugin):
                 process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
                 output, error = process.communicate()
                 output = output.decode("utf-8")
-                self.driver.reply_to(message, f"Result:\n{output}")
+                self.driver.reply_to(message, f"Result:\n```{output}```")
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 return
@@ -1128,7 +1148,7 @@ class ChatGPT(Plugin):
                 process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
                 output, error = process.communicate()
                 output = output.decode("utf-8")
-                self.driver.reply_to(message, f"Result:\n{output}")
+                self.driver.reply_to(message, f"Result:\n```{output}```")
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 return
@@ -1148,7 +1168,7 @@ class ChatGPT(Plugin):
                 process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
                 output, error = process.communicate()
                 output = output.decode("utf-8")
-                self.driver.reply_to(message, f"Result:\n{output}")
+                self.driver.reply_to(message, f"Result:\n```{output}```")
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 return
@@ -1168,7 +1188,7 @@ class ChatGPT(Plugin):
                 process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
                 output, error = process.communicate()
                 output = output.decode("utf-8")
-                self.driver.reply_to(message, f"Result:\n{output}")
+                self.driver.reply_to(message, f"Result:\n```{output}```")
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 return

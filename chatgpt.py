@@ -1072,6 +1072,28 @@ class ChatGPT(Plugin):
                     self.driver.reply_to(message, f"Error: {error}")
                     return
             self.driver.reply_to(message, f"Result:\n{text}")
+    @listen_to(r"^\.whois (.*)")
+    async def whois(self, message: Message, url: str):
+        """whois a url"""
+        if self.is_admin(message.sender_name):
+            if url == "" or url == "help":
+                # print help message
+                messagetxt = f".whois <url> - whois a url\n"
+                self.driver.reply_to(message, messagetxt)
+                return
+            try:
+                self.add_reaction(message, "hourglass")
+                import subprocess
+                import shlex
+                cmd = shlex.split(f"whois {url}")
+                process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+                output, error = process.communicate()
+                output = output.decode("utf-8")
+                self.remove_reaction(message, "hourglass")
+                self.driver.reply_to(message, f"Result:\n```\n{output}\n```")
+            except Exception as error:
+                self.driver.reply_to(message, f"Error: {error}")
+                return
     @listen_to(r"^\.dig (.*)")
     async def dig(self, message: Message, url: str):
         """dig a url"""

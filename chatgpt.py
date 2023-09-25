@@ -421,6 +421,15 @@ class ChatGPT(Plugin):
         """urlencode the text"""
 
         return urllib.parse.quote_plus(text)
+    @listen_to(r"^\.calc$")
+    async def calc_help(self, message: Message):
+        """calc help"""
+        if self.is_user(message.sender_name):
+            #print help message
+            messagetxt = f".calc <expression> - use mathjs api to calculate expression\n"
+            messagetxt += f"example: .calc 2+2\n"
+            messagetxt += f"syntax: https://mathjs.org/docs/expressions/syntax.html\n"
+            self.driver.reply_to(message, messagetxt)
     @listen_to(r"^\.calc ([\s\S]*)")
     async def calc(self, message: Message, text: str):
         """use math module to calc"""

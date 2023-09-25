@@ -122,7 +122,31 @@ class ChatGPT(Plugin):
                     break
 
         return list(reversed(limited_messages))
-
+    @listen_to(r"^\.ban ([a-zA-Z0-9_-]+) ([0-9]?)")
+    async def ban(self, message: Message, user, days = 0):
+        """ban user"""
+        if self.is_admin(message.sender_name):
+            # check if user is admin
+            if self.is_admin(user):
+                self.driver.reply_to(message, f"Can't ban admin: {user}")
+                return
+            #ban user
+            if days == 0:
+                self.driver.reply_to(message, f"Banned {user} forever")
+                self.redis.set(f"ban:{user}", 0)
+            else:
+                self.driver.reply_to(message, f"Banned {user} for {days} days")
+                # set a key in redis with the user and the number of days and autoexpire the key
+                self.redis.set(f"ban:{user}", days, ex=days*24*60*60)
+            await self.log(f"{message.sender_name} banned {user} for {days} days")
+    @listen_to(r"^\.unban ([a-zA-Z0-9_-]+)")
+    async def unban(self, message: Message, user):
+        """unban user"""
+        if self.is_admin(message.sender_name):
+            #unban user
+            self.driver.reply_to(message, f"Unbanned {user}")
+            self.redis.delete(f"ban:{user}")
+            await self.log(f"{message.sender_name} unbanned {user}")
     @listen_to(r"^\.s2t ([\s\S]*)")
     async def string_to_tokens_bot(self, message, string):
         """convert a string to tokens"""
@@ -178,6 +202,9 @@ class ChatGPT(Plugin):
 
     def is_user(self, username):
         """check if user is user"""
+        # check if user is banned
+        if self.redis.exists(f"ban:{username}"):
+            return False
         return True if username in self.redis.smembers("users") else False
 
     def is_admin(self, username):

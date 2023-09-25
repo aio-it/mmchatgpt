@@ -1033,7 +1033,38 @@ class ChatGPT(Plugin):
             )
         else:
             await self.log(f"User: {message.sender_name} used {self.model}")
-
+    @listen_to(r"^.(de|en)code ([a-zA-Z0-9]+) (.*)")
+    async def decode(self, message: Message, method: str, encoding: str, text: str):
+        """decode text using a model"""
+        supported_encodings = ['base64', 'b64', 'url']
+        encode = True if method == "en" else False
+        decode = True if method == "de" else False
+        if self.is_user(message.sender_name):
+            if encoding not in supported_encodings:
+                self.driver.reply_to(message, f"Error: {encoding} not supported. only {supported_encodings} is supported")
+                return
+            if encoding == "base64" or encoding == "b64":
+                try:
+                    import base64
+                    if decode:
+                        text = base64.b64decode(text).decode("utf-8")
+                    if encode:
+                        text = base64.b64encode(text.encode("utf-8")).decode("utf-8")
+                    self.driver.reply_to(message, f"Result: {text}")
+                except Exception as error:
+                    self.driver.reply_to(message, f"Error: {error}")
+                    return
+            if encoding == "url":
+                try:
+                    import urllib.parse
+                    if decode:
+                        text = urllib.parse.unquote(text)
+                    if encode:
+                        text = urllib.parse.quote(text)
+                    self.driver.reply_to(message, f"Result: {text}")
+                except Exception as error:
+                    self.driver.reply_to(message, f"Error: {error}")
+                    return
     @listen_to(r"^\.help")
     async def help_function(self, message):
         """help function that returns a list of commands"""

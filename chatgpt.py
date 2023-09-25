@@ -1254,7 +1254,8 @@ class ChatGPT(Plugin):
 
         commands_admin = [
             "### Admin commands",
-            "---" "**.get chatgpt <setting>** - get a setting for chatgpt",
+            "---",
+            "**.get chatgpt <setting>** - get a setting for chatgpt",
             "**.set chatgpt <setting> <value>** - set a setting for chatgpt",
             "**.model get** - get the model to use for chatgpt",
             "**.model set <model>** - set the model to use for chatgpt",

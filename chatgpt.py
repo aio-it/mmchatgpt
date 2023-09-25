@@ -412,7 +412,7 @@ class ChatGPT(Plugin):
         """urlencode the text"""
 
         return urllib.parse.quote_plus(text)
-    @listen_to(r"^\.calc ([\s\S]*)$")
+    @listen_to(r"^\.calc ([\s\S]*)")
     async def calc(self, message: Message, text: str):
         """use math module to calc"""
         if self.is_user(message.sender_name):
@@ -436,7 +436,7 @@ class ChatGPT(Plugin):
                     msg_txt = f"result: {response.text}"
                     self.remove_reaction(message, "abacus")
                     self.driver.reply_to(message, msg_txt)
-                    await self.log(f"{message.sender_name} used .calc")
+                    await self.log(f"{message.sender_name} used .calc with {text}")
             except TooManyRequests:
                 self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
     @listen_to(r"^\.drtts ([\s\S]*)")

@@ -135,9 +135,9 @@ class ChatGPT(Plugin):
                 if timeleft > 0:
                     # convert seconds to timeleft string
                     timeleft = str(datetime.timedelta(seconds=timeleft))
-                    bans += f"({user} {timeleft} seconds left)\n"
+                    bans += f"{user} - {timeleft} seconds left\n"
                 else:
-                    bans += f"{user} permanent\n"
+                    bans += f"{user} - permanent\n"
             self.driver.reply_to(message, f"Bans:\n {bans}")
     @listen_to(r"^\.ban ([a-zA-Z0-9_-]+) ?([0-9]?)")
     async def ban(self, message: Message, user, days = 0):

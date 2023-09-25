@@ -1129,7 +1129,7 @@ class ChatGPT(Plugin):
                 self.add_reaction(message, "hourglass")
                 import subprocess
                 import shlex
-                cmd = shlex.split(f"curl -i {url}")
+                cmd = shlex.split(f"curl -L -I {url}")
                 process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
                 output, error = process.communicate()
                 output = output.decode("utf-8")

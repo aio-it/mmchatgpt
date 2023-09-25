@@ -430,7 +430,7 @@ class ChatGPT(Plugin):
             messagetxt += f"example: .calc 2+2\n"
             messagetxt += f"syntax: https://mathjs.org/docs/expressions/syntax.html\n"
             self.driver.reply_to(message, messagetxt)
-    @listen_to(r"^\.calc ([\s\S]*)")
+    @listen_to(r"^\.calc ?([\s\S]+)")
     async def calc(self, message: Message, text: str):
         """use math module to calc"""
         if self.is_user(message.sender_name):

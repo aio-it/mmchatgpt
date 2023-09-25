@@ -125,6 +125,7 @@ class ChatGPT(Plugin):
     @listen_to(r"^\.ban ([a-zA-Z0-9_-]+) ([0-9]?)")
     async def ban(self, message: Message, user, days = 0):
         """ban user"""
+        days = int(days)
         if self.is_admin(message.sender_name):
             # check if user is admin
             if self.is_admin(user):

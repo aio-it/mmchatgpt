@@ -547,7 +547,7 @@ class ChatGPT(Plugin):
                 if i < len(top5):
                     messagetxt += f"{self.nohl(top5[i][0])}: {top5[i][1]}\n"
             self.driver.reply_to(message, messagetxt)
-    @listen_to(r"^\.pushups reset ([a-zA-Z0-9_-]+)])")
+    @listen_to(r"^\.pushups reset ([a-zA-Z0-9_-]+)")
     async def pushups_reset(self, message: Message, user):
         """pushups reset for user"""
         if self.is_admin(message.sender_name):

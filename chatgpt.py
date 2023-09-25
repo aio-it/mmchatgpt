@@ -521,7 +521,7 @@ class ChatGPT(Plugin):
             messagetxt += f".pushups top5 - top 5 pushups scores\n"
             messagetxt += f".pushups scores - scores for all users\n"
             messagetxt += f".pushups score - score for own user\n"
-            #messagetxt += f".pushups reset - reset pushups for own user\n"
+            messagetxt += f".pushups reset - reset pushups for own user\n"
             self.driver.reply_to(message, messagetxt)
     @listen_to(r"^.pushups top5")
     async def pushups_top5(self, message: Message):
@@ -547,6 +547,19 @@ class ChatGPT(Plugin):
                 if i < len(top5):
                     messagetxt += f"{self.nohl(top5[i][0])}: {top5[i][1]}\n"
             self.driver.reply_to(message, messagetxt)
+    @listen_to(r"^\.pushups reset ([a-zA-Z0-9_-]+)])")
+    async def pushups_reset(self, message: Message, user):
+        """pushups reset for user"""
+        if self.is_admin(message.sender_name):
+            #reset pushups for user
+            for key in self.redis.scan_iter(f"pushupsdaily:{user}:*"):
+                self.redis.delete(key)
+            for key in self.redis.scan_iter(f"pushupstotal:{user}"):
+                self.redis.delete(key)
+            messagetxt = f"{user} pushups reset"
+            self.driver.reply_to(message, messagetxt)
+            await self.log(messagetxt)
+
     async def pushups_return_score_string(self, user):
         """return score string for user"""
         #get total pushups

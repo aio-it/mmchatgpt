@@ -1058,7 +1058,6 @@ class ChatGPT(Plugin):
                         text = base64.b64decode(text).decode("utf-8")
                     if encode:
                         text = base64.b64encode(text.encode("utf-8")).decode("utf-8")
-                    self.driver.reply_to(message, f"Result:\n{text}")
                 except Exception as error:
                     self.driver.reply_to(message, f"Error: {error}")
                     return
@@ -1073,6 +1072,107 @@ class ChatGPT(Plugin):
                     self.driver.reply_to(message, f"Error: {error}")
                     return
             self.driver.reply_to(message, f"Result:\n{text}")
+    @listen_to(r"^\.ping6 (.*)")
+    async def ping6(self, message: Message, url: str):
+        """ping6 a ip or hostname"""
+        if self.is_admin(message.sender_name):
+            if url == "" or url == "help":
+                # print help message
+                messagetxt = f".ping6 <url> - ping6 a ip or hostname\n"
+                self.driver.reply_to(message, messagetxt)
+                return
+            try:
+                import subprocess
+                import shlex
+                cmd = shlex.split(f"ping6 -c 4 {url}")
+                process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+                output, error = process.communicate()
+                output = output.decode("utf-8")
+                self.driver.reply_to(message, f"Result:\n{output}")
+            except Exception as error:
+                self.driver.reply_to(message, f"Error: {error}")
+                return
+    @listen_to(r"^\.head (.*)")
+    async def head(self, message: Message, url: str):
+        """curl -i a url"""
+        if self.is_admin(message.sender_name):
+            if url == "" or url == "help":
+                # print help message
+                messagetxt = f".head <url> - curl -i a url\n"
+                self.driver.reply_to(message, messagetxt)
+                return
+            try:
+                import subprocess
+                import shlex
+                cmd = shlex.split(f"curl -i {url}")
+                process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+                output, error = process.communicate()
+                output = output.decode("utf-8")
+                self.driver.reply_to(message, f"Result:\n{output}")
+            except Exception as error:
+                self.driver.reply_to(message, f"Error: {error}")
+                return
+    @listen_to(r"^\.ping (.*)")
+    async def ping(self, message: Message, url: str):
+        """ping a ip or hostname"""
+        if self.is_admin(message.sender_name):
+            if url == "" or url == "help":
+                # print help message
+                messagetxt = f".ping <url> - ping a ip or hostname\n"
+                self.driver.reply_to(message, messagetxt)
+                return
+            try:
+                import subprocess
+                import shlex
+                cmd = shlex.split(f"ping -4 -c 4 {url}")
+                process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+                output, error = process.communicate()
+                output = output.decode("utf-8")
+                self.driver.reply_to(message, f"Result:\n{output}")
+            except Exception as error:
+                self.driver.reply_to(message, f"Error: {error}")
+                return
+    @listen_to(r"^\.traceroute (.*)")
+    async def traceroute(self, message: Message, url: str):
+        """traceroute a ip or hostname"""
+        if self.is_admin(message.sender_name):
+            if url == "" or url == "help":
+                # print help message
+                messagetxt = f".traceroute <url> - traceroute a ip or hostname\n"
+                self.driver.reply_to(message, messagetxt)
+                return
+            try:
+                import subprocess
+                import shlex
+                cmd = shlex.split(f"traceroute -4 {url}")
+                process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+                output, error = process.communicate()
+                output = output.decode("utf-8")
+                self.driver.reply_to(message, f"Result:\n{output}")
+            except Exception as error:
+                self.driver.reply_to(message, f"Error: {error}")
+                return
+    @listen_to(r"^\.traceroute6 (.*)")
+    async def traceroute6(self, message: Message, url: str):
+        """traceroute6 a ip or hostname"""
+        if self.is_admin(message.sender_name):
+            if url == "" or url == "help":
+                # print help message
+                messagetxt = f".traceroute6 <url> - traceroute6 a ip or hostname\n"
+                self.driver.reply_to(message, messagetxt)
+                return
+            try:
+                import subprocess
+                import shlex
+                cmd = shlex.split(f"traceroute6 {url}")
+                process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+                output, error = process.communicate()
+                output = output.decode("utf-8")
+                self.driver.reply_to(message, f"Result:\n{output}")
+            except Exception as error:
+                self.driver.reply_to(message, f"Error: {error}")
+                return
+
     @listen_to(r"^\.help")
     async def help_function(self, message):
         """help function that returns a list of commands"""

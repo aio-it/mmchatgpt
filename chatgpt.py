@@ -1082,12 +1082,14 @@ class ChatGPT(Plugin):
                 self.driver.reply_to(message, messagetxt)
                 return
             try:
+                self.add_reaction(message, "hourglass")
                 import subprocess
                 import shlex
                 cmd = shlex.split(f"dig {url}")
                 process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
                 output, error = process.communicate()
                 output = output.decode("utf-8")
+                self.remove_reaction(message, "hourglass")
                 self.driver.reply_to(message, f"Result:\n```{output}```")
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
@@ -1102,12 +1104,14 @@ class ChatGPT(Plugin):
                 self.driver.reply_to(message, messagetxt)
                 return
             try:
+                self.add_reaction(message, "hourglass")
                 import subprocess
                 import shlex
                 cmd = shlex.split(f"ping6 -c 4 {url}")
                 process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
                 output, error = process.communicate()
                 output = output.decode("utf-8")
+                self.remove_reaction(message, "hourglass")
                 self.driver.reply_to(message, f"Result:\n```{output}```")
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
@@ -1122,12 +1126,14 @@ class ChatGPT(Plugin):
                 self.driver.reply_to(message, messagetxt)
                 return
             try:
+                self.add_reaction(message, "hourglass")
                 import subprocess
                 import shlex
                 cmd = shlex.split(f"curl -i {url}")
                 process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
                 output, error = process.communicate()
                 output = output.decode("utf-8")
+                self.remove_reaction(message, "hourglass")
                 self.driver.reply_to(message, f"Result:\n```{output}```")
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
@@ -1142,12 +1148,14 @@ class ChatGPT(Plugin):
                 self.driver.reply_to(message, messagetxt)
                 return
             try:
+                self.add_reaction(message, "hourglass")
                 import subprocess
                 import shlex
                 cmd = shlex.split(f"ping -4 -c 4 {url}")
                 process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
                 output, error = process.communicate()
                 output = output.decode("utf-8")
+                self.remove_reaction(message, "hourglass")
                 self.driver.reply_to(message, f"Result:\n```{output}```")
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
@@ -1162,12 +1170,14 @@ class ChatGPT(Plugin):
                 self.driver.reply_to(message, messagetxt)
                 return
             try:
+                self.add_reaction(message, "hourglass")
                 import subprocess
                 import shlex
                 cmd = shlex.split(f"traceroute -4 {url}")
                 process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
                 output, error = process.communicate()
                 output = output.decode("utf-8")
+                self.remove_reaction(message, "hourglass")
                 self.driver.reply_to(message, f"Result:\n```{output}```")
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
@@ -1182,12 +1192,14 @@ class ChatGPT(Plugin):
                 self.driver.reply_to(message, messagetxt)
                 return
             try:
+                self.add_reaction(message, "hourglass")
                 import subprocess
                 import shlex
                 cmd = shlex.split(f"traceroute6 {url}")
                 process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
                 output, error = process.communicate()
                 output = output.decode("utf-8")
+                self.remove_reaction(message, "hourglass")
                 self.driver.reply_to(message, f"Result:\n```{output}```")
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")

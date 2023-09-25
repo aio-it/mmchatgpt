@@ -127,10 +127,18 @@ class ChatGPT(Plugin):
         """list banned users"""
         if self.is_admin(message.sender_name):
             # list banned users
-            banlist = []
+            bans = ""
             for key in self.redis.scan_iter("ban:*"):
-                banlist.append(key.split(":")[1])
-            self.driver.reply_to(message, f"Banned users: {banlist}")
+                # get time left for ban
+                user = key.split(":")[1]
+                timeleft = self.redis.ttl(key)
+                if timeleft > 0:
+                    # convert seconds to timeleft string
+                    timeleft = str(datetime.timedelta(seconds=timeleft))
+                    bans += f"({user} {timeleft} seconds left)\n"
+                else:
+                    bans += f"{user} permanent\n"
+            self.driver.reply_to(message, f"Bans:\n {bans}")
     @listen_to(r"^\.ban ([a-zA-Z0-9_-]+) ?([0-9]?)")
     async def ban(self, message: Message, user, days = 0):
         """ban user"""

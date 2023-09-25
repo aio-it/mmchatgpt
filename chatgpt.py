@@ -460,6 +460,25 @@ class ChatGPT(Plugin):
                     await self.log(f"{message.sender_name} used .calc with {text}")
             except TooManyRequests:
                 self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
+    @listen_to(r"^\.redis get ([\s\S]*)")
+    async def redis_get(self, message: Message, key: str):
+        """get redis key"""
+        if self.is_admin(message.sender_name):
+            value = self.redis.get(key)
+            self.driver.reply_to(message, f"Key: {key}\nValue: {value}")
+    @listen_to(r"^\.redis set ([\s\S]*) ([\s\S]*)")
+    async def redis_set(self, message: Message, key: str, value: str):
+        """set redis key"""
+        if self.is_admin(message.sender_name):
+            self.redis.set(key, value)
+            self.driver.reply_to(message, f"Key: {key}\nValue: {value}")
+    #redis search
+    @listen_to(r"^\.redis search ([\s\S]*)")
+    async def redis_search(self, message: Message, key: str):
+        """search redis key"""
+        if self.is_admin(message.sender_name):
+            keys = self.redis.keys(key)
+            self.driver.reply_to(message, f"Keys: {keys}")
     @listen_to(r"^\.drtts ([\s\S]*)")
     async def drtts(self, message: Message, text: str):
         """use the dr tts website to get an audio clip from text"""

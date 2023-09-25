@@ -454,7 +454,7 @@ class ChatGPT(Plugin):
                     )
                     # format the result in mattermost markdown
                     msg_txt = f"query: {text}\n"
-                    msg_txt = f"result: {response.text}"
+                    msg_txt += f"result: {response.text}"
                     self.remove_reaction(message, "abacus")
                     self.driver.reply_to(message, msg_txt)
                     await self.log(f"{message.sender_name} used .calc with {text}")

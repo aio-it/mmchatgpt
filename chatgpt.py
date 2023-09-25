@@ -412,7 +412,33 @@ class ChatGPT(Plugin):
         """urlencode the text"""
 
         return urllib.parse.quote_plus(text)
-
+    @listen_to(r"^\.calc ([\s\S]*)$")
+    async def calc(self, message: Message, text: str):
+        """use math module to calc"""
+        if self.is_user(message.sender_name):
+            try:
+                with RateLimit(
+                    resource="calc",
+                    client=message.sender_name,
+                    max_requests=1,
+                    expire=5,
+                ):
+                    self.add_reaction(message, "abacus")
+                    # replace newlines with spaces
+                    text = text.replace("\n", " ")
+                    # urlencode the text
+                    urlencoded_text = self.urlencode_text(text)
+                    # get the result from mathjs api https://api.mathjs.org/v4/?expr=<text>
+                    response = requests.get(
+                        f"https://api.mathjs.org/v4/?expr={urlencoded_text}"
+                    )
+                    # format the result in mattermost markdown
+                    msg_txt = f"result: {response.text}"
+                    self.remove_reaction(message, "abacus")
+                    self.driver.reply_to(message, msg_txt)
+                    await self.log(f"{message.sender_name} used .calc")
+            except TooManyRequests:
+                self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
     @listen_to(r"^\.drtts ([\s\S]*)")
     async def drtts(self, message: Message, text: str):
         """use the dr tts website to get an audio clip from text"""

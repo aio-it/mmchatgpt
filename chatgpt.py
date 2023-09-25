@@ -434,6 +434,8 @@ class ChatGPT(Plugin):
     async def calc(self, message: Message, text: str):
         """use math module to calc"""
         if self.is_user(message.sender_name):
+            #convert newline to ;
+            text = text.replace("\n", ";")
             try:
                 with RateLimit(
                     resource="calc",

@@ -479,6 +479,13 @@ class ChatGPT(Plugin):
         if self.is_admin(message.sender_name):
             keys = self.redis.keys(key)
             self.driver.reply_to(message, f"Keys: {keys}")
+    #redis delete
+    @listen_to(r"^\.redis delete ([\s\S]*)")
+    async def redis_delete(self, message: Message, key: str):
+        """delete redis key"""
+        if self.is_admin(message.sender_name):
+            self.redis.delete(key)
+            self.driver.reply_to(message, f"Deleted: {key}")
     @listen_to(r"^\.drtts ([\s\S]*)")
     async def drtts(self, message: Message, text: str):
         """use the dr tts website to get an audio clip from text"""

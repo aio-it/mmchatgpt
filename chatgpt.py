@@ -131,7 +131,7 @@ class ChatGPT(Plugin):
             for key in self.redis.scan_iter("ban:*"):
                 banlist.append(key.split(":")[1])
             self.driver.reply_to(message, f"Banned users: {banlist}")
-    @listen_to(r"^\.ban ([a-zA-Z0-9_-]+) ([0-9]?)")
+    @listen_to(r"^\.ban ([a-zA-Z0-9_-]+) ?([0-9]?)")
     async def ban(self, message: Message, user, days = 0):
         """ban user"""
         days = int(days)

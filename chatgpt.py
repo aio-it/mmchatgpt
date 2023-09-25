@@ -1090,7 +1090,7 @@ class ChatGPT(Plugin):
                 output, error = process.communicate()
                 output = output.decode("utf-8")
                 self.remove_reaction(message, "hourglass")
-                self.driver.reply_to(message, f"Result:\n```{output}```")
+                self.driver.reply_to(message, f"Result:\n```\n{output}\n```")
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 return
@@ -1112,7 +1112,7 @@ class ChatGPT(Plugin):
                 output, error = process.communicate()
                 output = output.decode("utf-8")
                 self.remove_reaction(message, "hourglass")
-                self.driver.reply_to(message, f"Result:\n```{output}```")
+                self.driver.reply_to(message, f"Result:\n```\n{output}\n```")
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 return
@@ -1134,7 +1134,7 @@ class ChatGPT(Plugin):
                 output, error = process.communicate()
                 output = output.decode("utf-8")
                 self.remove_reaction(message, "hourglass")
-                self.driver.reply_to(message, f"Result:\n```{output}```")
+                self.driver.reply_to(message, f"Result:\n```\n{output}\n```")
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 return
@@ -1156,7 +1156,7 @@ class ChatGPT(Plugin):
                 output, error = process.communicate()
                 output = output.decode("utf-8")
                 self.remove_reaction(message, "hourglass")
-                self.driver.reply_to(message, f"Result:\n```{output}```")
+                self.driver.reply_to(message, f"Result:\n```\n{output}\n```")
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 return
@@ -1178,7 +1178,7 @@ class ChatGPT(Plugin):
                 output, error = process.communicate()
                 output = output.decode("utf-8")
                 self.remove_reaction(message, "hourglass")
-                self.driver.reply_to(message, f"Result:\n```{output}```")
+                self.driver.reply_to(message, f"Result:\n```\n{output}\n```")
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 return
@@ -1200,7 +1200,7 @@ class ChatGPT(Plugin):
                 output, error = process.communicate()
                 output = output.decode("utf-8")
                 self.remove_reaction(message, "hourglass")
-                self.driver.reply_to(message, f"Result:\n```{output}```")
+                self.driver.reply_to(message, f"Result:\n```\n{output}\n```")
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 return

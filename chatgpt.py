@@ -751,14 +751,14 @@ class ChatGPT(Plugin):
                 if i < len(top):
                     place = i + 1
                     if place == 1:
-                        medal = ":first_place_medal: "
+                        place = ":first_place_medal: "
                     elif place == 2:
-                        medal = ":second_place_medal: "
+                        place = ":second_place_medal: "
                     elif place == 3:
-                        medal = ":third_place_medal: "
+                        place = ":third_place_medal: "
                     else:
-                        medal = ""
-                    messagetxt += f"{medal}{place}. {self.nohl(top[i][0])}: {top[i][1]} (avg: {averages[top[i][0]]}. days: {days[top[i][0]]})\n"
+                        place = f"{place}. "
+                    messagetxt += f"{place} {self.nohl(top[i][0])}: {top[i][1]} (avg: {averages[top[i][0]]}. days: {days[top[i][0]]})\n"
             self.driver.reply_to(message, messagetxt)
 
     @listen_to(r"^\.pushups reset ([a-zA-Z0-9_-]+)")

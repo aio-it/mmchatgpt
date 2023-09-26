@@ -746,7 +746,7 @@ class ChatGPT(Plugin):
             for user, score in scores.items():
                 top.append((user, score))
             top.sort(key=lambda x: x[1], reverse=True)
-            for i in range(5):
+            for i in range(topcount):
                 if i < len(top):
                     place = i + 1
                     if place == 1:

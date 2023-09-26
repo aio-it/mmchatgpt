@@ -705,6 +705,7 @@ class ChatGPT(Plugin):
             messagetxt = f"Top 5 pushups scores :weight_lifter:\n"
             #get top 5
             scores = {}
+            averages = {}
             for key in self.redis.scan_iter("pushupsdaily:*"):
                 user = key.split(":")[1]
                 score = int(self.redis.get(key))
@@ -712,14 +713,21 @@ class ChatGPT(Plugin):
                     scores[user] += score
                 else:
                     scores[user] = score
-
+            # get averages
+            for user in scores:
+                # get day count for user
+                days = self.driver.redis.keys(f"pushupsdaily:{user}:*")
+                if len(days) > 0:
+                    average = scores[user] / len(days)
+                else:
+                    average = 0
             top5 = []
             for user, score in scores.items():
                 top5.append((user, score))
             top5.sort(key=lambda x: x[1], reverse=True)
             for i in range(5):
                 if i < len(top5):
-                    messagetxt += f"{self.nohl(top5[i][0])}: {top5[i][1]}\n"
+                    messagetxt += f"{self.nohl(top5[i][0])}: {top5[i][1]} ({averages[top5[i][0]]} / day avg.)\n"
             self.driver.reply_to(message, messagetxt)
     @listen_to(r"^\.pushups reset ([a-zA-Z0-9_-]+)")
     async def pushups_reset(self, message: Message, user):

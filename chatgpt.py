@@ -714,15 +714,17 @@ class ChatGPT(Plugin):
             )
             self.driver.reply_to(message, messagetxt)
 
-    @listen_to(r"^.pushups top5")
-    async def pushups_top5(self, message: Message):
+    @listen_to(r"^.pushups top([1-9][0-9]*])")
+    async def pushups_top5(self, message: Message, topcount):
         """pushups scores for all users"""
         if self.is_user(message.sender_name):
+            topcount = int(topcount)
             # print help message
-            messagetxt = f"Top 5 pushups scores :weight_lifter:\n"
+            messagetxt = f"Top {topcount} pushups scores :weight_lifter:\n"
             # get top 5
             scores = {}
             averages = {}
+            days = {}
             for key in self.redis.scan_iter("pushupsdaily:*"):
                 user = key.split(":")[1]
                 score = int(self.redis.get(key))
@@ -735,16 +737,27 @@ class ChatGPT(Plugin):
                 # get day count for user
                 days = self.redis.keys(f"pushupsdaily:{user}:*")
                 if len(days) > 0:
+                    days[user] = len(days)
                     averages[user] = scores[user] / len(days)
                 else:
+                    days[user] = 0
                     averages[user] = 0
-            top5 = []
+            top = []
             for user, score in scores.items():
-                top5.append((user, score))
-            top5.sort(key=lambda x: x[1], reverse=True)
+                top.append((user, score))
+            top.sort(key=lambda x: x[1], reverse=True)
             for i in range(5):
-                if i < len(top5):
-                    messagetxt += f"{self.nohl(top5[i][0])}: {top5[i][1]} ({averages[top5[i][0]]} / day avg.)\n"
+                if i < len(top):
+                    place = i + 1
+                    if place == 1:
+                        medal = ":first_place_medal: "
+                    elif place == 2:
+                        medal = ":second_place_medal: "
+                    elif place == 3:
+                        medal = ":third_place_medal: "
+                    else:
+                        medal = ""
+                    messagetxt += f"{medal}{i}. {self.nohl(top[i][0])}: {top[i][1]} (avg: {averages[top[i][0]]}. days: {days[top[i][0]]})\n"
             self.driver.reply_to(message, messagetxt)
 
     @listen_to(r"^\.pushups reset ([a-zA-Z0-9_-]+)")

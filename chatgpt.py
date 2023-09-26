@@ -88,7 +88,7 @@ class ChatGPT(Plugin):
             self.log_channel = log_channel
         openai.api_key = openai_api_key
         if "giphy_api_key" in kwargs:
-            self.giphy_api_key = kwargs['giphy_api_key']
+            self.giphy_api_key = kwargs["giphy_api_key"]
         else:
             self.giphy_api_key = None
         # Apply default model to redis if not set and set self.model
@@ -126,6 +126,7 @@ class ChatGPT(Plugin):
                     break
 
         return list(reversed(limited_messages))
+
     @listen_to(r"^\.banlist")
     async def banlist(self, message: Message):
         """list banned users"""
@@ -144,8 +145,9 @@ class ChatGPT(Plugin):
                 else:
                     bans += f"{user} - permanent\n"
             self.driver.reply_to(message, f"Bans:\n{bans}")
+
     @listen_to(r"^\.ban ([a-zA-Z0-9_-]+) ?([0-9]?)")
-    async def ban(self, message: Message, user, days = 0):
+    async def ban(self, message: Message, user, days=0):
         """ban user"""
         days = int(days)
         if self.is_admin(message.sender_name):
@@ -153,23 +155,25 @@ class ChatGPT(Plugin):
             if self.is_admin(user):
                 self.driver.reply_to(message, f"Can't ban admin: {user}")
                 return
-            #ban user
+            # ban user
             if days == 0:
                 self.driver.reply_to(message, f"Banned {user} forever")
                 self.redis.set(f"ban:{user}", 0)
             else:
                 self.driver.reply_to(message, f"Banned {user} for {days} days")
                 # set a key in redis with the user and the number of days and autoexpire the key
-                self.redis.set(f"ban:{user}", days, ex=days*24*60*60)
+                self.redis.set(f"ban:{user}", days, ex=days * 24 * 60 * 60)
             await self.log(f"{message.sender_name} banned {user} for {days} days")
+
     @listen_to(r"^\.unban ([a-zA-Z0-9_-]+)")
     async def unban(self, message: Message, user):
         """unban user"""
         if self.is_admin(message.sender_name):
-            #unban user
+            # unban user
             self.driver.reply_to(message, f"Unbanned {user}")
             self.redis.delete(f"ban:{user}")
             await self.log(f"{message.sender_name} unbanned {user}")
+
     @listen_to(r"^\.s2t ([\s\S]*)")
     async def string_to_tokens_bot(self, message, string):
         """convert a string to tokens"""
@@ -425,6 +429,7 @@ class ChatGPT(Plugin):
         """urlencode the text"""
 
         return urllib.parse.quote_plus(text)
+
     @listen_to(r"^\.gif ([\s\S]*)")
     async def gif(self, message: Message, text: str):
         """fetch gif from giphy api"""
@@ -455,7 +460,7 @@ class ChatGPT(Plugin):
                     # download the gif using the url
                     filename = self.download_file_to_tmp(gif_url, "gif")
                     # format the gif_url as mattermost markdown
-                    #gif_url_txt = f"![gif]({gif_url})"
+                    # gif_url_txt = f"![gif]({gif_url})"
                     gif_url_txt = ""
                     self.remove_reaction(message, "frame_with_picture")
                     self.driver.reply_to(message, gif_url_txt, file_paths=[filename])
@@ -471,16 +476,19 @@ class ChatGPT(Plugin):
     async def calc_help(self, message: Message):
         """calc help"""
         if self.is_user(message.sender_name):
-            #print help message
-            messagetxt = f".calc <expression> - use mathjs api to calculate expression\n"
+            # print help message
+            messagetxt = (
+                f".calc <expression> - use mathjs api to calculate expression\n"
+            )
             messagetxt += f"example: .calc 2+2\n"
             messagetxt += f"syntax: https://mathjs.org/docs/expressions/syntax.html\n"
             self.driver.reply_to(message, messagetxt)
+
     @listen_to(r"^\.calc ?([\s\S]+)")
     async def calc(self, message: Message, text: str):
         """use math module to calc"""
         if self.is_user(message.sender_name):
-            #convert newline to ;
+            # convert newline to ;
             text = text.replace("\n", ";")
             try:
                 with RateLimit(
@@ -506,6 +514,7 @@ class ChatGPT(Plugin):
                     await self.log(f"{message.sender_name} used .calc with {text}")
             except TooManyRequests:
                 self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
+
     @listen_to(r"^\.redis get ([\s\S]*)")
     async def redis_get(self, message: Message, key: str):
         """get redis key"""
@@ -525,13 +534,15 @@ class ChatGPT(Plugin):
             else:
                 value = "Unknown key type"
             self.driver.reply_to(message, f"Key: {key}\nValue: {value}")
+
     @listen_to(r"^\.redis set ([\s\S]*) ([\s\S]*)")
     async def redis_set(self, message: Message, key: str, value: str):
         """set redis key"""
         if self.is_admin(message.sender_name):
             self.redis.set(key, value)
             self.driver.reply_to(message, f"Key: {key}\nValue: {value}")
-    #redis search
+
+    # redis search
     @listen_to(r"^\.redis search ([\s\S]*)")
     async def redis_search(self, message: Message, key: str):
         """search redis key"""
@@ -539,17 +550,19 @@ class ChatGPT(Plugin):
             keys = self.redis.keys(key)
             keystxt = ""
             for key in keys:
-                #get the type of the key
+                # get the type of the key
                 keytype = self.redis.type(key)
                 keystxt += f" - {key} ({keytype})\n"
             self.driver.reply_to(message, f"Keys:\n{keystxt}")
-    #redis delete
+
+    # redis delete
     @listen_to(r"^\.redis delete ([\s\S]*)")
     async def redis_delete(self, message: Message, key: str):
         """delete redis key"""
         if self.is_admin(message.sender_name):
             self.redis.delete(key)
             self.driver.reply_to(message, f"Deleted: {key}")
+
     @listen_to(r"^\.drtts ([\s\S]*)")
     async def drtts(self, message: Message, text: str):
         """use the dr tts website to get an audio clip from text"""
@@ -679,31 +692,35 @@ class ChatGPT(Plugin):
     def remove_reaction(self, message: Message, reaction: str = "thought_balloon"):
         """set the thread to in progress by removing the reaction from the thread"""
         self.driver.reactions.delete_reaction(self.driver.user_id, message.id, reaction)
+
     def nohl(self, user):
         """prevent highlighting the user by adding a zero width space to the username after the first letter"""
         return user[0] + "\u200B" + user[1:]
-    
+
     @listen_to(r"^\.pushups$")
     @listen_to(r"^\.pushups help$")
     async def pushups_helps(self, message: Message):
         """pushups scores for all users"""
         if self.is_user(message.sender_name):
-            #print help message
+            # print help message
             messagetxt = f".pushups <number> - add pushups for own user\n"
             messagetxt += f".pushups add <number> - add pushups for own user\n"
             messagetxt += f".pushups sub <number> - substract pushups for own user for today and total\n"
             messagetxt += f".pushups top5 - top 5 pushups scores\n"
             messagetxt += f".pushups scores - scores for all users\n"
             messagetxt += f".pushups score - score for own user\n"
-            messagetxt += f".pushups reset <user> - reset pushups for user (admin-only)\n"
+            messagetxt += (
+                f".pushups reset <user> - reset pushups for user (admin-only)\n"
+            )
             self.driver.reply_to(message, messagetxt)
+
     @listen_to(r"^.pushups top5")
     async def pushups_top5(self, message: Message):
         """pushups scores for all users"""
         if self.is_user(message.sender_name):
-            #print help message
+            # print help message
             messagetxt = f"Top 5 pushups scores :weight_lifter:\n"
-            #get top 5
+            # get top 5
             scores = {}
             averages = {}
             for key in self.redis.scan_iter("pushupsdaily:*"):
@@ -716,7 +733,7 @@ class ChatGPT(Plugin):
             # get averages
             for user in scores:
                 # get day count for user
-                days = self.driver.redis.keys(f"pushupsdaily:{user}:*")
+                days = self.redis.keys(f"pushupsdaily:{user}:*")
                 if len(days) > 0:
                     average = scores[user] / len(days)
                 else:
@@ -729,11 +746,12 @@ class ChatGPT(Plugin):
                 if i < len(top5):
                     messagetxt += f"{self.nohl(top5[i][0])}: {top5[i][1]} ({averages[top5[i][0]]} / day avg.)\n"
             self.driver.reply_to(message, messagetxt)
+
     @listen_to(r"^\.pushups reset ([a-zA-Z0-9_-]+)")
     async def pushups_reset(self, message: Message, user):
         """pushups reset for user"""
         if self.is_admin(message.sender_name):
-            #reset pushups for user
+            # reset pushups for user
             for key in self.redis.scan_iter(f"pushupsdaily:{user}:*"):
                 self.redis.delete(key)
             for key in self.redis.scan_iter(f"pushupstotal:{user}"):
@@ -744,51 +762,51 @@ class ChatGPT(Plugin):
 
     async def pushups_return_score_string(self, user):
         """return score string for user"""
-        #get total pushups
+        # get total pushups
         total = 0
         for key in self.redis.scan_iter(f"pushupsdaily:{user}:*"):
             total += int(self.redis.get(key))
-        #get today pushups
+        # get today pushups
         today = datetime.datetime.now().strftime("%Y-%m-%d")
         today_key = f"pushupsdaily:{user}:{today}"
         today_pushups = int(self.redis.get(today_key))
         return f"{user} has {today_pushups} pushups today and {total} pushups total"
-    
-    @listen_to(r"^\.pushups sub ([0-9]+)") # pushups
+
+    @listen_to(r"^\.pushups sub ([0-9]+)")  # pushups
     async def pushups_sub(self, message: Message, pushups_sub):
         """pushups substract"""
         if self.is_user(message.sender_name):
             pushups_sub = int(pushups_sub)
             messagetxt = f"{message.sender_name} substracted {pushups_sub} pushups\n"
             await self.log(messagetxt)
-            #store pushups in redis per day
+            # store pushups in redis per day
             today = datetime.datetime.now().strftime("%Y-%m-%d")
             key = f"pushupsdaily:{message.sender_name}:{today}"
             self.redis.decr(key, pushups_sub)
             pushups_today = self.redis.get(key)
             messagetxt += f"{message.sender_name} has {pushups_today} pushups today\n"
-            #store pushups in redis total
+            # store pushups in redis total
             key = f"pushupstotal:{message.sender_name}"
             self.redis.decr(key, pushups_sub)
             pushups_total = self.redis.get(key)
             messagetxt += f"{message.sender_name} has {pushups_total} pushups total\n"
             self.driver.reply_to(message, messagetxt)
 
-    @listen_to(r"^\.pushups ([0-9]+)") # pushups
-    @listen_to(r"^\.pushups add ([0-9]+)") # pushups
+    @listen_to(r"^\.pushups ([0-9]+)")  # pushups
+    @listen_to(r"^\.pushups add ([0-9]+)")  # pushups
     async def pushups_add(self, message: Message, pushups_add):
         """pushups"""
         if self.is_user(message.sender_name):
             pushups_add = int(pushups_add)
             messagetxt = f"{message.sender_name} did {pushups_add} pushups\n"
             await self.log(f"{message.sender_name} did {pushups_add} pushups")
-            #store pushups in redis per day
+            # store pushups in redis per day
             today = datetime.datetime.now().strftime("%Y-%m-%d")
             key = f"pushupsdaily:{message.sender_name}:{today}"
             self.redis.incr(key, pushups_add)
             pushups = self.redis.get(key)
             messagetxt += f"{message.sender_name} has done {pushups} pushups today\n"
-            #store pushups in redis per user
+            # store pushups in redis per user
             key = f"pushupstotal:{message.sender_name}"
             self.redis.incr(key, pushups_add)
             pushups = self.redis.get(key)
@@ -799,7 +817,7 @@ class ChatGPT(Plugin):
     async def pushups_scores(self, message: Message):
         """pushups scores for all users"""
         if self.is_user(message.sender_name):
-            #get pushups in redis per user
+            # get pushups in redis per user
             keys = self.redis.keys("pushupstotal:*")
             messagetxt = ""
             for key in keys:
@@ -807,12 +825,12 @@ class ChatGPT(Plugin):
                 key = key.split(":")[1]
                 messagetxt += f"{key} has done {pushups} pushups total\n"
             self.driver.reply_to(message, messagetxt)
-            
+
     @listen_to(r"^\.pushups score$")
     async def pushups_score(self, message: Message):
         """pushups score"""
         if self.is_user(message.sender_name):
-            #get pushups for last 7 days and print them and a sum of those 7 days and a total
+            # get pushups for last 7 days and print them and a sum of those 7 days and a total
             messagetxt = ""
             today = datetime.datetime.now()
             totals_for_last_7_days = 0
@@ -830,7 +848,7 @@ class ChatGPT(Plugin):
             messagetxt = messagetxt[::-1]
             messagetxt = "\n".join(messagetxt)
             messagetxt += f"\nTotal for last 7 days: {totals_for_last_7_days}\n"
-            #get total pushups
+            # get total pushups
             total = 0
             for key in self.redis.scan_iter(f"pushupsdaily:{message.sender_name}:*"):
                 total += int(self.redis.get(key))
@@ -1041,27 +1059,36 @@ class ChatGPT(Plugin):
             )
         else:
             await self.log(f"User: {message.sender_name} used {self.model}")
+
     @listen_to(r"^.(de|en)code ([a-zA-Z0-9]+) (.*)")
     async def decode(self, message: Message, method: str, encoding: str, text: str):
         """decode text using a model"""
-        supported_encodings = ['base64', 'b64', 'url']
+        supported_encodings = ["base64", "b64", "url"]
         encode = True if method == "en" else False
         decode = True if method == "de" else False
         if self.is_user(message.sender_name):
             if text == "" or encoding == "" or encoding == "help":
                 # print help message
-                messagetxt = f".encode <encoding> <text> - encode text using an encoding\n"
-                messagetxt += f".decode <encoding> <text> - decode text using an encoding\n"
+                messagetxt = (
+                    f".encode <encoding> <text> - encode text using an encoding\n"
+                )
+                messagetxt += (
+                    f".decode <encoding> <text> - decode text using an encoding\n"
+                )
                 messagetxt += f"Supported encodings: {' '.join(supported_encodings)}\n"
                 self.driver.reply_to(message, messagetxt)
                 return
             # check if encoding is supported
             if encoding not in supported_encodings:
-                self.driver.reply_to(message, f"Error: {encoding} not supported. only {supported_encodings} is supported")
+                self.driver.reply_to(
+                    message,
+                    f"Error: {encoding} not supported. only {supported_encodings} is supported",
+                )
                 return
             if encoding == "base64" or encoding == "b64":
                 try:
                     import base64
+
                     if decode:
                         text = base64.b64decode(text).decode("utf-8")
                     if encode:
@@ -1072,6 +1099,7 @@ class ChatGPT(Plugin):
             if encoding == "url":
                 try:
                     import urllib.parse
+
                     if decode:
                         text = urllib.parse.unquote(text)
                     if encode:
@@ -1080,6 +1108,7 @@ class ChatGPT(Plugin):
                     self.driver.reply_to(message, f"Error: {error}")
                     return
             self.driver.reply_to(message, f"Result:\n{text}")
+
     @listen_to(r"^\.whois (.*)")
     async def whois(self, message: Message, url: str):
         """whois a url"""
@@ -1093,6 +1122,7 @@ class ChatGPT(Plugin):
                 self.add_reaction(message, "hourglass")
                 import subprocess
                 import shlex
+
                 cmd = shlex.split(f"whois {url}")
                 process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
                 output, error = process.communicate()
@@ -1102,6 +1132,7 @@ class ChatGPT(Plugin):
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 return
+
     @listen_to(r"^\.dig (.*)")
     async def dig(self, message: Message, url: str):
         """dig a url"""
@@ -1115,6 +1146,7 @@ class ChatGPT(Plugin):
                 self.add_reaction(message, "hourglass")
                 import subprocess
                 import shlex
+
                 cmd = shlex.split(f"dig {url}")
                 process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
                 output, error = process.communicate()
@@ -1124,6 +1156,7 @@ class ChatGPT(Plugin):
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 return
+
     @listen_to(r"^\.ping6 (.*)")
     async def ping6(self, message: Message, url: str):
         """ping6 a ip or hostname"""
@@ -1137,6 +1170,7 @@ class ChatGPT(Plugin):
                 self.add_reaction(message, "hourglass")
                 import subprocess
                 import shlex
+
                 cmd = shlex.split(f"ping6 -c 4 {url}")
                 process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
                 output, error = process.communicate()
@@ -1146,6 +1180,7 @@ class ChatGPT(Plugin):
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 return
+
     @listen_to(r"^\.head (.*)")
     async def head(self, message: Message, url: str):
         """curl -i a url"""
@@ -1159,6 +1194,7 @@ class ChatGPT(Plugin):
                 self.add_reaction(message, "hourglass")
                 import subprocess
                 import shlex
+
                 cmd = shlex.split(f"curl -L -I {url}")
                 process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
                 output, error = process.communicate()
@@ -1168,6 +1204,7 @@ class ChatGPT(Plugin):
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 return
+
     @listen_to(r"^\.ping (.*)")
     async def ping(self, message: Message, url: str):
         """ping a ip or hostname"""
@@ -1181,6 +1218,7 @@ class ChatGPT(Plugin):
                 self.add_reaction(message, "hourglass")
                 import subprocess
                 import shlex
+
                 cmd = shlex.split(f"ping -4 -c 4 {url}")
                 process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
                 output, error = process.communicate()
@@ -1190,6 +1228,7 @@ class ChatGPT(Plugin):
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 return
+
     @listen_to(r"^\.traceroute (.*)")
     async def traceroute(self, message: Message, url: str):
         """traceroute a ip or hostname"""
@@ -1203,6 +1242,7 @@ class ChatGPT(Plugin):
                 self.add_reaction(message, "hourglass")
                 import subprocess
                 import shlex
+
                 cmd = shlex.split(f"traceroute -4 {url}")
                 process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
                 output, error = process.communicate()
@@ -1212,6 +1252,7 @@ class ChatGPT(Plugin):
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 return
+
     @listen_to(r"^\.traceroute6 (.*)")
     async def traceroute6(self, message: Message, url: str):
         """traceroute6 a ip or hostname"""
@@ -1225,6 +1266,7 @@ class ChatGPT(Plugin):
                 self.add_reaction(message, "hourglass")
                 import subprocess
                 import shlex
+
                 cmd = shlex.split(f"traceroute6 {url}")
                 process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
                 output, error = process.communicate()

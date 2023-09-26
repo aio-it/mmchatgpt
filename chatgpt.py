@@ -715,7 +715,7 @@ class ChatGPT(Plugin):
             self.driver.reply_to(message, messagetxt)
 
     @listen_to(r"^\.pushups top([1-9][0-9]*)")
-    async def pushups_top5(self, message: Message, topcount):
+    async def pushups_top(self, message: Message, topcount):
         """pushups scores for all users"""
         if self.is_user(message.sender_name):
             topcount = int(topcount)

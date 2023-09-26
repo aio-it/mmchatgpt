@@ -735,9 +735,9 @@ class ChatGPT(Plugin):
                 # get day count for user
                 days = self.redis.keys(f"pushupsdaily:{user}:*")
                 if len(days) > 0:
-                    average = scores[user] / len(days)
+                    averages[user] = scores[user] / len(days)
                 else:
-                    average = 0
+                    averages[user] = 0
             top5 = []
             for user, score in scores.items():
                 top5.append((user, score))

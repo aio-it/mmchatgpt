@@ -717,6 +717,7 @@ class ChatGPT(Plugin):
     @listen_to(r"^\.pushups top([1-9][0-9]*)")
     async def pushups_top(self, message: Message, topcount):
         """pushups scores for all users"""
+        # TODO: add streaks
         if self.is_user(message.sender_name):
             topcount = int(topcount)
             if topcount > 100:

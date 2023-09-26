@@ -719,9 +719,10 @@ class ChatGPT(Plugin):
         """pushups scores for all users"""
         if self.is_user(message.sender_name):
             topcount = int(topcount)
+            if topcount > 100:
+                topcount = 100
             # print help message
             messagetxt = f"Top {topcount} pushups scores :weight_lifter:\n"
-            # get top 5
             scores = {}
             averages = {}
             days = {}
@@ -757,7 +758,7 @@ class ChatGPT(Plugin):
                         medal = ":third_place_medal: "
                     else:
                         medal = ""
-                    messagetxt += f"{medal}{i}. {self.nohl(top[i][0])}: {top[i][1]} (avg: {averages[top[i][0]]}. days: {days[top[i][0]]})\n"
+                    messagetxt += f"{medal}{place}. {self.nohl(top[i][0])}: {top[i][1]} (avg: {averages[top[i][0]]}. days: {days[top[i][0]]})\n"
             self.driver.reply_to(message, messagetxt)
 
     @listen_to(r"^\.pushups reset ([a-zA-Z0-9_-]+)")

@@ -737,7 +737,7 @@ class ChatGPT(Plugin):
             for user in scores:
                 # get day count for user
                 userdays = self.redis.keys(f"pushupsdaily:{user}:*")
-                if len(days) > 0:
+                if len(userdays) > 0:
                     days[user] = len(userdays)
                     import math
 

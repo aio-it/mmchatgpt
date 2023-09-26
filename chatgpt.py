@@ -739,7 +739,9 @@ class ChatGPT(Plugin):
                 userdays = self.redis.keys(f"pushupsdaily:{user}:*")
                 if len(days) > 0:
                     days[user] = len(userdays)
-                    averages[user] = round(scores[user] / len(userdays), 0)
+                    import math
+
+                    averages[user] = math.ceil(scores[user] / len(userdays))
                 else:
                     days[user] = 0
                     averages[user] = 0

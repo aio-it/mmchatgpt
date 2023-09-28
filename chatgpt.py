@@ -238,10 +238,10 @@ class ChatGPT(Plugin):
 
         if user is None and uid is None:
             return "not found"
-        if uid is not None:
-            return "uid"
         if user is not None:
             return "user"
+        if uid is not None:
+            return "uid"
 
     def get_user_by_username(self, username):
         """get user from username"""

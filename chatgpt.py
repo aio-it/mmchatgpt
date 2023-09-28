@@ -136,7 +136,8 @@ class ChatGPT(Plugin):
             bans = ""
             for key in self.redis.scan_iter("ban:*"):
                 # get time left for ban
-                user = key.split(":")[1]
+                uid = key.split(":")[1]
+                user = self.id2u(uid)
                 time = self.redis.get(key)
                 timeleft = self.redis.ttl(key)
                 if timeleft > 0:

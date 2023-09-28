@@ -258,7 +258,8 @@ class ChatGPT(Plugin):
             # throw exception if user is not found
             raise Exception(f"User not found: {username}")
         # cache the uid in redis for 1 hour
-        self.redis.set(f"uid:{username}", uid, ex=60 * 60)
+        if uid != None:
+            self.redis.set(f"uid:{username}", uid, ex=60 * 60)
         return uid 
 
     def u2id(self, username):

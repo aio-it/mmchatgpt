@@ -215,12 +215,7 @@ class ChatGPT(Plugin):
             self.driver.reply_to(message, self.get_uid(username))
     def get_user_by_username(self, username):
         """get user id from username"""
-        options = {
-            "term": username,
-            "limit": 1
-
-        }
-        users = self.driver.users.get_users_by_usernames(options)
+        users = self.driver.users.get_users_by_usernames([username])
         if len(users) > 0:
             return users[0]["id"]
         return 

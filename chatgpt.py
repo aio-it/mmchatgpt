@@ -253,8 +253,6 @@ class ChatGPT(Plugin):
         except:
             # uid not found
             uid = None
-            # log error
-            self.log(f"User not found: {username}")
             # throw exception if user is not found
             raise Exception(f"User not found: {username}")
         # cache the uid in redis for 1 hour

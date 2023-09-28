@@ -315,8 +315,8 @@ class ChatGPT(Plugin):
 
     def on_start(self):
         """send startup message to all admins"""
-        self.log("ChatGPT Bot started")
-        self.log("model: " + self.model)
+        #self.log("ChatGPT Bot started")
+        #self.log("model: " + self.model)
         # convert all admins usernames to user ids and save to redis
         for admin in self.redis.smembers("admins"):
             #check if it is already a uid

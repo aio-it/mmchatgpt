@@ -146,7 +146,26 @@ class ChatGPT(Plugin):
                 else:
                     bans += f"{user} - permanent\n"
             self.driver.reply_to(message, f"Bans:\n{bans}")
-
+    def ban_user(self, username, days=0, hours=0, minutes=0, seconds=0):
+        """ban user"""
+        # check if user is admin
+        if self.is_admin(username):
+            return False
+        # ban user
+        uid = self.u2id(username)
+        if days == 0:
+            self.redis.set(f"ban:{uid}", 0)
+        else:
+            # calc ban time in seconds
+            days = int(days)
+            hours = int(hours)
+            minutes = int(minutes)
+            seconds = int(seconds)
+            seconds += minutes * 60
+            seconds += hours * 60 * 60
+            seconds += days * 24 * 60 * 60
+            self.redis.set(f"ban:{uid}", seconds, ex=seconds)
+            return True
     @listen_to(r"^\.ban ([a-zA-Z0-9_-]+) ?([0-9]?)")
     async def ban(self, message: Message, user, days=0):
         """ban user"""
@@ -157,13 +176,16 @@ class ChatGPT(Plugin):
                 self.driver.reply_to(message, f"Can't ban admin: {user}")
                 return
             # ban user
+            # check if user exists
+            if self.get_user_by_username(user) is None:
+                self.driver.reply_to(message, f"User not found: {user}")
+                return
             if days == 0:
                 self.driver.reply_to(message, f"Banned {user} forever")
-                self.redis.set(f"ban:{user}", 0)
+                self.ban_user(user)
             else:
                 self.driver.reply_to(message, f"Banned {user} for {days} days")
-                # set a key in redis with the user and the number of days and autoexpire the key
-                self.redis.set(f"ban:{user}", days, ex=days * 24 * 60 * 60)
+                self.ban_user(user, days)
             await self.log(f"{message.sender_name} banned {user} for {days} days")
 
     @listen_to(r"^\.unban ([a-zA-Z0-9_-]+)")
@@ -851,15 +873,23 @@ class ChatGPT(Plugin):
     async def pushups_sub(self, message: Message, pushups_sub):
         """pushups substract"""
         if self.is_user(message.sender_name):
+            # check if we are substracting more than we have
+            today = datetime.datetime.now().strftime("%Y-%m-%d")
+            today_key = f"pushupsdaily:{message.sender_name}:{today}"
+            today_pushups = int(self.redis.get(today_key))
+            if int(pushups_sub) > today_pushups:
+                self.driver.reply_to(
+                    message,
+                    f"You can't substract more pushups than you have done today ({today_pushups})",
+                )
+                return
             pushups_sub = int(pushups_sub)
             messagetxt = f"{message.sender_name} substracted {pushups_sub} pushups\n"
             await self.log(messagetxt)
             # store pushups in redis per day
-            today = datetime.datetime.now().strftime("%Y-%m-%d")
-            key = f"pushupsdaily:{message.sender_name}:{today}"
             self.redis.decr(key, pushups_sub)
-            pushups_today = self.redis.get(key)
-            messagetxt += f"{message.sender_name} has {pushups_today} pushups today\n"
+            pushups_today = self.redis.get(today_key)
+            messagetxt += f"{message.sender_name} has done {pushups_today} pushups today\n"
             # store pushups in redis total
             key = f"pushupstotal:{message.sender_name}"
             self.redis.decr(key, pushups_sub)
@@ -872,7 +902,22 @@ class ChatGPT(Plugin):
     async def pushups_add(self, message: Message, pushups_add):
         """pushups"""
         if self.is_user(message.sender_name):
+            # check if pushups more than 1000
             pushups_add = int(pushups_add)
+            if pushups_add > 1000:
+                self.driver.reply_to(
+                    message, f"Are you the hulk? Quit your bullshit {message.sender_name}. Enjoy the 6 hour timeout :middle_finger:"
+                )
+                self.driver.react_to(message, "middle_finger")
+                # ban user for 6 hours
+                self.ban_user(message.sender_name, 0, 6)
+                # log the ban
+                await self.log(f"{message.sender_name} banned for 6 hours trying to bullshit their way through life")
+                # react hammer
+                self.driver.react_to(message, "hammer")
+                # reset self pushups
+                self.pushups_reset_self(message)
+                return
             messagetxt = f"{message.sender_name} did {pushups_add} pushups\n"
             await self.log(f"{message.sender_name} did {pushups_add} pushups")
             # store pushups in redis per day

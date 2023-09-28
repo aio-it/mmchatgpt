@@ -246,11 +246,15 @@ class ChatGPT(Plugin):
         users = self.driver.users.get_users_by_usernames([username])
         if len(users) > 0:
             return users[0]
-        return 
+        return None
 
     def get_user_by_user_id(self, user_id):
         """get user id from user_id"""
-        return self.driver.users.get_user(user_id)
+        try:
+            user = self.driver.users.get_user(user_id)
+            return user
+        except:
+            return None
 
     def on_start(self):
         """send startup message to all admins"""
@@ -302,14 +306,13 @@ class ChatGPT(Plugin):
     def is_admin(self, username):
         """check if user is admin"""
         # convert username to uid
-        uid = self.get_uid(username)
         return True if self.u2id(username) in self.redis.smembers("admins") else False
 
     async def wall(self, message):
         """send message to all admins"""
-        for admin in self.redis.smembers("admins"):
+        for admin_uid in self.redis.smembers("admins"):
             self.driver.direct_message(
-                receiver_id=self.get_user_by_username(admin)["id"], message=message
+                receiver_id=admin_uid, message=message
             )
 
     async def log(self, message: str):
@@ -325,71 +328,66 @@ class ChatGPT(Plugin):
         elif private:
             await self.wall(f"DEBUG: {message}")
 
-    @listen_to(r"^\.usage")
-    async def usage(self, message: Message):
-        """reply with usage"""
-        if self.is_admin(message.sender_name):
-            users = self.redis.hkeys("usage")
-            for user in users:
-                if user == message.sender_name:
-                    continue
-                usage = self.get_usage_for_user(user)
-                self.driver.reply_to(
-                    message,
-                    f"{user} Usage:\n\tCount: {usage['usage']}\n\tTokens: {usage['tokens']}\n\tPrice: {(float(usage['tokens'])*PRICE_PER_TOKEN)*DOLLAR_TO_DKK}kr",
-                    direct=True,
-                )
-
-        usage = self.get_usage_for_user(message.sender_name)
-        self.driver.reply_to(
-            message,
-            f"{message.sender_name} Usage:\n\tCount: {usage['usage']}\n\tTokens: {usage['tokens']}\n\tPrice: {(float(usage['tokens'])*PRICE_PER_TOKEN)*DOLLAR_TO_DKK}kr",
-        )
-
     @listen_to(r"^\.users remove (.+)")
     async def users_remove(self, message: Message, username: str):
         """remove user"""
         if self.is_admin(message.sender_name):
-            self.redis.srem("users", username)
-            self.driver.reply_to(message, f"Removed user: {username}")
-            await self.log(f"Removed user: {username}")
+            # convert username to uid
+            uid = self.u2id(username)
+            self.redis.srem("users", uid)
+            self.driver.reply_to(message, f"Removed user: {username} ({uid})")
+            await self.log(f"Removed user: {username} ({uid})")
 
     @listen_to(r"^\.users add (.+)")
     async def users_add(self, message: Message, username: str):
         """add user"""
         if self.is_admin(message.sender_name):
-            self.redis.sadd("users", username)
-            self.driver.reply_to(message, f"Added user: {username}")
+            # check if user exists
+            if self.get_user_by_username(username) is None:
+                self.driver.reply_to(message, f"User not found: {username}")
+                return
+            self.redis.sadd("users", self.u2id(username))
+            self.driver.reply_to(message, f"Added user: {username} ({self.u2id(username)})")
 
     @listen_to(r"^\.users list")
     async def users_list(self, message: Message):
         """list the users"""
         if self.is_admin(message.sender_name):
-            self.driver.reply_to(
-                message, f"Allowed users: {self.redis.smembers('users')}"
-            )
+            # loop through all users and get their usernames
+            users = ""
+            for user in self.redis.smembers("users"):
+                users += f"{self.id2u(user)} ({user})\n"
+            self.driver.reply_to(message, f"Allowed users:\n{users}")
 
     @listen_to(r"^\.admins add (.*)")
     async def admins_add(self, message: Message, username: str):
         """add admin"""
         if self.is_admin(message.sender_name):
-            self.redis.sadd("admins", username)
+            # check if user exists
+            if self.get_user_by_username(username) is None:
+                self.driver.reply_to(message, f"User not found: {username}")
+                return
+            # convert username to uid
+            uid = self.u2id(username)
+            self.redis.sadd("admins", uid)
             self.driver.reply_to(message, f"Added admin: {username}")
 
     @listen_to(r"^\.admins remove (.*)")
     async def admins_remove(self, message: Message, username: str):
         """remove admin"""
         if self.is_admin(message.sender_name):
-            self.redis.srem("admins", username)
+            self.redis.srem("admins", self.u2id(username))
             self.driver.reply_to(message, f"Removed admin: {username}")
 
     @listen_to(r"^\.admins list")
     async def admins_list(self, message: Message):
         """list the admins"""
         if self.is_admin(message.sender_name):
-            self.driver.reply_to(
-                message, f"Allowed admins: {self.redis.smembers('admins')}"
-            )
+            # get a list of all admins and convert their uids to usernames
+            admins = ""
+            for admin in self.redis.smembers("admins"):
+                admins += f"{self.id2u(admin)} ({admin})\n"
+            self.driver.reply_to(message, f"Allowed admins:\n{admins}")
 
     @listen_to(r"^\.models list")
     async def model_list(self, message: Message):
@@ -409,7 +407,7 @@ class ChatGPT(Plugin):
             else:
                 self.driver.reply_to(message, f"Model not allowed: {model}")
 
-    @listen_to(r"^\.model get", allowed_users=["lbr"])
+    @listen_to(r"^\.model get")
     async def model_get(self, message: Message):
         """get the model"""
         if self.is_admin(message.sender_name):

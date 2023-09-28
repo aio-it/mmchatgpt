@@ -248,7 +248,15 @@ class ChatGPT(Plugin):
         # check if uid is cached in redis
         if not force and self.redis.exists(f"uid:{username}"):
             return self.redis.get(f"uid:{username}")
-        uid = self.get_user_by_username(username)['id']
+        try: 
+            uid = self.get_user_by_username(username)['id']
+        except:
+            # uid not found
+            uid = None
+            # log error
+            self.log(f"User not found: {username}")
+            # throw exception if user is not found
+            raise Exception(f"User not found: {username}")
         # cache the uid in redis for 1 hour
         self.redis.set(f"uid:{username}", uid, ex=60 * 60)
         return uid 

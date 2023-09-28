@@ -206,13 +206,14 @@ class ChatGPT(Plugin):
         """function that converts a string to tokens using tiktoken module from openai"""
         dec = tiktoken.encoding_for_model(model)
         return dec.decode(tokens)
-    def get_uid(self, username):
-        self.get_user_by_user_id(self.get_user_by_username(username))
     @listen_to(r"\.uid ([a-zA-Z0-9_-]+)")
     async def uid(self, message: Message, username: str):
         """get user id from username"""
         if self.is_admin(message.sender_name):
             self.driver.reply_to(message, self.get_uid(username))
+    def get_uid(self, username):
+        self.get_user_by_user_id(self.get_user_by_username(username)[id])
+
     def get_user_by_username(self, username):
         """get user id from username"""
         users = self.driver.users.get_users_by_usernames([username])

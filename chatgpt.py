@@ -211,10 +211,10 @@ class ChatGPT(Plugin):
         """get user id from username"""
         if self.is_admin(message.sender_name):
             self.driver.reply_to(message, self.get_uid(username))
-    def get_uid(self, username):
+    def get_uid(self, username, force=False):
         """get uid from username"""
         # check if uid is cached in redis
-        if self.redis.exists(f"uid:{username}"):
+        if not force and self.redis.exists(f"uid:{username}"):
             return self.redis.get(f"uid:{username}")
         uid = self.get_user_by_username(username)['id']
         # cache the uid in redis for 1 hour
@@ -253,10 +253,13 @@ class ChatGPT(Plugin):
         if self.redis.exists(f"user:{username}"):
             return self.redis_deserialize_json(self.redis.get(f"user:{username}"))
         users = self.driver.users.get_users_by_usernames([username])
-        if len(users) > 0:
+        if len(users) == 1:
             # cache the user in redis for 1 hour
             self.redis.set(f"user:{username}", self.redis_serialize_json(users[0]), ex=60 * 60)
             return users[0]
+        if len(users) > 1:
+            # throw exception if more than one user is found
+            raise Exception(f"More than one user found: {users} this is undefined behavior")
         return None
 
     def get_user_by_user_id(self, user_id):
@@ -372,7 +375,7 @@ class ChatGPT(Plugin):
             # loop through all users and get their usernames
             users = ""
             for user in self.redis.smembers("users"):
-                users += f"{self.id2u(user)} ({user})\n"
+                users += f"{self.nohl(self.id2u(user))} ({user})\n"
             self.driver.reply_to(message, f"Allowed users:\n{users}")
 
     @listen_to(r"^\.admins add (.*)")
@@ -404,46 +407,6 @@ class ChatGPT(Plugin):
             for admin in self.redis.smembers("admins"):
                 admins += f"{self.id2u(admin)} ({admin})\n"
             self.driver.reply_to(message, f"Allowed admins:\n{admins}")
-
-    @listen_to(r"^\.models list")
-    async def model_list(self, message: Message):
-        """list the models"""
-        if self.is_admin(message.sender_name):
-            self.driver.reply_to(message, f"Allowed models: {self.ALLOWED_MODELS}")
-
-    @listen_to(r"^\.model set (.*)")
-    async def model_set(self, message: Message, model: str):
-        """set the model"""
-        if self.is_admin(message.sender_name):
-            if model in self.ALLOWED_MODELS:
-                # save model to redis in the settings hash
-                self.redis.hset(self.SETTINGS_KEY, "model", model)
-                self.model = model
-                self.driver.reply_to(message, f"Model set to: {model}")
-            else:
-                self.driver.reply_to(message, f"Model not allowed: {model}")
-
-    @listen_to(r"^\.model get")
-    async def model_get(self, message: Message):
-        """get the model"""
-        if self.is_admin(message.sender_name):
-            self.driver.reply_to(message, f"Model: {self.model}")
-
-    @listen_to(r"^\.getchatlog")
-    async def getchatlog(self, message: Message):
-        """get the chatlog"""
-        if self.is_admin(message.sender_name):
-            thread_id = message.reply_id
-            thread_key = REDIS_PREPEND + thread_id
-            chatlog = self.redis_deserialize_json(self.redis.lrange(thread_key, 0, -1))
-            if self.get_chatgpt_setting("system") != "":
-                chatlog.insert(
-                    0, {"role": "system", "content": self.get_chatgpt_setting("system")}
-                )
-            chatlogmsg = ""
-            for msg in chatlog:
-                chatlogmsg += f"{msg['role']}: {msg['content']}\n"
-            self.driver.reply_to(message, chatlogmsg)
 
     @listen_to(r"^\.mkimg ([\s\S]*)")
     async def mkimg(self, message: Message, text: str):

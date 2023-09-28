@@ -853,8 +853,8 @@ class ChatGPT(Plugin):
             messagetxt += f"{message.sender_name} has {pushups_total} pushups total\n"
             self.driver.reply_to(message, messagetxt)
 
-    @listen_to(r"^\.pushups ([0-9]+)")  # pushups
-    @listen_to(r"^\.pushups add ([0-9]+)")  # pushups
+    @listen_to(r"^\.pushups (-?[0-9]+)")  # pushups
+    @listen_to(r"^\.pushups add (-?[0-9]+)")  # pushups
     async def pushups_add(self, message: Message, pushups_add):
         """pushups"""
         if self.is_user(message.sender_name):

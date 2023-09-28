@@ -226,10 +226,17 @@ class ChatGPT(Plugin):
             self.driver.reply_to(message, self.check_if_username_or_id(username_or_id))
     def check_if_username_or_id(self, username_or_id):
         """check if username or id"""
-        user = self.get_user_by_username(username_or_id)["username"]
-        uid = self.get_user_by_user_id(username_or_id)["id"]
+        try:
+            user = self.get_user_by_username(username_or_id)["username"]
+        except:
+            user = None
+        try:
+            uid = self.get_user_by_user_id(username_or_id)["id"]
+        except:
+            uid = None
+
         if user is None and uid is None:
-            return False
+            return "not found"
         if user is not None:
             return "user"
         if uid is not None:

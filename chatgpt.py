@@ -104,6 +104,7 @@ class ChatGPT(Plugin):
         print(f"Allowed admins: {self.redis.smembers('admins')}")
         print(f"Allowed models: {self.ALLOWED_MODELS}")
 
+
     def return_last_x_messages(self, messages, max_length_in_tokens):
         """return last x messages from list of messages limited by max_length_in_tokens"""
         limited_messages = []
@@ -205,7 +206,13 @@ class ChatGPT(Plugin):
         """function that converts a string to tokens using tiktoken module from openai"""
         dec = tiktoken.encoding_for_model(model)
         return dec.decode(tokens)
-
+    def get_uid(self, username):
+        self.get_user_by_user_id(self.get_user_by_username(username))
+    @listen_to(r"\.uid ([a-zA-Z0-9_-]+)")
+    async def uid(self, message: Message, username: str):
+        """get user id from username"""
+        if self.is_admin(message.sender_name):
+            self.driver.reply_to(message, self.get_uid(username))
     def get_user_by_username(self, username):
         """get user id from username"""
         return self.driver.users.get_user_by_username(username)

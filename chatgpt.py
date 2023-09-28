@@ -220,7 +220,7 @@ class ChatGPT(Plugin):
             "limit": 1
 
         }
-        users = self.driver.users.get_user_by_usernames(options)
+        users = self.driver.users.get_users_by_usernames(options)
         if len(users) > 0:
             return users[0]["id"]
         return 

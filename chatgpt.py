@@ -1186,11 +1186,6 @@ class ChatGPT(Plugin):
         )
 
         if not stream:
-            # add usage for user
-            # TODO: add per model usage
-            self.add_usage_for_user(
-                message.sender_name, response["usage"]["total_tokens"]
-            )
             # log usage for user
             await self.log(
                 f"User: {message.sender_name} used {response['usage']['total_tokens']} tokens"
@@ -1540,19 +1535,6 @@ class ChatGPT(Plugin):
                 self.driver.user_id, message.id, "runner"
             )
 
-    def get_all_usage(self):
-        """get all usage"""
-        return {
-            "usage": self.redis.hgetall("usage"),
-            "tokens": self.redis.hgetall("tokens"),
-        }
-
-    def get_usage_for_user(self, username):
-        """get usage for user"""
-        return {
-            "usage": self.redis.hget("usage", username),
-            "tokens": self.redis.hget("tokens", username),
-        }
 
     def add_usage_for_user(self, username, usage):
         """add usage for user"""

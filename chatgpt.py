@@ -212,19 +212,25 @@ class ChatGPT(Plugin):
         if self.is_admin(message.sender_name):
             self.driver.reply_to(message, self.get_uid(username))
     def get_uid(self, username):
-        return self.get_user_by_username(username)['id']
+        """get uid from username"""
+        # check if uid is cached in redis
+        if self.redis.exists(f"uid:{username}"):
+            return self.redis.get(f"uid:{username}")
+        uid = self.get_user_by_username(username)['id']
+        # cache the uid in redis for 1 hour
+        self.redis.set(f"uid:{username}", uid, ex=60 * 60)
+        return uid 
 
     def u2id(self, username):
         """convert username to uid"""
         return self.get_uid(username)
-    
+        
     def id2u(self, user_id):
         """convert uid to username"""
         return self.get_user_by_user_id(user_id)['username']
     
     def check_if_username_or_id(self, username_or_id):
         """check if username or id"""
-        # TODO: order matters. if checking for username first one could set their username to another users id it could get exploited if used for access control
         try:
             user = self.get_user_by_username(username_or_id)["username"]
         except:
@@ -250,8 +256,13 @@ class ChatGPT(Plugin):
 
     def get_user_by_user_id(self, user_id):
         """get user id from user_id"""
+        # check if user is cached in redis
+        if self.redis.exists(f"user:{user_id}"):
+            return self.redis_deserialize_json(self.redis.get(f"user:{user_id}"))
         try:
             user = self.driver.users.get_user(user_id)
+            # cache the user in redis for 1 hour
+            self.redis.set(f"user:{user_id}", self.redis_serialize_json(user), ex=60 * 60)
             return user
         except:
             return None

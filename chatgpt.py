@@ -214,16 +214,14 @@ class ChatGPT(Plugin):
     def get_uid(self, username):
         return self.get_user_by_username(username)['id']
 
-    @listen_to("\.username ([a-zA-Z0-9_-]+)")
-    async def username(self, message: Message, user_id: str):
-        """get username from user id"""
-        if self.is_admin(message.sender_name):
-            self.driver.reply_to(message, self.get_user_by_user_id(user_id)["username"])
-    @listen_to(r"^\.userorid ([a-zA-Z0-9_-]+)")
-    async def userorid(self, message: Message, username_or_id: str):
-        """get username from user id"""
-        #if self.is_admin(message.sender_name):
-        self.driver.reply_to(message, self.check_if_username_or_id(username_or_id))
+    def u2id(self, username):
+        """convert username to uid"""
+        return self.get_uid(username)
+    
+    def id2u(self, user_id):
+        """convert uid to username"""
+        return self.get_user_by_user_id(user_id)['username']
+    
     def check_if_username_or_id(self, username_or_id):
         """check if username or id"""
         # TODO: order matters. if checking for username first one could set their username to another users id it could get exploited if used for access control
@@ -258,6 +256,33 @@ class ChatGPT(Plugin):
         """send startup message to all admins"""
         self.log("ChatGPT Bot started")
         self.log("model: " + self.model)
+        # convert all admins usernames to user ids and save to redis
+        for admin in self.redis.smembers("admins"):
+            #check if it is already a uid
+            if self.check_if_username_or_id(admin) == "uid":
+                continue
+            #replace current admin username with uid in redis
+            self.redis.srem("admins", admin)
+            self.redis.sadd("admins", self.get_uid(admin))
+        # convert all users usernames to user ids and save to redis
+        for user in self.redis.smembers("users"):
+            #check if it is already a uid
+            if self.check_if_username_or_id(user) == "uid":
+                continue
+            #replace current user username with uid in redis
+            self.redis.srem("users", user)
+            self.redis.sadd("users", self.get_uid(user))
+        # convert all bans usernames to user ids and save to redis
+        for key in self.redis.scan_iter("ban:*"):
+            user = key.split(":")[1]
+            #check if it is already a uid
+            if self.check_if_username_or_id(user) == "uid":
+                continue
+            # get expire time
+            expire = self.redis.ttl(key)
+            # replace current ban username with uid in redis
+            self.redis.delete(key)
+            self.redis.set(f"ban:{self.get_uid(user)}", expire)
 
     def on_stop(self):
         """send startup message to all admins"""
@@ -270,13 +295,15 @@ class ChatGPT(Plugin):
     def is_user(self, username):
         """check if user is user"""
         # check if user is banned
-        if self.redis.exists(f"ban:{username}"):
+        if self.redis.exists(f"ban:{self.u2id(username)}"):
             return False
-        return True if username in self.redis.smembers("users") else False
+        return True if self.u2id(username) in self.redis.smembers("users") else False
 
     def is_admin(self, username):
         """check if user is admin"""
-        return True if username in self.redis.smembers("admins") else False
+        # convert username to uid
+        uid = self.get_uid(username)
+        return True if self.u2id(username) in self.redis.smembers("admins") else False
 
     async def wall(self, message):
         """send message to all admins"""

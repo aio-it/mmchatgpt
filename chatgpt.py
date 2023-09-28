@@ -212,10 +212,10 @@ class ChatGPT(Plugin):
         if self.is_admin(message.sender_name):
             self.driver.reply_to(message, self.get_uid(username))
     def get_uid(self, username):
-        return self.get_user_by_user_id(self.get_user_by_username(username))['id']
+        return self.get_user_by_username(username)['id']
 
     def get_user_by_username(self, username):
-        """get user id from username"""
+        """get user from username"""
         users = self.driver.users.get_users_by_usernames([username])
         if len(users) > 0:
             return users[0]

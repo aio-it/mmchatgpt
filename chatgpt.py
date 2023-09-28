@@ -1535,12 +1535,6 @@ class ChatGPT(Plugin):
                 self.driver.user_id, message.id, "runner"
             )
 
-
-    def add_usage_for_user(self, username, usage):
-        """add usage for user"""
-        self.redis.hincrby("usage", username, 1)
-        self.redis.hincrby("tokens", username, usage)
-
     def append_chatlog(self, thread_id, msg):
         """append a message to a chatlog"""
         expiry = 60 * 60 * 24 * 7

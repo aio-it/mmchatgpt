@@ -223,7 +223,7 @@ class ChatGPT(Plugin):
     async def userorid(self, message: Message, username_or_id: str):
         """get username from user id"""
         #if self.is_admin(message.sender_name):
-            self.driver.reply_to(message, self.check_if_username_or_id(username_or_id))
+        self.driver.reply_to(message, self.check_if_username_or_id(username_or_id))
     def check_if_username_or_id(self, username_or_id):
         """check if username or id"""
         # TODO: order matters. if checking for username first one could set their username to another users id it could get exploited if used for access control

@@ -193,9 +193,18 @@ class ChatGPT(Plugin):
     async def unban(self, message: Message, user):
         """unban user"""
         if self.is_admin(message.sender_name):
+            # check if user exists
+            if self.get_user_by_username(user) is None:
+                self.driver.reply_to(message, f"User not found: {user}")
+                return
+            # check if user is banned
+            if not self.redis.exists(f"ban:{self.u2id(user)}"):
+                self.driver.reply_to(message, f"User not banned: {user}")
+                return
             # unban user
+            uid = self.u2id(user)
             self.driver.reply_to(message, f"Unbanned {user}")
-            self.redis.delete(f"ban:{user}")
+            self.redis.delete(f"ban:{uid}")
             await self.log(f"{message.sender_name} unbanned {user}")
 
     @listen_to(r"^\.s2t ([\s\S]*)")

@@ -905,8 +905,10 @@ class ChatGPT(Plugin):
             # check if pushups more than 1000
             pushups_add = int(pushups_add)
             if pushups_add > 1000:
+                gif = "https://media.tenor.com/d0VNnBZkSUkAAAAC/bongocat-banhammer.gif"
+                gif_string = f"![gif]({gif})"
                 self.driver.reply_to(
-                    message, f"Are you the hulk? Quit your bullshit {message.sender_name}. Enjoy the 6 hour timeout :middle_finger:"
+                    message, f"Are you the hulk? Quit your bullshit {message.sender_name}. Enjoy the 6 hour timeout :middle_finger: {gif_string}"
                 )
                 self.driver.react_to(message, "middle_finger")
                 # ban user for 6 hours

@@ -213,12 +213,27 @@ class ChatGPT(Plugin):
             self.driver.reply_to(message, self.get_uid(username))
     def get_uid(self, username):
         return self.get_user_by_username(username)['id']
+
     @listen_to("\.username ([a-zA-Z0-9_-]+)")
     async def username(self, message: Message, user_id: str):
         """get username from user id"""
         if self.is_admin(message.sender_name):
             self.driver.reply_to(message, self.get_user_by_user_id(user_id)["username"])
-
+    @listen_to(r"^\.userorid ([a-zA-Z0-9_-]+)")
+    async def userorid(self, message: Message, username_or_id: str):
+        """get username from user id"""
+        if self.is_admin(message.sender_name):
+            self.driver.reply_to(message, self.check_if_username_or_id(username_or_id))
+    def check_if_username_or_id(self, username_or_id):
+        """check if username or id"""
+        user = self.get_user_by_username(username_or_id)["username"]
+        uid = self.get_user_by_user_id(username_or_id)["id"]
+        if user is None and uid is None:
+            return False
+        if user is not None:
+            return "user"
+        if uid is not None:
+            return "uid"
     def get_user_by_username(self, username):
         """get user from username"""
         users = self.driver.users.get_users_by_usernames([username])

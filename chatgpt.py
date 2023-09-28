@@ -217,7 +217,7 @@ class ChatGPT(Plugin):
     async def username(self, message: Message, user_id: str):
         """get username from user id"""
         if self.is_admin(message.sender_name):
-            self.driver.reply_to(message, self.get_user_by_user_id(user_id))["username"]
+            self.driver.reply_to(message, self.get_user_by_user_id(user_id)["username"])
 
     def get_user_by_username(self, username):
         """get user from username"""

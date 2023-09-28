@@ -935,7 +935,7 @@ class ChatGPT(Plugin):
                 # react hammer
                 self.driver.react_to(message, "hammer")
                 # reset self pushups
-                await self.pushups_reset_self(message)
+                # await self.pushups_reset_self(message)
                 return
             messagetxt = f"{message.sender_name} did {pushups_add} pushups\n"
             await self.log(f"{message.sender_name} did {pushups_add} pushups")

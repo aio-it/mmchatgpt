@@ -128,6 +128,25 @@ class ChatGPT(Plugin):
 
         return list(reversed(limited_messages))
 
+    @listen_to(r"^\.model set ([a-zA-Z0-9_-]+)")
+    async def model_set(self, message: Message, model: str):
+        """set the model"""
+        if self.is_admin(message.sender_name):
+            if model in self.ALLOWED_MODELS:
+                self.redis.hset(self.SETTINGS_KEY, "model", model)
+                self.model = model
+                self.driver.reply_to(message, f"Set model to {model}")
+            else:
+                self.driver.reply_to(
+                    message, f"Model not allowed. Allowed models: {self.ALLOWED_MODELS}"
+                )
+
+    @listen_to(r"^\.model get")
+    async def model_get(self, message: Message):
+        """get the model"""
+        if self.is_admin(message.sender_name):
+            self.driver.reply_to(message, f"Model: {self.model}")
+
     @listen_to(r"^\.banlist")
     async def banlist(self, message: Message):
         """list banned users"""

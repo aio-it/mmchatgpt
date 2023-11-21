@@ -5,6 +5,7 @@ import requests
 import time
 import json
 from environs import Env
+
 env = Env()
 import openai
 from openai import AsyncOpenAI
@@ -1200,7 +1201,7 @@ class ChatGPT(Plugin):
                         return
 
                     # extract the message
-                    chunk_message = chunk["choices"][0]["delta"]
+                    chunk_message = chunk.choices[0].delta
                     # if the message has content, add it to the full message
                     if "content" in chunk_message:
                         full_message += chunk_message["content"]

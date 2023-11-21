@@ -482,6 +482,9 @@ class ChatGPT(Plugin):
     async def mkimg(self, message: Message, text: str):
         """use the openai module to get and image from text"""
         if self.is_user(message.sender_name):
+            from openai import OpenAI  # pylint: disable=import-outside-toplevel
+
+            client = OpenAI(api_key=self.openai_api_key)
             try:
                 with RateLimit(
                     resource="mkimg",
@@ -491,7 +494,10 @@ class ChatGPT(Plugin):
                 ):
                     self.add_reaction(message, "frame_with_picture")
                     text = text.replace("\n", " ")
-                    response = openai.Image.create(prompt=text, n=1, size="1024x1024")
+                    response = client.images.generate(
+                        prompt=text, n=1, size="1024x1024", model="dall-e-3"
+                    )
+                    # response = openai.Image.create(prompt=text, n=1, size="1024x1024")
                     image_url = response["data"][0]["url"]
                     # download the image using the url
                     filename = self.download_file_to_tmp(image_url, "png")

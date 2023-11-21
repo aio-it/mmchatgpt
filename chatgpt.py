@@ -1206,20 +1206,19 @@ class ChatGPT(Plugin):
                     chunk_message = chunk.choices[0].delta
                     # self.driver.reply_to(message, chunk_message.content)
                     # if the message has content, add it to the full message
-                    if "content" in chunk_message:
-                        full_message += chunk_message.content
-                        # await self.debug((time.time() - last_update_time) * 1000)
-                        if (
-                            time.time() - last_update_time
-                        ) * 1000 > stream_update_delay_ms:
-                            # await self.debug("updating message")
-                            # update the message
-                            self.driver.posts.patch_post(
-                                reply_msg_id,
-                                {"message": f"{post_prefix}{full_message}"},
-                            )
-                            # update last_update_time
-                            last_update_time = time.time()
+                    full_message += chunk_message.content
+                    # await self.debug((time.time() - last_update_time) * 1000)
+                    if (
+                        time.time() - last_update_time
+                    ) * 1000 > stream_update_delay_ms:
+                        # await self.debug("updating message")
+                        # update the message
+                        self.driver.posts.patch_post(
+                            reply_msg_id,
+                            {"message": f"{post_prefix}{full_message}"},
+                        )
+                        # update last_update_time
+                        last_update_time = time.time()
                 # update the message a final time to make sure we have the full message
                 self.driver.posts.patch_post(
                     reply_msg_id, {"message": f"{post_prefix}{full_message}"}

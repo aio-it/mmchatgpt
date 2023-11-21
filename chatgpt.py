@@ -1204,7 +1204,7 @@ class ChatGPT(Plugin):
                     from pprint import pprint
 
                     chunk_message = chunk.choices[0].delta
-                    self.driver.reply_to(message, pprint(chunk_message))
+                    self.driver.reply_to(message, chunk_message["content"])
                     # if the message has content, add it to the full message
                     if "content" in chunk_message:
                         full_message += chunk_message["content"]

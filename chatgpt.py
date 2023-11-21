@@ -4,10 +4,12 @@ import asyncio
 import requests
 import time
 import json
+from environs import Env
+env = Env()
 import openai
 from openai import AsyncOpenAI
 
-aclient = AsyncOpenAI(api_key=openai_api_key)
+aclient = AsyncOpenAI(api_key=env.str("OPENAI_API_KEY"))
 import redis
 import aiohttp.client_exceptions as aiohttp_client_exceptions
 import tiktoken
@@ -93,7 +95,7 @@ class ChatGPT(Plugin):
             self.log_to_channel = True
             self.log_channel = log_channel
         self.openai_api_key = openai_api_key
-        
+
         if "giphy_api_key" in kwargs:
             self.giphy_api_key = kwargs["giphy_api_key"]
         else:
@@ -504,7 +506,6 @@ class ChatGPT(Plugin):
                         size="1024x1024",
                         model="dall-e-3",
                         response_format="url",
-
                     )
                     # response = openai.Image.create(prompt=text, n=1, size="1024x1024")
                     image_url = response.data[0].url
@@ -1096,13 +1097,15 @@ class ChatGPT(Plugin):
         if not stream:
             try:
                 # send async request to openai
-                response = await aclient.chat.completions.create(model=self.model,
-                messages=self.return_last_x_messages(
-                    messages, self.MAX_TOKENS_PER_MODEL[self.model]
-                ),
-                temperature=temperature,
-                top_p=top_p,
-                stream=stream)
+                response = await aclient.chat.completions.create(
+                    model=self.model,
+                    messages=self.return_last_x_messages(
+                        messages, self.MAX_TOKENS_PER_MODEL[self.model]
+                    ),
+                    temperature=temperature,
+                    top_p=top_p,
+                    stream=stream,
+                )
                 # check for error in the responses and send error message
                 if "error" in response:
                     if "message" in response:
@@ -1146,13 +1149,15 @@ class ChatGPT(Plugin):
             reply_msg_id = self.driver.reply_to(message, full_message)["id"]
             # send async request to openai
             try:
-                response = await aclient.chat.completions.create(model=self.model,
-                messages=self.return_last_x_messages(
-                    messages, self.MAX_TOKENS_PER_MODEL[self.model]
-                ),
-                temperature=temperature,
-                top_p=top_p,
-                stream=stream)
+                response = await aclient.chat.completions.create(
+                    model=self.model,
+                    messages=self.return_last_x_messages(
+                        messages, self.MAX_TOKENS_PER_MODEL[self.model]
+                    ),
+                    temperature=temperature,
+                    top_p=top_p,
+                    stream=stream,
+                )
             except (openai.error.RateLimitError, openai.error.APIError) as error:
                 # update the message
                 self.driver.posts.patch_post(

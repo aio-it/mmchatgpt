@@ -496,10 +496,15 @@ class ChatGPT(Plugin):
                     self.add_reaction(message, "frame_with_picture")
                     text = text.replace("\n", " ")
                     response = client.images.generate(
-                        prompt=text, n=1, size="1024x1024", model="dall-e-3"
+                        prompt=text,
+                        n=1,
+                        size="1024x1024",
+                        model="dall-e-3",
+                        response_format="url",
+
                     )
                     # response = openai.Image.create(prompt=text, n=1, size="1024x1024")
-                    image_url = response["data"][0]["url"]
+                    image_url = response.data[0].url
                     # download the image using the url
                     filename = self.download_file_to_tmp(image_url, "png")
                     # format the image_url as mattermost markdown

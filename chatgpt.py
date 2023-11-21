@@ -46,6 +46,8 @@ class ChatGPT(Plugin):
         "gpt-3.5-turbo",
         "gpt-4",
         "gpt-4-32k",
+        "gpt-4-1106-preview",
+        "gpt-4-vision-preview",
     ]
     MAX_TOKENS_PER_MODEL = {
         "gpt-3.5-turbo-0301": 3000,
@@ -103,7 +105,6 @@ class ChatGPT(Plugin):
         print(f"Allowed admins: {self.redis.smembers('admins')}")
         print(f"Allowed models: {self.ALLOWED_MODELS}")
 
-
     def return_last_x_messages(self, messages, max_length_in_tokens):
         """return last x messages from list of messages limited by max_length_in_tokens"""
         limited_messages = []
@@ -146,6 +147,7 @@ class ChatGPT(Plugin):
                 else:
                     bans += f"{user} - permanent\n"
             self.driver.reply_to(message, f"Bans:\n{bans}")
+
     def ban_user(self, username, days=0, hours=0, minutes=0, seconds=0):
         """ban user"""
         # check if user is admin
@@ -166,6 +168,7 @@ class ChatGPT(Plugin):
             seconds += days * 24 * 60 * 60
             self.redis.set(f"ban:{uid}", seconds, ex=seconds)
             return True
+
     @listen_to(r"^\.ban ([a-zA-Z0-9_-]+) ?([0-9]?)")
     async def ban(self, message: Message, user, days=0):
         """ban user"""
@@ -237,18 +240,20 @@ class ChatGPT(Plugin):
         """function that converts a string to tokens using tiktoken module from openai"""
         dec = tiktoken.encoding_for_model(model)
         return dec.decode(tokens)
+
     @listen_to(r"\.uid ([a-zA-Z0-9_-]+)")
     async def uid(self, message: Message, username: str):
         """get user id from username"""
         if self.is_admin(message.sender_name):
             self.driver.reply_to(message, self.get_uid(username))
+
     def get_uid(self, username, force=False):
         """get uid from username"""
         # check if uid is cached in redis
         if not force and self.redis.exists(f"uid:{username}"):
             return self.redis.get(f"uid:{username}")
-        try: 
-            uid = self.get_user_by_username(username)['id']
+        try:
+            uid = self.get_user_by_username(username)["id"]
         except:
             # uid not found
             uid = None
@@ -257,16 +262,16 @@ class ChatGPT(Plugin):
         # cache the uid in redis for 1 hour
         if uid != None:
             self.redis.set(f"uid:{username}", uid, ex=60 * 60)
-        return uid 
+        return uid
 
     def u2id(self, username):
         """convert username to uid"""
         return self.get_uid(username)
-        
+
     def id2u(self, user_id):
         """convert uid to username"""
-        return self.get_user_by_user_id(user_id)['username']
-    
+        return self.get_user_by_user_id(user_id)["username"]
+
     def check_if_username_or_id(self, username_or_id):
         """check if username or id"""
         try:
@@ -293,11 +298,15 @@ class ChatGPT(Plugin):
         users = self.driver.users.get_users_by_usernames([username])
         if len(users) == 1:
             # cache the user in redis for 1 hour
-            self.redis.set(f"user:{username}", self.redis_serialize_json(users[0]), ex=60 * 60)
+            self.redis.set(
+                f"user:{username}", self.redis_serialize_json(users[0]), ex=60 * 60
+            )
             return users[0]
         if len(users) > 1:
             # throw exception if more than one user is found
-            raise Exception(f"More than one user found: {users} this is undefined behavior")
+            raise Exception(
+                f"More than one user found: {users} this is undefined behavior"
+            )
         return None
 
     def get_user_by_user_id(self, user_id):
@@ -308,35 +317,37 @@ class ChatGPT(Plugin):
         try:
             user = self.driver.users.get_user(user_id)
             # cache the user in redis for 1 hour
-            self.redis.set(f"user:{user_id}", self.redis_serialize_json(user), ex=60 * 60)
+            self.redis.set(
+                f"user:{user_id}", self.redis_serialize_json(user), ex=60 * 60
+            )
             return user
         except:
             return None
 
     def on_start(self):
         """send startup message to all admins"""
-        #self.log("ChatGPT Bot started")
-        #self.log("model: " + self.model)
+        # self.log("ChatGPT Bot started")
+        # self.log("model: " + self.model)
         # convert all admins usernames to user ids and save to redis
         for admin in self.redis.smembers("admins"):
-            #check if it is already a uid
+            # check if it is already a uid
             if self.check_if_username_or_id(admin) == "uid":
                 continue
-            #replace current admin username with uid in redis
+            # replace current admin username with uid in redis
             self.redis.srem("admins", admin)
             self.redis.sadd("admins", self.get_uid(admin))
         # convert all users usernames to user ids and save to redis
         for user in self.redis.smembers("users"):
-            #check if it is already a uid
+            # check if it is already a uid
             if self.check_if_username_or_id(user) == "uid":
                 continue
-            #replace current user username with uid in redis
+            # replace current user username with uid in redis
             self.redis.srem("users", user)
             self.redis.sadd("users", self.get_uid(user))
         # convert all bans usernames to user ids and save to redis
         for key in self.redis.scan_iter("ban:*"):
             user = key.split(":")[1]
-            #check if it is already a uid
+            # check if it is already a uid
             if self.check_if_username_or_id(user) == "uid":
                 continue
             # get expire time
@@ -368,9 +379,7 @@ class ChatGPT(Plugin):
     async def wall(self, message):
         """send message to all admins"""
         for admin_uid in self.redis.smembers("admins"):
-            self.driver.direct_message(
-                receiver_id=admin_uid, message=message
-            )
+            self.driver.direct_message(receiver_id=admin_uid, message=message)
 
     async def log(self, message: str):
         """send message to log channel"""
@@ -404,7 +413,9 @@ class ChatGPT(Plugin):
                 self.driver.reply_to(message, f"User not found: {username}")
                 return
             self.redis.sadd("users", self.u2id(username))
-            self.driver.reply_to(message, f"Added user: {username} ({self.u2id(username)})")
+            self.driver.reply_to(
+                message, f"Added user: {username} ({self.u2id(username)})"
+            )
 
     @listen_to(r"^\.users list")
     async def users_list(self, message: Message):
@@ -791,9 +802,7 @@ class ChatGPT(Plugin):
             messagetxt += f".pushups top5 - top 5 pushups scores\n"
             messagetxt += f".pushups scores - scores for all users\n"
             messagetxt += f".pushups score - score for own user\n"
-            messagetxt += (
-                f".pushups reset - reset pushups for self\n"
-            )
+            messagetxt += f".pushups reset - reset pushups for self\n"
             messagetxt += (
                 f".pushups reset <user> - reset pushups for user (admin-only)\n"
             )
@@ -861,6 +870,7 @@ class ChatGPT(Plugin):
             messagetxt = f"{user} pushups reset"
             self.driver.reply_to(message, messagetxt)
             await self.log(messagetxt)
+
     @listen_to("^\.pushups reset$")
     async def pushups_reset_self(self, message: Message):
         """pushups reset for self"""
@@ -873,6 +883,7 @@ class ChatGPT(Plugin):
             messagetxt = f"{message.sender_name} pushups reset"
             self.driver.reply_to(message, messagetxt)
             await self.log(messagetxt)
+
     async def pushups_return_score_string(self, user):
         """return score string for user"""
         # get total pushups
@@ -905,7 +916,9 @@ class ChatGPT(Plugin):
             # store pushups in redis per day
             self.redis.decr(key, pushups_sub)
             pushups_today = self.redis.get(today_key)
-            messagetxt += f"{message.sender_name} has done {pushups_today} pushups today\n"
+            messagetxt += (
+                f"{message.sender_name} has done {pushups_today} pushups today\n"
+            )
             # store pushups in redis total
             key = f"pushupstotal:{message.sender_name}"
             self.redis.decr(key, pushups_sub)
@@ -924,13 +937,16 @@ class ChatGPT(Plugin):
                 gif = "https://media.tenor.com/d0VNnBZkSUkAAAAC/bongocat-banhammer.gif"
                 gif_string = f"![gif]({gif})"
                 self.driver.reply_to(
-                    message, f"Are you the hulk? Quit your bullshit {message.sender_name}. Enjoy the 6 hour timeout :middle_finger: {gif_string}"
+                    message,
+                    f"Are you the hulk? Quit your bullshit {message.sender_name}. Enjoy the 6 hour timeout :middle_finger: {gif_string}",
                 )
                 self.driver.react_to(message, "middle_finger")
                 # ban user for 6 hours
                 self.ban_user(message.sender_name, 0, 6)
                 # log the ban
-                await self.log(f"{message.sender_name} banned for 6 hours trying to bullshit their way through life")
+                await self.log(
+                    f"{message.sender_name} banned for 6 hours trying to bullshit their way through life"
+                )
                 # react hammer
                 self.driver.react_to(message, "hammer")
                 # reset self pushups

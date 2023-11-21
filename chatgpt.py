@@ -1185,6 +1185,7 @@ class ChatGPT(Plugin):
                     # last_chunk_time = time.time()
                     # self.debug(f"chunk: {chunk}")
                     # check for error in the responses and send error message
+                    # TODO: might need fixing
                     if "error" in chunk:
                         if "message" in chunk:
                             self.driver.reply_to(

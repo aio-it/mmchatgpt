@@ -54,6 +54,8 @@ class ChatGPT(Plugin):
         "gpt-3.5-turbo": 3000,
         "gpt-4": 7000,
         "gpt-4-32k": 7000,
+        "gpt-4-1106-preview": 7000,
+        "gpt-4-vision-preview": 7000,
     }
     ChatGPT_DEFAULTS = {
         "temperature": 1.0,

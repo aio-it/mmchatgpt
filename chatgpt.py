@@ -5,6 +5,9 @@ import requests
 import time
 import json
 import openai
+from openai import AsyncOpenAI
+
+aclient = AsyncOpenAI(api_key=openai_api_key)
 import redis
 import aiohttp.client_exceptions as aiohttp_client_exceptions
 import tiktoken
@@ -90,7 +93,7 @@ class ChatGPT(Plugin):
             self.log_to_channel = True
             self.log_channel = log_channel
         self.openai_api_key = openai_api_key
-        openai.api_key = openai_api_key
+        
         if "giphy_api_key" in kwargs:
             self.giphy_api_key = kwargs["giphy_api_key"]
         else:
@@ -517,7 +520,7 @@ class ChatGPT(Plugin):
                     await self.log(f"{message.sender_name} used .mkimg")
             except TooManyRequests:
                 self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
-            except openai.error.InvalidRequestError as error:
+            except openai.InvalidRequestError as error:
                 self.driver.reply_to(message, f"Error: {error}")
             except:  # pylint: disable=bare-except
                 self.driver.reply_to(message, "Error: OpenAI API error")
@@ -1093,15 +1096,13 @@ class ChatGPT(Plugin):
         if not stream:
             try:
                 # send async request to openai
-                response = await openai.ChatCompletion.acreate(
-                    model=self.model,
-                    messages=self.return_last_x_messages(
-                        messages, self.MAX_TOKENS_PER_MODEL[self.model]
-                    ),
-                    temperature=temperature,
-                    top_p=top_p,
-                    stream=stream,
-                )
+                response = await aclient.chat.completions.create(model=self.model,
+                messages=self.return_last_x_messages(
+                    messages, self.MAX_TOKENS_PER_MODEL[self.model]
+                ),
+                temperature=temperature,
+                top_p=top_p,
+                stream=stream)
                 # check for error in the responses and send error message
                 if "error" in response:
                     if "message" in response:
@@ -1115,7 +1116,7 @@ class ChatGPT(Plugin):
                     # add x reaction to the message that failed to show error
                     self.driver.react_to(message, "x")
                     return
-            except openai.error.InvalidRequestError as error:
+            except openai.InvalidRequestError as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 self.driver.reactions.delete_reaction(
                     self.driver.user_id, message.id, "thought_balloon"
@@ -1145,15 +1146,13 @@ class ChatGPT(Plugin):
             reply_msg_id = self.driver.reply_to(message, full_message)["id"]
             # send async request to openai
             try:
-                response = await openai.ChatCompletion.acreate(
-                    model=self.model,
-                    messages=self.return_last_x_messages(
-                        messages, self.MAX_TOKENS_PER_MODEL[self.model]
-                    ),
-                    temperature=temperature,
-                    top_p=top_p,
-                    stream=stream,
-                )
+                response = await aclient.chat.completions.create(model=self.model,
+                messages=self.return_last_x_messages(
+                    messages, self.MAX_TOKENS_PER_MODEL[self.model]
+                ),
+                temperature=temperature,
+                top_p=top_p,
+                stream=stream)
             except (openai.error.RateLimitError, openai.error.APIError) as error:
                 # update the message
                 self.driver.posts.patch_post(

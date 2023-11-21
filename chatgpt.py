@@ -89,6 +89,7 @@ class ChatGPT(Plugin):
         else:
             self.log_to_channel = True
             self.log_channel = log_channel
+        self.openai_api_key = openai_api_key
         openai.api_key = openai_api_key
         if "giphy_api_key" in kwargs:
             self.giphy_api_key = kwargs["giphy_api_key"]

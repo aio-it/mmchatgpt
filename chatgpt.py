@@ -20,6 +20,7 @@ import uuid
 import pyttsx3
 import shlex
 import datetime
+import base64
 from typing import Tuple, List
 
 
@@ -1119,7 +1120,8 @@ class ChatGPT(Plugin):
                 get_file_response = self.driver.files.get_file(file_ids[0])
                 if get_file_response.status_code == 200:
                     image_content = get_file_response.content
-
+                else:
+                    return
                 # convert the image to base64
                 import base64
 

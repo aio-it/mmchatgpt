@@ -1069,21 +1069,8 @@ class ChatGPT(Plugin):
                 # get the image url
                 get_file_response = self.driver.files.get_file(file_ids[0])
                 if get_file_response.status_code == 200:
-                    # If the response body is JSON and contains the URL
-                    if "application/json" in get_file_response.headers.get(
-                        "Content-Type", ""
-                    ):
-                        url = get_file_response.json().get("url")
-                    # If the response is the image itself
-                    else:
-                        image_content = get_file_response.content
-                        # You can then save or process this image content
+                    image_content = get_file_response.content
 
-                # log the image response
-                # await self.log(pformat(url))
-                # await self.log(pformat(image_content))
-                # download the image using the url
-                # filename = self.download_file_to_tmp(image, extension)
                 # convert the image to base64
                 import base64
 
@@ -1119,8 +1106,8 @@ class ChatGPT(Plugin):
                     json=payload,
                 )
                 # log the response:
-                await self.log(pformat(response))
-                self.driver.reply_to(message, pformat(response))
+                await self.log(pformat(response.content))
+                self.driver.reply_to(message, pformat(response.content))
                 # delete the image file
                 self.delete_downloaded_file(filename)
                 await self.log(f"{message.sender_name} used .vision")

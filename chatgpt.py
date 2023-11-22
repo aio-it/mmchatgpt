@@ -1078,7 +1078,8 @@ class ChatGPT(Plugin):
                         # You can then save or process this image content
 
                 # log the image response
-                await self.log(pformat(url), pformat(get_file_response))
+                await self.log(pformat(url))
+                await self.log(pformat(get_file_response))
                 # download the image using the url
                 #filename = self.download_file_to_tmp(image, extension)
                 # convert the image to base64

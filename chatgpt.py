@@ -573,8 +573,8 @@ class ChatGPT(Plugin):
                 self.remove_reaction(message, "frame_with_picture")
                 self.add_reaction(message, "pig")
                 self.driver.reply_to(message, f"Error: {error.message}")
-                self.driver.reply_to(message, f"Error: {pformat(error.message)}")
-                self.driver.reply_to(message, f"Error: {pformat(error)}")
+                # self.driver.reply_to(message, f"Error: {pformat(error.message)}")
+                # self.driver.reply_to(message, f"Error: {pformat(error)}")
             except:  # pylint: disable=bare-except
                 self.driver.reply_to(message, "Error: OpenAI API error")
 
@@ -1148,7 +1148,7 @@ class ChatGPT(Plugin):
                     ],
                     "max_tokens": 300,
                 }
-
+                self.add_reaction(message, "thought_balloon")
                 response = requests.post(
                     "https://api.openai.com/v1/chat/completions",
                     headers=headers,
@@ -1160,6 +1160,8 @@ class ChatGPT(Plugin):
                     # log the response:
                     gpt_response = response["choices"][0]["message"]["content"]
                     self.driver.reply_to(message, gpt_response)
+                    self.remove_reaction(message, "thought_balloon")
+
                     await self.log(f"{message.sender_name} used .vision")
 
     @listen_to(".+", needs_mention=True)

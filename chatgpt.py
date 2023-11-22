@@ -1048,6 +1048,31 @@ class ChatGPT(Plugin):
             messagetxt += f":weight_lifter: Alltime Total: {total}\n"
             self.driver.reply_to(message, messagetxt)
 
+    @listen_to(r"^\.vision (.+)")
+    async def parseimage(self, message: Message, msg: str):
+        """check if post contains an image upload in the message.body.post.file_ids and parse it"""
+        if self.is_user(message.sender_name):
+            data = message.body.data
+            post = data.post
+            # check if message contains an image
+            if data.image == "true":
+                file_ids = post.file_ids
+                files_metadata = post.metadata.files
+                # check the metadata of the image and get the extension
+                extension = files_metadata[0].extension
+                # skip if wrong extension
+                if extension not in ["png", "jpg", "jpeg"]:
+                    return
+                # get the image
+                image = self.driver.files.get_file_info(message.body.post.file_ids[0])
+                # get the image url
+                image_url = self.driver.get_file(image["id"])["link"]
+                # download the image using the url
+                filename = self.download_file_to_tmp(image_url, extension)
+                # delete the image file
+                self.delete_downloaded_file(filename)
+                await self.log(f"{message.sender_name} used .parseimage")
+
     @listen_to(".+", needs_mention=True)
     async def chat(self, message: Message):
         """listen to everything and respond when mentioned"""

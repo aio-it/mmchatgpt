@@ -1588,6 +1588,7 @@ class ChatGPT(Plugin):
             "---",
             "**.help** - returns this list of commands and usage",
             f"**@{self.driver.client.username} <text>** - returns a response from the chatgpt model (reply to a message to use the context of that thread)",
+            "**.vision <text>** - Parse an image while providing it with a question or text (attach image to the message)",
             "**.mkimg <text>** - text to image using DALL-E3; returns an hd image",
             "**.mkstdimg <text>** - text to image using DALL-E3; returns an standard image",
             "**.drtts <text>** - text to speech using DR TTS; returns an audio file",

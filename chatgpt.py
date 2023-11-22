@@ -1062,8 +1062,9 @@ class ChatGPT(Plugin):
         msg = message.text
         from pprint import pformat
 
-        # log the message
-        await self.log(f"{message.sender_name}:  {pformat(message.body)}")
+        # log the message if user is admin
+        if self.is_admin(message.sender_name):
+            await self.log(f"{message.sender_name}:  {pformat(message.body)}")
         thread_id = message.reply_id
         thread_key = REDIS_PREPEND + thread_id
         # check if thread exists in redis

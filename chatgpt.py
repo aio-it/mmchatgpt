@@ -1123,7 +1123,6 @@ class ChatGPT(Plugin):
                 else:
                     return
                 # convert the image to base64
-                import base64
 
                 image_base64 = base64.b64encode(image_content).decode("utf-8")
                 # send the image to the openai vision model

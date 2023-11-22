@@ -566,8 +566,12 @@ class ChatGPT(Plugin):
                     self.delete_downloaded_file(filename)
                     await self.log(f"{message.sender_name} used .mkimg")
             except TooManyRequests:
+                self.remove_reaction(message, "frame_with_picture")
+                self.add_reaction(message, "x")
                 self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
             except openai.BadRequestError as error:
+                self.remove_reaction(message, "frame_with_picture")
+                self.add_reaction(message, "x")
                 self.driver.reply_to(message, f"Error: {error.message}")
                 self.driver.reply_to(message, f"Error: {pformat(error)}")
             except:  # pylint: disable=bare-except

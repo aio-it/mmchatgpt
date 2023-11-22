@@ -1105,14 +1105,14 @@ class ChatGPT(Plugin):
                     headers=headers,
                     json=payload,
                 )
-                # convert the response.content to json
-                response = response.json()
-
-                # log the response:
-
-                await self.log(pformat(response))
-                self.driver.reply_to(message, pformat(response))
-                await self.log(f"{message.sender_name} used .vision")
+                if response.status_code == 200:
+                    # convert the response.content to json
+                    response = response.json()
+                    # log the response:
+                    gpt_response = response.choices[0].message.content
+                    await self.log(pformat(response))
+                    self.driver.reply_to(message, gpt_response)
+                    await self.log(f"{message.sender_name} used .vision")
 
     @listen_to(".+", needs_mention=True)
     async def chat(self, message: Message):

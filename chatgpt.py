@@ -529,7 +529,7 @@ class ChatGPT(Plugin):
             except:  # pylint: disable=bare-except
                 self.driver.reply_to(message, "Error: OpenAI API error")
 
-    @listen_to(r"^\.mkimg ([\s\S]*)")
+    @listen_to(r"^\.mki[mn]g ([\s\S]*)")
     async def mkimg(self, message: Message, text: str):
         """use the openai module to get and image from text"""
         if self.is_user(message.sender_name):

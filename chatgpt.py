@@ -1055,7 +1055,7 @@ class ChatGPT(Plugin):
             data = message.body["data"]
             post = data["post"]
             # check if message contains an image
-            if data.image == "true":
+            if data["image"] == "true":
                 file_ids = post["file_ids"]
                 files_metadata = post["metadata"]["files"]
                 # check the metadata of the image and get the extension

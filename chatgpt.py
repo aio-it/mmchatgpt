@@ -1105,10 +1105,11 @@ class ChatGPT(Plugin):
                     headers=headers,
                     json=payload,
                 )
-                #convert the response to json
-                response = response.content.json()
+                # convert the response.content to json
+                response = response.json()
+
                 # log the response:
-                
+
                 await self.log(pformat(response))
                 self.driver.reply_to(message, pformat(response))
                 await self.log(f"{message.sender_name} used .vision")

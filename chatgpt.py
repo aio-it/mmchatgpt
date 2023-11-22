@@ -4,6 +4,7 @@ import asyncio
 import requests
 import time
 import json
+from pprint import pformat
 from environs import Env
 
 env = Env()
@@ -1066,7 +1067,9 @@ class ChatGPT(Plugin):
                 if extension not in ["png", "jpg", "jpeg"]:
                     return
                 # get the image url
-                image_url = self.driver.files.get_file(file_ids[0])
+                image = self.driver.files.get_file(file_ids[0])
+                # log the image response
+                await self.log(pformat(image))
                 # download the image using the url
                 filename = self.download_file_to_tmp(image_url, extension)
                 # convert the image to base64

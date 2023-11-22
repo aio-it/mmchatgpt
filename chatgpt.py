@@ -1081,11 +1081,12 @@ class ChatGPT(Plugin):
 
                 # log the image response
                 # await self.log(pformat(url))
-                await self.log(pformat(image_content))
+                # await self.log(pformat(image_content))
                 # download the image using the url
                 # filename = self.download_file_to_tmp(image, extension)
                 # convert the image to base64
                 import base64
+
                 image_base64 = base64.b64encode(image_content).decode("utf-8")
                 # send the image to the openai vision model
                 headers = {

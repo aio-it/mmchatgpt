@@ -567,8 +567,8 @@ class ChatGPT(Plugin):
                     await self.log(f"{message.sender_name} used .mkimg")
             except TooManyRequests:
                 self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
-            except openai.InvalidRequestError as error:
-                self.driver.reply_to(message, f"Error: {error}")
+            except openai.BadRequestError as error:
+                self.driver.reply_to(message, f"Error: {pformat(error)}")
             except:  # pylint: disable=bare-except
                 self.driver.reply_to(message, "Error: OpenAI API error")
 

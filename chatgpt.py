@@ -1054,6 +1054,8 @@ class ChatGPT(Plugin):
         if self.is_user(message.sender_name):
             data = message.body["data"]
             post = data["post"]
+            # url encode msg
+            msg = self.urlencode_text(msg)
             # check if message contains an image
             if data["image"] == "true":
                 file_ids = post["file_ids"]

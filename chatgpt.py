@@ -508,6 +508,49 @@ class ChatGPT(Plugin):
                         size="1024x1024",
                         model="dall-e-3",
                         response_format="url",
+                        quality="standard",
+                    )
+                    # response = openai.Image.create(prompt=text, n=1, size="1024x1024")
+                    image_url = response.data[0].url
+                    # download the image using the url
+                    filename = self.download_file_to_tmp(image_url, "png")
+                    # format the image_url as mattermost markdown
+                    # image_url_txt = f"![img]({image_url})"
+                    # await self.debug(response)
+                    # self.driver.reply_to(message, image_url_txt, file_paths=[filename])
+                    self.remove_reaction(message, "frame_with_picture")
+                    self.driver.reply_to(message, "", file_paths=[filename])
+                    self.delete_downloaded_file(filename)
+                    await self.log(f"{message.sender_name} used .mkimg")
+            except TooManyRequests:
+                self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
+            except openai.InvalidRequestError as error:
+                self.driver.reply_to(message, f"Error: {error}")
+            except:  # pylint: disable=bare-except
+                self.driver.reply_to(message, "Error: OpenAI API error")
+
+    @listen_to(r"^\.mkhdimg ([\s\S]*)")
+    async def mkhdimg(self, message: Message, text: str):
+        """use the openai module to get and image from text"""
+        if self.is_user(message.sender_name):
+            from openai import OpenAI  # pylint: disable=import-outside-toplevel
+
+            client = OpenAI(api_key=self.openai_api_key)
+            try:
+                with RateLimit(
+                    resource="mkimg",
+                    client=message.sender_name,
+                    max_requests=1,
+                    expire=5,
+                ):
+                    self.add_reaction(message, "frame_with_picture")
+                    text = text.replace("\n", " ")
+                    response = client.images.generate(
+                        prompt=text,
+                        n=1,
+                        size="1024x1024",
+                        model="dall-e-3",
+                        response_format="url",
                         quality="hd",
                     )
                     # response = openai.Image.create(prompt=text, n=1, size="1024x1024")

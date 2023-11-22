@@ -572,7 +572,7 @@ class ChatGPT(Plugin):
             except openai.BadRequestError as error:
                 self.remove_reaction(message, "frame_with_picture")
                 self.add_reaction(message, "pig")
-                self.driver.reply_to(message, f"Error: {error.response}")
+                self.driver.reply_to(message, f"Error: {pformat(error.response)}")
                 self.driver.reply_to(message, f"Error: {pformat(error)}")
             except:  # pylint: disable=bare-except
                 self.driver.reply_to(message, "Error: OpenAI API error")

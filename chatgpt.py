@@ -1059,14 +1059,12 @@ class ChatGPT(Plugin):
                 file_ids = post["file_ids"]
                 files_metadata = post["metadata"]["files"]
                 # check the metadata of the image and get the extension
-                extension = files_metadata[0].extension
+                extension = files_metadata[0]["extension"]
                 # skip if wrong extension
                 if extension not in ["png", "jpg", "jpeg"]:
                     return
-                # get the image
-                image = self.driver.files.get_file_info(message.body.post.file_ids[0])
                 # get the image url
-                image_url = self.driver.get_file(image["id"])["link"]
+                image_url = self.driver.files.get_file(file_ids[0])
                 # download the image using the url
                 filename = self.download_file_to_tmp(image_url, extension)
                 # convert the image to base64

@@ -1108,8 +1108,6 @@ class ChatGPT(Plugin):
                 # log the response:
                 await self.log(pformat(response.content))
                 self.driver.reply_to(message, pformat(response.content))
-                # delete the image file
-                self.delete_downloaded_file(filename)
                 await self.log(f"{message.sender_name} used .vision")
 
     @listen_to(".+", needs_mention=True)

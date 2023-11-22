@@ -486,8 +486,8 @@ class ChatGPT(Plugin):
                 admins += f"{self.id2u(admin)} ({admin})\n"
             self.driver.reply_to(message, f"Allowed admins:\n{admins}")
 
-    @listen_to(r"^\.mkimg ([\s\S]*)")
-    async def mkimg(self, message: Message, text: str):
+    @listen_to(r"^\.mkstdimg ([\s\S]*)")
+    async def mkstdimg(self, message: Message, text: str):
         """use the openai module to get and image from text"""
         if self.is_user(message.sender_name):
             from openai import OpenAI  # pylint: disable=import-outside-toplevel
@@ -529,8 +529,8 @@ class ChatGPT(Plugin):
             except:  # pylint: disable=bare-except
                 self.driver.reply_to(message, "Error: OpenAI API error")
 
-    @listen_to(r"^\.mkhdimg ([\s\S]*)")
-    async def mkhdimg(self, message: Message, text: str):
+    @listen_to(r"^\.mkimg ([\s\S]*)")
+    async def mkimg(self, message: Message, text: str):
         """use the openai module to get and image from text"""
         if self.is_user(message.sender_name):
             from openai import OpenAI  # pylint: disable=import-outside-toplevel
@@ -1588,7 +1588,8 @@ class ChatGPT(Plugin):
             "---",
             "**.help** - returns this list of commands and usage",
             f"**@{self.driver.client.username} <text>** - returns a response from the chatgpt model (reply to a message to use the context of that thread)",
-            "**.mkimg <text>** - text to image using DALL-E2; returns an image",
+            "**.mkimg <text>** - text to image using DALL-E3; returns an hd image",
+            "**.mkstdimg <text>** - text to image using DALL-E3; returns an standard image",
             "**.drtts <text>** - text to speech using DR TTS; returns an audio file",
             "**.tts <text>** - text to speech using pyttsx3; returns an audio file",
             "**.pushups** - pushups help",

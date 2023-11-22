@@ -1071,11 +1071,11 @@ class ChatGPT(Plugin):
                 # log the image response
                 await self.log(pformat(image))
                 # download the image using the url
-                filename = self.download_file_to_tmp(image_url, extension)
+                #filename = self.download_file_to_tmp(image, extension)
                 # convert the image to base64
                 import base64
 
-                with open(filename, "rb") as file:
+                with open(image, "rb") as file:
                     image_base64 = base64.b64encode(file.read()).decode("utf-8")
                 # send the image to the openai vision model
                 headers = {
@@ -1108,8 +1108,6 @@ class ChatGPT(Plugin):
                     json=payload,
                 )
                 # log the response:
-                from pprint import pformat
-
                 await self.log(pformat(response))
                 self.driver.reply_to(message, pformat(response))
                 # delete the image file
@@ -1128,8 +1126,6 @@ class ChatGPT(Plugin):
         # set stream using ternary
         stream = True if self.get_chatgpt_setting("stream") == "true" else False
         msg = message.text
-        from pprint import pformat
-
         # log the message if user is admin
         if self.is_admin(message.sender_name):
             await self.log(f"{message.sender_name}:  {pformat(message.body)}")

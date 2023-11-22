@@ -1052,8 +1052,8 @@ class ChatGPT(Plugin):
     async def parseimage(self, message: Message, msg: str):
         """check if post contains an image upload in the message.body.post.file_ids and parse it"""
         if self.is_user(message.sender_name):
-            data = message.body.data
-            post = data.post
+            data = message.body["data"]
+            post = data["post"]
             # check if message contains an image
             if data.image == "true":
                 file_ids = post.file_ids
@@ -1071,39 +1071,42 @@ class ChatGPT(Plugin):
                 filename = self.download_file_to_tmp(image_url, extension)
                 # convert the image to base64
                 import base64
+
                 with open(filename, "rb") as file:
                     image_base64 = base64.b64encode(file.read()).decode("utf-8")
-                # send the image to the openai vision model 
+                # send the image to the openai vision model
                 headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {self.openai_api_key}"
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {self.openai_api_key}",
                 }
 
                 payload = {
-                "model": "gpt-4-vision-preview",
-                "messages": [
-                    {
-                    "role": "user",
-                    "content": [
+                    "model": "gpt-4-vision-preview",
+                    "messages": [
                         {
-                        "type": "text",
-                        "text": "{msg}"
-                        },
-                        {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{image_base64}"
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": "{msg}"},
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:image/jpeg;base64,{image_base64}"
+                                    },
+                                },
+                            ],
                         }
-                        }
-                    ]
-                    }
-                ],
-                "max_tokens": 300
+                    ],
+                    "max_tokens": 300,
                 }
 
-                response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
+                response = requests.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers=headers,
+                    json=payload,
+                )
                 # log the response:
                 from pprint import pformat
+
                 await self.log(pformat(response))
                 self.driver.reply_to(message, pformat(response))
                 # delete the image file

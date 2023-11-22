@@ -1110,7 +1110,6 @@ class ChatGPT(Plugin):
                     response = response.json()
                     # log the response:
                     gpt_response = response["choices"][0]["message"]["content"]
-                    await self.log(pformat(response))
                     self.driver.reply_to(message, gpt_response)
                     await self.log(f"{message.sender_name} used .vision")
 

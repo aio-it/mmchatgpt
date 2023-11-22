@@ -571,8 +571,8 @@ class ChatGPT(Plugin):
                 self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
             except openai.BadRequestError as error:
                 self.remove_reaction(message, "frame_with_picture")
-                self.add_reaction(message, "pig_nose")
-                self.driver.reply_to(message, f"Error: {error.message}")
+                self.add_reaction(message, "pig")
+                self.driver.reply_to(message, f"Error: {error.response}")
                 self.driver.reply_to(message, f"Error: {pformat(error)}")
             except:  # pylint: disable=bare-except
                 self.driver.reply_to(message, "Error: OpenAI API error")

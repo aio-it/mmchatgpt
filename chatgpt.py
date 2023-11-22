@@ -1060,6 +1060,10 @@ class ChatGPT(Plugin):
         # set stream using ternary
         stream = True if self.get_chatgpt_setting("stream") == "true" else False
         msg = message.text
+        from pprint import pformat
+
+        # log the message
+        await self.log(f"{message.sender_name}:  {pformat(message.body)}")
         thread_id = message.reply_id
         thread_key = REDIS_PREPEND + thread_id
         # check if thread exists in redis

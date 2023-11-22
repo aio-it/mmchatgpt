@@ -1069,9 +1069,46 @@ class ChatGPT(Plugin):
                 image_url = self.driver.get_file(image["id"])["link"]
                 # download the image using the url
                 filename = self.download_file_to_tmp(image_url, extension)
+                # convert the image to base64
+                import base64
+                with open(filename, "rb") as file:
+                    image_base64 = base64.b64encode(file.read()).decode("utf-8")
+                # send the image to the openai vision model 
+                headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {self.openai_api_key}"
+                }
+
+                payload = {
+                "model": "gpt-4-vision-preview",
+                "messages": [
+                    {
+                    "role": "user",
+                    "content": [
+                        {
+                        "type": "text",
+                        "text": "{msg}"
+                        },
+                        {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{image_base64}"
+                        }
+                        }
+                    ]
+                    }
+                ],
+                "max_tokens": 300
+                }
+
+                response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
+                # log the response:
+                from pprint import pformat
+                await self.log(pformat(response))
+                self.driver.reply_to(message, pformat(response))
                 # delete the image file
                 self.delete_downloaded_file(filename)
-                await self.log(f"{message.sender_name} used .parseimage")
+                await self.log(f"{message.sender_name} used .vision")
 
     @listen_to(".+", needs_mention=True)
     async def chat(self, message: Message):

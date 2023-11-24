@@ -513,6 +513,7 @@ class ChatGPT(Plugin):
                     )
                     # response = openai.Image.create(prompt=text, n=1, size="1024x1024")
                     image_url = response.data[0].url
+                    revised_prompt = response.data[0].revised_prompt
                     # download the image using the url
                     filename = self.download_file_to_tmp(image_url, "png")
                     # format the image_url as mattermost markdown
@@ -520,7 +521,7 @@ class ChatGPT(Plugin):
                     # await self.debug(response)
                     # self.driver.reply_to(message, image_url_txt, file_paths=[filename])
                     self.remove_reaction(message, "frame_with_picture")
-                    self.driver.reply_to(message, "", file_paths=[filename])
+                    self.driver.reply_to(message, revised_prompt, file_paths=[filename])
                     self.delete_downloaded_file(filename)
                     await self.log(f"{message.sender_name} used .mkimg")
             except TooManyRequests:
@@ -556,6 +557,7 @@ class ChatGPT(Plugin):
                     )
                     # response = openai.Image.create(prompt=text, n=1, size="1024x1024")
                     image_url = response.data[0].url
+                    revised_prompt = response.data[0].revised_prompt
                     # download the image using the url
                     filename = self.download_file_to_tmp(image_url, "png")
                     # format the image_url as mattermost markdown
@@ -563,7 +565,7 @@ class ChatGPT(Plugin):
                     # await self.debug(response)
                     # self.driver.reply_to(message, image_url_txt, file_paths=[filename])
                     self.remove_reaction(message, "frame_with_picture")
-                    self.driver.reply_to(message, "", file_paths=[filename])
+                    self.driver.reply_to(message, revised_prompt, file_paths=[filename])
                     self.delete_downloaded_file(filename)
                     await self.log(f"{message.sender_name} used .mkimg")
             except TooManyRequests:

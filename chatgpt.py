@@ -582,7 +582,7 @@ class ChatGPT(Plugin):
                 self.driver.reply_to(message, "Error: OpenAI API error")
 
     @listen_to(r"^\.mki[mn]g2 ([\s\S]*)")
-    async def mkimg(self, message: Message, text: str):
+    async def mkimg2(self, message: Message, text: str):
         """use the openai module to get and image from text"""
         if self.is_user(message.sender_name):
             from openai import OpenAI  # pylint: disable=import-outside-toplevel

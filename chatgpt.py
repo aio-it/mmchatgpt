@@ -487,7 +487,7 @@ class ChatGPT(Plugin):
                 admins += f"{self.id2u(admin)} ({admin})\n"
             self.driver.reply_to(message, f"Allowed admins:\n{admins}")
 
-    @listen_to(r"^\.(?:mk)?i[mn]g")
+    @listen_to(r"^\.(?:mk)?i[mn]g$")
     async def img_help(self, message: Message):
         await self.img(message, "help")
 
@@ -495,7 +495,7 @@ class ChatGPT(Plugin):
     async def img(self, message: Message, text: str):
         """use the openai module to get and image from text"""
         # check if the text is help
-        if text == "help" or text == "-h" or text == "--help" or text == "":
+        if text == "help" or text == "-h" or text == "--help":
             options_msg = ".img [options...] <prompt> - use dall-e-3 to generate an image from your prompt"
             options_msg += "\noptions:"
             options_msg += "\n\nsize:"

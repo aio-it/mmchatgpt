@@ -585,7 +585,6 @@ class ChatGPT(Plugin):
     async def img(self, message: Message, size: str, style: str, text: str):
         """use the openai module to get and image from text"""
         if self.is_user(message.sender_name):
-            size = "1024x1024"
             if size == "l":
                 # landscape
                 size = "1024x1792"

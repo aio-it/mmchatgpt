@@ -601,7 +601,6 @@ class ChatGPT(Plugin):
             self.driver.reply_to(message, options_msg)
             return
         if self.is_user(message.sender_name):
-            await self.log(f"{message.sender_name} used .img with {text}")
             # define defaults
             default_size = "1024x1024"
             default_style = "vivid"
@@ -642,7 +641,6 @@ class ChatGPT(Plugin):
                     break
             # join the words back together
             text = " ".join(words)
-            await self.log(f"{message.sender_name} used .img with {text}")
 
             from openai import AsyncOpenAI  # pylint: disable=import-outside-toplevel
 
@@ -681,7 +679,7 @@ class ChatGPT(Plugin):
                         file_paths=[filename],
                     )
                     self.delete_downloaded_file(filename)
-                    await self.log(f"{message.sender_name} used .mkimg")
+                    await self.log(f"{message.sender_name} used .img with {quality} {style} {size}")
             except TooManyRequests:
                 self.remove_reaction(message, "frame_with_picture")
                 self.add_reaction(message, "x")

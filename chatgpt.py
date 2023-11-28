@@ -498,14 +498,14 @@ class ChatGPT(Plugin):
         if text == "help" or text == "-h" or text == "--help":
             options_msg = ".img [options...] <prompt> - use dall-e-3 to generate an image from your prompt"
             options_msg += "\noptions:"
-            options_msg += "\n\nsize:"
+            options_msg += "\n\n*size:*"
             options_msg += "\nportrait - use portrait mode"
             options_msg += "\nlandscape - use landscape mode"
             options_msg += "\nsquare - use square mode (default)"
-            options_msg += "\n\nstyle:"
+            options_msg += "\n\n*style:*"
             options_msg += "\nnatural - use natural style"
             options_msg += "\nvivid - use vivid style (default)"
-            options_msg += "\n\nquality:"
+            options_msg += "\n\n*quality:*"
             options_msg += "\nstandard - use standard quality"
             options_msg += "\nhd - use hd quality (default)"
             self.driver.reply_to(message, options_msg)

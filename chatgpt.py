@@ -531,7 +531,7 @@ class ChatGPT(Plugin):
             except:  # pylint: disable=bare-except
                 self.driver.reply_to(message, "Error: OpenAI API error")
 
-    @listen_to(r"^\.mki[mn]g ([\s\S]*)")
+    #@listen_to(r"^\.mki[mn]g ([\s\S]*)")
     async def mkimg(self, message: Message, text: str):
         """use the openai module to get and image from text"""
         if self.is_user(message.sender_name):
@@ -581,7 +581,7 @@ class ChatGPT(Plugin):
             except:  # pylint: disable=bare-except
                 self.driver.reply_to(message, "Error: OpenAI API error")
 
-    @listen_to(r"^\.img ([\s\S]*)")
+    @listen_to(r"^\.(?:mk)?i[mn]g ([\s\S]*)")
     async def img(self, message: Message, text: str):
         """use the openai module to get and image from text"""
         # check if the text is help
@@ -679,7 +679,9 @@ class ChatGPT(Plugin):
                         file_paths=[filename],
                     )
                     self.delete_downloaded_file(filename)
-                    await self.log(f"{message.sender_name} used .img with {quality} {style} {size}")
+                    await self.log(
+                        f"{message.sender_name} used .img with {quality} {style} {size}"
+                    )
             except TooManyRequests:
                 self.remove_reaction(message, "frame_with_picture")
                 self.add_reaction(message, "x")

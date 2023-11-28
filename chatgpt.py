@@ -596,7 +596,7 @@ class ChatGPT(Plugin):
                 size = default_size
             if style_words not in text:
                 style = default_style
-            # get size from text string  
+            # get size from text string
             if "portrait" in text:
                 size = "1024x1792"
             elif "landscape" in text:
@@ -607,7 +607,7 @@ class ChatGPT(Plugin):
             if "natural" in text:
                 style = "natural"
             elif "vivid" in text:
-                style = "vivid"                
+                style = "vivid"
 
             from openai import OpenAI  # pylint: disable=import-outside-toplevel
 

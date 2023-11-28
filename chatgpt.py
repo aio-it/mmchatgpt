@@ -592,9 +592,9 @@ class ChatGPT(Plugin):
             size_words = ["portrait", "landscape", "square"]
             style_words = ["vivid", "natural"]
             # set defaults if not set
-            if size_words not in text:
+            if any(ele in text for ele in size_words):
                 size = default_size
-            if style_words not in text:
+            if any(ele in text for ele in style_words):
                 style = default_style
             # get size from text string
             if "portrait" in text:

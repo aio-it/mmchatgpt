@@ -487,7 +487,11 @@ class ChatGPT(Plugin):
                 admins += f"{self.id2u(admin)} ({admin})\n"
             self.driver.reply_to(message, f"Allowed admins:\n{admins}")
 
-    @listen_to(r"^\.(?:mk)?i[mn]g {0,1}([\s\S]*)?")
+    @listen_to(r"^\.(?:mk)?i[mn]g")
+    async def img_help(self, message: Message):
+        await self.img(message, "help")
+
+    @listen_to(r"^\.(?:mk)?i[mn]g ([\s\S]*)")
     async def img(self, message: Message, text: str):
         """use the openai module to get and image from text"""
         # check if the text is help

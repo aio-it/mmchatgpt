@@ -589,31 +589,37 @@ class ChatGPT(Plugin):
             # define defaults
             default_size = "1024x1024"
             default_style = "vivid"
+            default_quality = "hd"
             # config words
             size_words = ["portrait", "landscape", "square"]
             style_words = ["vivid", "natural"]
-            # set defaults if not set
-            if any(ele in text for ele in size_words):
-                size = default_size
-            if any(ele in text for ele in style_words):
-                style = default_style
-            # get size from text string
-            if "portrait" in text:
-                size = "1024x1792"
-            elif "landscape" in text:
-                size = "1792x1024"
-            elif "square" in text:
-                size = "1024x1024"
-            # get style from text string
-            if "natural" in text:
-                style = "natural"
-            elif "vivid" in text:
-                style = "vivid"
+            quality_words = ["standard", "hd"]
+            quality = default_quality
+            style = default_style
+            size = default_size
+
             # loop trough all words in text and remove config words but only if they are in the beginning of the string and next to eachother
             words = text.split(" ")
             i = 0
             while i < len(words):
-                if words[i] in size_words or words[i] in style_words:
+                w = words[i]
+                # check if word is in config words
+                if w in size_words or w in style_words or w in quality_words:
+                    # parse the config word and set the setting
+                    if w == "portrait":
+                        size = "1024x1792"
+                    elif w == "landscape":
+                        size = "1792x1024"
+                    elif w == "square":
+                        size = "1024x1024"
+                    elif w == "natural":
+                        style = "natural"
+                    elif w == "vivid":
+                        style = "vivid"
+                    elif w == "standard":
+                        quality = "standard"
+                    elif w == "hd":
+                        quality = "hd"
                     # remove the word at the index i
                     del words[i]
                 else:
@@ -641,7 +647,7 @@ class ChatGPT(Plugin):
                         model="dall-e-3",
                         style=style,
                         response_format="url",
-                        quality="hd",
+                        quality=quality,
                     )
                     # response = openai.Image.create(prompt=text, n=1, size="1024x1024")
                     image_url = response.data[0].url

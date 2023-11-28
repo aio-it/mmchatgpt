@@ -628,9 +628,9 @@ class ChatGPT(Plugin):
             text = " ".join(words)
             await self.log(f"{message.sender_name} used .img with {text}")
 
-            from openai import OpenAI  # pylint: disable=import-outside-toplevel
+            from openai import AsyncOpenAI  # pylint: disable=import-outside-toplevel
 
-            client = OpenAI(api_key=self.openai_api_key)
+            client = AsyncOpenAI(api_key=self.openai_api_key)
             try:
                 with RateLimit(
                     resource="mkimg",
@@ -640,7 +640,7 @@ class ChatGPT(Plugin):
                 ):
                     self.add_reaction(message, "frame_with_picture")
                     text = text.replace("\n", " ")
-                    response = client.images.generate(
+                    response = await client.images.generate(
                         prompt=text,
                         n=1,
                         size=size,

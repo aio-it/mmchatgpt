@@ -584,6 +584,19 @@ class ChatGPT(Plugin):
     @listen_to(r"^\.img ([\s\S]*)")
     async def img(self, message: Message, text: str):
         """use the openai module to get and image from text"""
+        # check if the text is help
+        if text == "help":
+            options_msg =  ".img [options...] <prompt> - use dall-e-3 to generate an image from your prompt",
+            options_msg += "\noptions:"
+            options_msg += "\nportrait - use portrait mode"
+            options_msg += "\nlandscape - use landscape mode"
+            options_msg += "\nsquare - use square mode (default)"
+            options_msg += "\nnatural - use natural style"
+            options_msg += "\nvivid - use vivid style (default)"
+            options_msg += "\nstandard - use standard quality"
+            options_msg += "\nhd - use hd quality (default)"
+            self.driver.reply_to(message, options_msg)
+            return
         if self.is_user(message.sender_name):
             await self.log(f"{message.sender_name} used .img with {text}")
             # define defaults

@@ -585,6 +585,7 @@ class ChatGPT(Plugin):
     async def img(self, message: Message, text: str):
         """use the openai module to get and image from text"""
         if self.is_user(message.sender_name):
+            await self.log(f"{message.sender_name} used .img with {text}")
             # define defaults
             default_size = "1024x1024"
             default_style = "vivid"
@@ -608,6 +609,18 @@ class ChatGPT(Plugin):
                 style = "natural"
             elif "vivid" in text:
                 style = "vivid"
+            # loop trough all words in text and remove config words but only if they are in the beginning of the string and next to eachother
+            words = text.split(" ")
+            i = 0
+            while i < len(words):
+                if words[i] in size_words or words[i] in style_words:
+                    # remove the word at the index i
+                    del words[i]
+                else:
+                    break
+            # join the words back together
+            text = " ".join(words)
+            await self.log(f"{message.sender_name} used .img with {text}")
 
             from openai import OpenAI  # pylint: disable=import-outside-toplevel
 

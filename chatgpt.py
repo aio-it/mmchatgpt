@@ -586,7 +586,7 @@ class ChatGPT(Plugin):
         """use the openai module to get and image from text"""
         # check if the text is help
         if text == "help":
-            options_msg =  ".img [options...] <prompt> - use dall-e-3 to generate an image from your prompt",
+            options_msg = ".img [options...] <prompt> - use dall-e-3 to generate an image from your prompt"
             options_msg += "\noptions:"
             options_msg += "\nportrait - use portrait mode"
             options_msg += "\nlandscape - use landscape mode"

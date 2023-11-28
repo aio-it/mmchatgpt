@@ -675,7 +675,11 @@ class ChatGPT(Plugin):
                     # await self.debug(response)
                     # self.driver.reply_to(message, image_url_txt, file_paths=[filename])
                     self.remove_reaction(message, "frame_with_picture")
-                    self.driver.reply_to(message, revised_prompt, file_paths=[filename])
+                    self.driver.reply_to(
+                        message,
+                        f"prompt: {text}\nrevised: {revised_prompt}",
+                        file_paths=[filename],
+                    )
                     self.delete_downloaded_file(filename)
                     await self.log(f"{message.sender_name} used .mkimg")
             except TooManyRequests:

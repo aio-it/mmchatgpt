@@ -581,21 +581,33 @@ class ChatGPT(Plugin):
             except:  # pylint: disable=bare-except
                 self.driver.reply_to(message, "Error: OpenAI API error")
 
-    @listen_to(r"^\.img (l|p|s) (vivid|natural) ([\s\S]*)")
-    async def img(self, message: Message, size: str, style: str, text: str):
+    @listen_to(r"^\.img ([\s\S]*)")
+    async def img(self, message: Message, text: str):
         """use the openai module to get and image from text"""
         if self.is_user(message.sender_name):
-            if size == "l":
-                # landscape
+            # define defaults
+            default_size = "1024x1024"
+            default_style = "vivid"
+            # config words
+            size_words = ["portrait", "landscape", "square"]
+            style_words = ["vivid", "natural"]
+            # set defaults if not set
+            if size_words not in text:
+                size = default_size
+            if style_words not in text:
+                style = default_style
+            # get size from text string  
+            if "portrait" in text:
                 size = "1024x1792"
-            elif size == "p":
-                # portrait
+            elif "landscape" in text:
                 size = "1792x1024"
-            elif size == "s":
-                # square
+            elif "square" in text:
                 size = "1024x1024"
-            if style not in ["vivid", "natural"]:
-                style = "vivid"
+            # get style from text string
+            if "natural" in text:
+                style = "natural"
+            elif "vivid" in text:
+                style = "vivid"                
 
             from openai import OpenAI  # pylint: disable=import-outside-toplevel
 

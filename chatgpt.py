@@ -1632,9 +1632,11 @@ class ChatGPT(Plugin):
                 inputs = input.split(" ")
                 for word in inputs:
                     valid_input = self.validateinput(word,validators)
-                    if "error" in valid_input:
-                        self.driver.reply_to(message, f"Error: {valid_input['error']}")
-                        return
+                    #check if dict
+                    if type(valid_input) is dict:
+                        if "error" in valid_input:
+                            self.driver.reply_to(message, f"Error: {valid_input['error']}")
+                            return
                     # run command
                 self.add_reaction(message, "hourglass")
                 self.log(f"{message.sender_name} ran command: {command} {args} {input}")

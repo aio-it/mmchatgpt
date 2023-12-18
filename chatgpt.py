@@ -1666,10 +1666,10 @@ class ChatGPT(Plugin):
                     if type(valid_input) is dict:
                         if "error" in valid_input:
                             self.driver.reply_to(message, f"Error: {valid_input['error']}")
-                            return
+                            return False
                     if valid_input is False:
                         self.driver.reply_to(message, f"Error: {word} is not a valid input to {command}")
-                        return
+                        return False
                     # run command
                 self.add_reaction(message, "hourglass")
                 await self.log(f"{message.sender_name} ran command: {command} {args} {input}")

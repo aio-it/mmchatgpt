@@ -1203,6 +1203,9 @@ class ChatGPT(Plugin):
         #    return
         if message.text[0] == ".":  # ignore commands
             return
+        # if message start with ! ignore
+        if message.text[0] == "!":
+            return
         # set stream using ternary
         stream = True if self.get_chatgpt_setting("stream") == "true" else False
         msg = message.text

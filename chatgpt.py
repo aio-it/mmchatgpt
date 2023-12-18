@@ -87,6 +87,16 @@ SHELL_COMMANDS = {
                 "command": "date",
                 "args": ""
             },
+            "uptime": {
+                "validators": [],
+                "command": "uptime",
+                "args": ""
+            },
+            "ptr": {
+                "validators": ["ip"],
+                "command": "dig",
+                "args": "-x +short"
+            },
         }
 
 # Custom Exceptions

@@ -1715,6 +1715,7 @@ class ChatGPT(Plugin):
                             return False
                     if valid_input is False:
                         self.driver.reply_to(message, f"Error: {word} is not a valid input to {command}")
+                        await self.log(f"Error: {word} is not a valid input to {command}")
                         return False
                     # run command
             self.add_reaction(message, "hourglass")

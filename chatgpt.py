@@ -1644,71 +1644,68 @@ class ChatGPT(Plugin):
     @listen_to(r"^!(.*)")
     async def run_command(self,message: Message, command):
         """ runs a command after validating the command and the input"""
-        if self.is_admin(message.sender_name):
-            # if help
-            # validate command
-            # split command into command and input
-            command = command.split(" ", 1)
-            if len(command) == 1:
-                command = command[0]
-                input = ""
-            else:
-                command, input = command
-                input = input.lower()
-            if command == "help":
-                # send a list of commands from SHELL_COMMANDS
-                messagetxt = f"Allowed commands:\n"
-                for command in SHELL_COMMANDS.keys():
-                    messagetxt += f" {command}\n"
-                self.driver.reply_to(message, messagetxt)
-                return
-            valid_commands = self.validatecommand(command)
-            if "error" in valid_commands:
-                self.driver.reply_to(message, f"Error: {valid_commands['error']}")
-                return
-            else:
-                validators = valid_commands["validators"]
-                command = valid_commands["command"]
-                args = valid_commands["args"]
-                # validate input for each word in input
-                inputs = input.split(" ")
-                for word in inputs:
-                    await self.log(f"word: {word}")
-                    valid_input = self.validateinput(word,validators)
-                    await self.log(f"valid_input: {valid_input}")
-                    #check if dict
-                    if type(valid_input) is dict:
-                        if "error" in valid_input:
-                            self.driver.reply_to(message, f"Error: {valid_input['error']}")
-                            return False
-                    if valid_input is False:
-                        self.driver.reply_to(message, f"Error: {word} is not a valid input to {command}")
+        # split command into command and input
+        command = command.split(" ", 1)
+        if len(command) == 1:
+            command = command[0]
+            input = ""
+        else:
+            command, input = command
+            input = input.lower()
+        if command == "help":
+            # send a list of commands from SHELL_COMMANDS
+            messagetxt = f"Allowed commands:\n"
+            for command in SHELL_COMMANDS.keys():
+                messagetxt += f" {command}\n"
+            self.driver.reply_to(message, messagetxt)
+            return
+        valid_commands = self.validatecommand(command)
+        if "error" in valid_commands:
+            self.driver.reply_to(message, f"Error: {valid_commands['error']}")
+            return
+        else:
+            validators = valid_commands["validators"]
+            command = valid_commands["command"]
+            args = valid_commands["args"]
+            # validate input for each word in input
+            inputs = input.split(" ")
+            for word in inputs:
+                await self.log(f"word: {word}")
+                valid_input = self.validateinput(word,validators)
+                await self.log(f"valid_input: {valid_input}")
+                #check if dict
+                if type(valid_input) is dict:
+                    if "error" in valid_input:
+                        self.driver.reply_to(message, f"Error: {valid_input['error']}")
                         return False
-                    # run command
-                self.add_reaction(message, "hourglass")
-                await self.log(f"{message.sender_name} ran command: {command} {args} {input}")
-                import subprocess
-                import shlex
-                cmd = shlex.split(f"{command} {args} {input}")
-                process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-                timeout = False
-                try:
-                    output, error = process.communicate(timeout=10)
+                if valid_input is False:
+                    self.driver.reply_to(message, f"Error: {word} is not a valid input to {command}")
+                    return False
+                # run command
+            self.add_reaction(message, "hourglass")
+            await self.log(f"{message.sender_name} ran command: {command} {args} {input}")
+            import subprocess
+            import shlex
+            cmd = shlex.split(f"{command} {args} {input}")
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+            timeout = False
+            try:
+                output, error = process.communicate(timeout=10)
+                output = output.decode("utf-8")
+            except subprocess.TimeoutExpired:
+                process.kill()
+                output, error = process.communicate()
+                if output:
                     output = output.decode("utf-8")
-                except subprocess.TimeoutExpired:
-                    process.kill()
-                    output, error = process.communicate()
-                    if output:
-                        output = output.decode("utf-8")
-                    if error:
-                        error = error.decode("utf-8")
-                    timeout=True
-                self.remove_reaction(message, "hourglass")
-                self.driver.reply_to(message, f"Result:\n```\n{output}\n```")
                 if error:
-                    self.driver.reply_to(message, f"Error:\n```\n{error}\n```")
-                if timeout:
-                    self.driver.reply_to(message, f"Timed out: 10 seconds")
+                    error = error.decode("utf-8")
+                timeout=True
+            self.remove_reaction(message, "hourglass")
+            self.driver.reply_to(message, f"Result:\n```\n{output}\n```")
+            if error:
+                self.driver.reply_to(message, f"Error:\n```\n{error}\n```")
+            if timeout:
+                self.driver.reply_to(message, f"Timed out: 10 seconds")
 
     @listen_to(r"^\.help")
     async def help_function(self, message):

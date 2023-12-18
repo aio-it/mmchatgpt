@@ -1511,8 +1511,8 @@ class ChatGPT(Plugin):
             types = [types]
         if bad_chars in input:
             return False
-        for type in types:
-            if type not in valid_types:
+        for ctype in types:
+            if ctype not in valid_types:
                 return False
         if "domain" in types:
             if validators.domain(input):

@@ -1656,6 +1656,9 @@ class ChatGPT(Plugin):
         if "string" in types:
             if re.match(r"[a-zA-Z0-9_-]+",input):
                 return True
+        if "argument" in types:
+            if input in allowed_args:
+                return True
         return { "error": f"invalid input: {input} (no matches) for types {', '.join(types)}" }
 
     @listen_to(r"^!(.*)")

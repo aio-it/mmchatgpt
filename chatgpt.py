@@ -1771,7 +1771,7 @@ class ChatGPT(Plugin):
             import subprocess
             import shlex
             cmd = shlex.split(f"{command} {args} {input}")
-            process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             timeout = False
             try:
                 output, error = process.communicate(timeout=10)

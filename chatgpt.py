@@ -456,7 +456,7 @@ class ChatGPT(Plugin):
         if self.log_to_channel:
             self.driver.create_post(self.log_channel, message)
     def slog(self,message: str):
-        """ssync log"""
+        """sync log"""
         if self.log_to_channel:
             self.driver.create_post(self.log_channel, message)
     

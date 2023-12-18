@@ -1499,7 +1499,7 @@ class ChatGPT(Plugin):
         """function that takes a string and validates that it matches against one or more of the types given in the list"""
         import re
         import validators
-        self.log(f"validateinput: {input}")
+        await self.log(f"validateinput: {input}")
         bad_chars = [" ", "\n", "\t", "\r",";","#"]
         valid_types = [
             "domain",

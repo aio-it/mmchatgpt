@@ -1551,7 +1551,7 @@ class ChatGPT(Plugin):
                 if len(answers) == 0 and len(answers6) == 0 and len(answersc) == 0:
                     return { "error": f"no dns records found for {domain}" }
                 # loop over answers6 and answers and check if any of them are private ips
-                for a in [answers,answers6,answersc]:
+                for a in [answersc,answers6,answers]:
                     for rdata in a:
                         self.slog(f"rdata: {rdata.address}")
                         import ipaddress

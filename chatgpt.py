@@ -1611,6 +1611,7 @@ class ChatGPT(Plugin):
                 return True
         if "url" in types:
             if validators.url(input):
+                self.slog(f"validating url: {input}")
                 #get domain from url and validate it as a domain so we can check if it is a private ip
                 import urllib.parse
                 domain = urllib.parse.urlparse(input).netloc

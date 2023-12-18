@@ -1661,6 +1661,7 @@ class ChatGPT(Plugin):
         """ runs a command after validating the command and the input"""
         # check if user is user (lol)
         if not self.is_user(message.sender_name):
+            self.driver.reply_to(message, f"Error: {message.sender_name} is not a user")
             return
         # split command into command and input
         command = command.split(" ", 1)

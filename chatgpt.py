@@ -1578,20 +1578,23 @@ class ChatGPT(Plugin):
             input = input.lower()
             valid_commands = self.validatecommand(command)
             if valid_commands:
-                valid_input = self.validateinput(input,valid_commands)
-                if valid_input:
+                # validate input for each word in input
+                input = input.split(" ")
+                for word in input:
+                    valid_input = self.validateinput(word,valid_commands)
+                    if not valid_input:
+                        self.driver.reply_to(message, f"Error: invalid input")
+                        return
                     # run command
-                    self.add_reaction(message, "hourglass")
-                    import subprocess
-                    import shlex
-                    cmd = shlex.split(f"{command} {input}")
-                    process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-                    output, error = process.communicate()
-                    output = output.decode("utf-8")
-                    self.remove_reaction(message, "hourglass")
-                    self.driver.reply_to(message, f"Result:\n```\n{output}\n```")
-                else:
-                    self.driver.reply_to(message, f"Error: invalid input")
+                self.add_reaction(message, "hourglass")
+                import subprocess
+                import shlex
+                cmd = shlex.split(f"{command} {input}")
+                process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+                output, error = process.communicate()
+                output = output.decode("utf-8")
+                self.remove_reaction(message, "hourglass")
+                self.driver.reply_to(message, f"Result:\n```\n{output}\n```")
             else:
                 self.driver.reply_to(message, f"Error: invalid command")
 

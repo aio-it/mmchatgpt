@@ -1551,10 +1551,10 @@ class ChatGPT(Plugin):
             command = command.lower()
             input = input.lower()
             valid_commands = self.validatecommand(command)
-            validators = valid_commands["validators"]
-            command = valid_commands["command"]
-            args = valid_commands["args"]
-            if valid_commands:
+            if valid_commands != False:
+                validators = valid_commands["validators"]
+                command = valid_commands["command"]
+                args = valid_commands["args"]
                 # validate input for each word in input
                 inputs = input.split(" ")
                 for word in inputs:

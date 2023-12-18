@@ -1458,7 +1458,7 @@ class ChatGPT(Plugin):
             "ping6": {
                 "validators": ["ip", "domain"],
                 "command": "ping6",
-                "args": "-c 1 -W 1",
+                "args": "-c 4 -W 1",
                 }
                 
             ],

@@ -1452,7 +1452,7 @@ class ChatGPT(Plugin):
                     self.driver.reply_to(message, f"Error: {error}")
                     return
             self.driver.reply_to(message, f"Result:\n{text}")
-        shell_commands = {
+        self.shell_commands = {
             "ping": {
                 "validators": ["ip", "domain"],
                 "command": "ping",

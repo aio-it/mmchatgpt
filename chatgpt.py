@@ -67,17 +67,20 @@ SHELL_COMMANDS = {
             "head": {
                 "validators": ["url","domain"],
                 "command": "curl",
-                "args": "-I -L"
+                "args": "-I -L",
+                "allowed_args": ["-I","-L","-k"]
             },
             "get": {
                 "validators": ["url","domain"],
                 "command": "curl",
-                "args": "-L"
+                "args": "-L",
+                "allowed_args": ["-I","-L","-k"]
             },
             "post": {
                 "validators": ["url","domain"],
                 "command": "curl",
-                "args": "-L -X POST"
+                "args": "-L -X POST",
+                "allowed_args": ["-I","-L","-k"]
             },
             "date": {
                 "validators": [],

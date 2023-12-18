@@ -1618,9 +1618,7 @@ class ChatGPT(Plugin):
                 result = self.validateinput(domain,["domain"])
                 # check if dict
                 if type(result) is dict:
-                    if "error" not in result:
-                        return True
-                    else: 
+                    if "error" in result:
                         return { "error": f"domain: {result['error']}" }
                 return True
         if "asn" in types:

@@ -1688,19 +1688,20 @@ class ChatGPT(Plugin):
             args = valid_commands["args"]
             # validate input for each word in input
             inputs = input.split(" ")
-            for word in inputs:
-                await self.log(f"word: {word}")
-                valid_input = self.validateinput(word,validators)
-                await self.log(f"valid_input: {valid_input}")
-                #check if dict
-                if type(valid_input) is dict:
-                    if "error" in valid_input:
-                        self.driver.reply_to(message, f"Error: {valid_input['error']}")
+            if len(inputs) > 0:
+                for word in inputs:
+                    await self.log(f"word: {word}")
+                    valid_input = self.validateinput(word,validators)
+                    await self.log(f"valid_input: {valid_input}")
+                    #check if dict
+                    if type(valid_input) is dict:
+                        if "error" in valid_input:
+                            self.driver.reply_to(message, f"Error: {valid_input['error']}")
+                            return False
+                    if valid_input is False:
+                        self.driver.reply_to(message, f"Error: {word} is not a valid input to {command}")
                         return False
-                if valid_input is False:
-                    self.driver.reply_to(message, f"Error: {word} is not a valid input to {command}")
-                    return False
-                # run command
+                    # run command
             self.add_reaction(message, "hourglass")
             await self.log(f"{message.sender_name} ran command: {command} {args} {input}")
             import subprocess

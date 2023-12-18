@@ -1572,6 +1572,8 @@ class ChatGPT(Plugin):
                 output = output.decode("utf-8")
                 self.remove_reaction(message, "hourglass")
                 self.driver.reply_to(message, f"Result:\n```\n{output}\n```")
+                if error:
+                    self.driver.reply_to(message, f"Error:\n```\n{error}\n```")
             else:
                 self.driver.reply_to(message, f"Error: invalid command")
 

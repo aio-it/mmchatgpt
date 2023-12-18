@@ -1688,6 +1688,8 @@ class ChatGPT(Plugin):
                 messagetxt += f" {command}\n"
             self.driver.reply_to(message, messagetxt)
             return
+        validators = []
+        args = ""
         valid_commands = self.validatecommand(command)
         if "error" in valid_commands:
             self.driver.reply_to(message, f"Error: {valid_commands['error']}")

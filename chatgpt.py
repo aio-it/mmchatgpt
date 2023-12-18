@@ -1719,7 +1719,7 @@ class ChatGPT(Plugin):
                         return False
                     # run command
             self.add_reaction(message, "hourglass")
-            await self.log(f"{message.sender_name} ran command: {command} {args} {input}")
+            await self.log(f"{message.sender_name} is running command: {command} {args} {input}")
             import subprocess
             import shlex
             cmd = shlex.split(f"{command} {args} {input}")

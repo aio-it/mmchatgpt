@@ -1553,6 +1553,16 @@ class ChatGPT(Plugin):
                                 sixtofour = ipaddress.ip_address(ip.sixtofour)
                                 if sixtofour.is_private:
                                     return { "error": "private ip (nice try though)" }
+                                if sixtofour.is_reserved:
+                                    return { "error": "reserved ip (nice try though)" }
+                                if sixtofour.is_multicast:  
+                                    return { "error": "multicast ip (nice try though)" }
+                                if sixtofour.is_unspecified:
+                                    return { "error": "unspecified ip (nice try though)" }
+                                if sixtofour.is_loopback:
+                                    return { "error": "loopback ip (nice try though)" }
+                                if sixtofour.is_link_local:
+                                    return { "error": "link local ip (nice try though)" }
                 except Exception as error:
                     return { "error": f"error resolving domain: {error}" }
                 return True

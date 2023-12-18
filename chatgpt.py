@@ -1765,7 +1765,7 @@ class ChatGPT(Plugin):
                     error = error.decode("utf-8")
                 timeout=True
             self.remove_reaction(message, "hourglass")
-            self.driver.reply_to(message, f"Result:\n```\n{output}\n```")
+            self.driver.reply_to(message, f"{command} {args} {input}\nResult:\n```\n{output}\n```")
             if error:
                 self.driver.reply_to(message, f"Error:\n```\n{error}\n```")
             if timeout:

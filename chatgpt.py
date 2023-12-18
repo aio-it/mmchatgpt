@@ -127,7 +127,7 @@ SHELL_COMMANDS = {
                 "args": "-Pn",
                 "allowed_args": ["-Pn","-sC","-O","-T4","-p-"]
             },
-            "tcp": {
+            "tcpportcheck": {
                 "validators": ["ip", "domain", "port"],
                 "command": "nc",
                 "args": "-vz",

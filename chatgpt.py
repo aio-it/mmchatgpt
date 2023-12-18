@@ -1477,7 +1477,8 @@ class ChatGPT(Plugin):
             "ipv4",
             "ipv6",
             "url",
-            "asn"
+            "asn",
+            "string"
         ]
         if types and type(types) is not list:
             types = [types]
@@ -1544,6 +1545,9 @@ class ChatGPT(Plugin):
         if "asn" in types:
             if re.match(r"(AS|as)[0-9]+",input):
                 return True
+        if "string" in types:
+            re.match(r"[a-zA-Z0-9_- ]+",input)
+
     @listen_to(r"^!(.*) (.*)")
     async def run_command(self,message: Message, command, input):
         """ runs a command after validating the command and the input"""

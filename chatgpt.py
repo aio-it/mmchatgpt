@@ -1531,7 +1531,7 @@ class ChatGPT(Plugin):
         if types and type(types) is not list:
             types = [types]
         if len(types) == 0:
-            return { "error": "no types given (no arguments allowed)" }
+            return { "error": "no arguments allowed" }
         # check if any of the bad chars exist in input
         for char in bad_chars:
             if char in input:

@@ -1529,6 +1529,20 @@ class ChatGPT(Plugin):
                         import ipaddress
                         if ipaddress.ip_address(rdata.address).is_private:
                             return { "error": "private ip (resolved from dns)" }
+                        if ipaddress.ip_address(rdata.address).is_reserved:
+                            return { "error": "reserved ip (resolved from dns)" }
+                        if ipaddress.ip_address(rdata.address).is_multicast:
+                            return { "error": "multicast ip (resolved from dns)" }
+                        if ipaddress.ip_address(rdata.address).is_unspecified:
+                            return { "error": "unspecified ip (resolved from dns)" }
+                        if ipaddress.ip_address(rdata.address).is_loopback:
+                            return { "error": "loopback ip (resolved from dns)" }
+                        if ipaddress.ip_address(rdata.address).is_link_local:
+                            return { "error": "link local ip (resolved from dns)" }
+                        if ipaddress.ip_address(rdata.address).sixtofour is not None:
+                            #verify the ipv4 address inside the ipv6 address is not private
+                            if ipaddress.ip_address(ipaddress.ip_address(rdata.address).sixtofour).is_private:
+                                return { "error": "private ip (nice try though)" }
                 except Exception as error:
                     return False
                 return True

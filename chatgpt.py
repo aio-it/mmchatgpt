@@ -1532,6 +1532,7 @@ class ChatGPT(Plugin):
                 try:
                     self.slog(f"resolving {input}")
                     answers = dns.resolver.resolve(input, "A")
+                    answers.extend(dns.resolver.resolve(input, "AAAA"))
                     self.slog(f"answers: {answers}")
                     if len(answers) == 0:
                         return { "error": f"no dns records found for {domain}" }

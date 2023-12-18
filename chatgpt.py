@@ -1687,8 +1687,8 @@ class ChatGPT(Plugin):
             command = valid_commands["command"]
             args = valid_commands["args"]
             # validate input for each word in input
-            inputs = input.split(" ")
-            if len(inputs) > 0:
+            if input != "":
+                inputs = input.split(" ")
                 for word in inputs:
                     await self.log(f"word: {word}")
                     valid_input = self.validateinput(word,validators)

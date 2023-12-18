@@ -1485,9 +1485,8 @@ class ChatGPT(Plugin):
                 "command": "curl",
                 "args": "-I -L"
             },
-            }
-
         }
+        
         if command in commands_and_allowed_input_types:
             return commands_and_allowed_input_types[command]
         else:

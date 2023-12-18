@@ -1550,7 +1550,7 @@ class ChatGPT(Plugin):
                             if ipaddress.ip_address(ipaddress.ip_address(rdata.address).sixtofour).is_private:
                                 return { "error": "private ip (nice try though)" }
                 except Exception as error:
-                    return False
+                    return { "error": f"error resolving domain: {error}" }
                 return True
         if "ipv4" in types or "ip" in types:
             if validators.ipv4(input):

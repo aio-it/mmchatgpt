@@ -1521,6 +1521,7 @@ class ChatGPT(Plugin):
             if ctype not in valid_types:
                 return { "error": f"invalid type: {ctype}" }
         if "domain" in types:
+            await self.log(f"validating domain {input}")
             if validators.domain(input):
                 # verify that the ip returned from a dns lookup is not a private ip
                 import dns.resolver

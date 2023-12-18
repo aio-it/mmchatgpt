@@ -107,6 +107,11 @@ SHELL_COMMANDS = {
                 "command": "dig",
                 "args": "+short -t A"
             },
+            "nmap": {
+                "validators": ["ip"],
+                "command": "nmap",
+                "args": "-Pn -sV -sC -O -T4 -p-"
+            },
         }
 
 # Custom Exceptions

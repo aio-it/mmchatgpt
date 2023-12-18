@@ -16,6 +16,7 @@ uuid = "*"
 requests = "*"
 pyttsx3 = "*"
 wheel = "*"
+validators = "*"
 
 [dev-packages]
 autopep8 = "*"

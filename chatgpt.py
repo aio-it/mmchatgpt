@@ -1545,10 +1545,12 @@ class ChatGPT(Plugin):
                             return { "error": "loopback ip (resolved from dns)" }
                         if ipaddress.ip_address(rdata.address).is_link_local:
                             return { "error": "link local ip (resolved from dns)" }
-                        if ipaddress.ip_address(rdata.address).sixtofour is not None:
-                            #verify the ipv4 address inside the ipv6 address is not private
-                            if ipaddress.ip_address(ipaddress.ip_address(rdata.address).sixtofour).is_private:
-                                return { "error": "private ip (nice try though)" }
+                        # if ipv6
+                        if ipaddress.ip_address(rdata.address).version == 6:
+                            if ipaddress.ip_address(rdata.address).sixtofour is not None:
+                                #verify the ipv4 address inside the ipv6 address is not private
+                                if ipaddress.ip_address(ipaddress.ip_address(rdata.address).sixtofour).is_private:
+                                    return { "error": "private ip (nice try though)" }
                 except Exception as error:
                     return { "error": f"error resolving domain: {error}" }
                 return True
@@ -1595,7 +1597,7 @@ class ChatGPT(Plugin):
                 domain = urllib.parse.urlparse(input).netloc
                 if domain == input:
                     # no domain found in url
-                    return { "error": "no domain found in url" }
+                    return { "error": "no domain found in url (or localhost)" }
                 # call validateinput again with domain
                 await self.log(f"validating domain: {domain}")
                 result = await self.validateinput(domain,["domain"])

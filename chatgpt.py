@@ -1776,6 +1776,7 @@ class ChatGPT(Plugin):
             try:
                 output, error = process.communicate(timeout=10)
                 output = output.decode("utf-8")
+                error = error.decode("utf-8")
             except subprocess.TimeoutExpired:
                 process.kill()
                 output, error = process.communicate()

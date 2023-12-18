@@ -17,6 +17,7 @@ requests = "*"
 pyttsx3 = "*"
 wheel = "*"
 validators = "*"
+dnspython = "*"
 
 [dev-packages]
 autopep8 = "*"

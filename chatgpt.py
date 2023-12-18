@@ -1633,10 +1633,13 @@ class ChatGPT(Plugin):
                     output, error = process.communicate()
                     output = output.decode("utf-8")
                     error = error.decode("utf-8")
+                    timeout=True
                 self.remove_reaction(message, "hourglass")
                 self.driver.reply_to(message, f"Result:\n```\n{output}\n```")
                 if error:
                     self.driver.reply_to(message, f"Error:\n```\n{error}\n```")
+                if timeout:
+                    self.driver.reply_to(message, f"Timeout: 10 seconds")
 
     @listen_to(r"^\.whois (.*)")
     async def whois(self, message: Message, url: str):

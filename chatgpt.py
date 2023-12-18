@@ -1711,6 +1711,7 @@ class ChatGPT(Plugin):
                     if type(valid_input) is dict:
                         if "error" in valid_input:
                             self.driver.reply_to(message, f"Error: {valid_input['error']}")
+                            await self.log(f"Error: {valid_input['error']}")
                             return False
                     if valid_input is False:
                         self.driver.reply_to(message, f"Error: {word} is not a valid input to {command}")

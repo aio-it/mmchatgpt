@@ -1499,7 +1499,7 @@ class ChatGPT(Plugin):
         """function that takes a string and validates that it matches against one or more of the types given in the list"""
         import re
         import validators
-        await self.log(f"validateinput: {input}, types: {types}")
+        await self.log(f"validateinput: {input}, types: {' '.join(types)}")
         bad_chars = [" ", "\n", "\t", "\r",";","#"]
         valid_types = [
             "domain",
@@ -1651,6 +1651,9 @@ class ChatGPT(Plugin):
                         if "error" in valid_input:
                             self.driver.reply_to(message, f"Error: {valid_input['error']}")
                             return
+                    if valid_input is False:
+                        self.driver.reply_to(message, f"Error: {word} is not a valid input")
+                        return
                     # run command
                 self.add_reaction(message, "hourglass")
                 await self.log(f"{message.sender_name} ran command: {command} {args} {input}")

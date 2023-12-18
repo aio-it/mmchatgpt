@@ -1577,7 +1577,6 @@ class ChatGPT(Plugin):
         if "string" in types:
             if re.match(r"[a-zA-Z0-9_-]+",input):
                 return True
-    @listen_to(r"^!help")
     @listen_to(r"^!(.*)")
     async def run_command(self,message: Message, command):
         """ runs a command after validating the command and the input"""

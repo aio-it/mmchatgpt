@@ -1552,6 +1552,9 @@ class ChatGPT(Plugin):
             command = command.lower()
             input = input.lower()
             valid_commands = self.validatecommand(command)
+            if error in valid_commands:
+                self.driver.reply_to(message, f"Error: {valid_commands['error']}")
+                return
             if valid_commands != False:
                 validators = valid_commands["validators"]
                 command = valid_commands["command"]

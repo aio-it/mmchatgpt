@@ -1491,10 +1491,10 @@ class ChatGPT(Plugin):
 
     def validatecommand(self, command):
         """check if commands is in a list of commands allowed"""
-        if command in self.shell_commands:
-            return self.shell_commands[command]
+        if command in SHELL_COMMANDS:
+            return SHELL_COMMANDS[command]
         else:
-            return { "error": f"invalid command. supported commands: {' '.join(list(self.shell_commands.keys()))}" }
+            return { "error": f"invalid command. supported commands: {' '.join(list(SHELL_COMMANDS.keys()))}" }
     def validateinput(self,input,types=["domain","ip"]):
         """function that takes a string and validates that it matches against one or more of the types given in the list"""
         import re

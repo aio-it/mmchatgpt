@@ -1566,7 +1566,7 @@ class ChatGPT(Plugin):
                 self.add_reaction(message, "hourglass")
                 import subprocess
                 import shlex
-                cmd = shlex.split(f"{command} {input}")
+                cmd = shlex.split(f"{command} {args} {input}")
                 process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
                 output, error = process.communicate()
                 output = output.decode("utf-8")

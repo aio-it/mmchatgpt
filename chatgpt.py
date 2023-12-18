@@ -1536,39 +1536,41 @@ class ChatGPT(Plugin):
                     self.slog(f"answers: {answers}")
                     if len(answers) == 0 and len(answers6) == 0:
                         return { "error": f"no dns records found for {domain}" }
-                    for rdata in answers + answers6:
-                        self.slog(f"rdata: {rdata.address}")
-                        import ipaddress
-                        ip = ipaddress.ip_address(rdata.address)
-                        if ip.is_private:
-                            return { "error": "private ip (resolved from dns)" }
-                        if ip.is_reserved:
-                            return { "error": "reserved ip (resolved from dns)" }
-                        if ip.is_multicast:
-                            return { "error": "multicast ip (resolved from dns)" }
-                        if ip.is_unspecified:
-                            return { "error": "unspecified ip (resolved from dns)" }
-                        if ip.is_loopback:
-                            return { "error": "loopback ip (resolved from dns)" }
-                        if ip.is_link_local:
-                            return { "error": "link local ip (resolved from dns)" }
-                        # if ipv6
-                        if ip.version == 6:
-                            if ip.sixtofour is not None:
-                                #verify the ipv4 address inside the ipv6 address is not private
-                                sixtofour = ipaddress.ip_address(ip.sixtofour)
-                                if sixtofour.is_private:
-                                    return { "error": "private ip (nice try though)" }
-                                if sixtofour.is_reserved:
-                                    return { "error": "reserved ip (nice try though)" }
-                                if sixtofour.is_multicast:  
-                                    return { "error": "multicast ip (nice try though)" }
-                                if sixtofour.is_unspecified:
-                                    return { "error": "unspecified ip (nice try though)" }
-                                if sixtofour.is_loopback:
-                                    return { "error": "loopback ip (nice try though)" }
-                                if sixtofour.is_link_local:
-                                    return { "error": "link local ip (nice try though)" }
+                    # loop over answers6 and answers and check if any of them are private ips
+                    for a in [answers,answers6]:
+                        for rdata in a:
+                            self.slog(f"rdata: {rdata.address}")
+                            import ipaddress
+                            ip = ipaddress.ip_address(rdata.address)
+                            if ip.is_private:
+                                return { "error": "private ip (resolved from dns)" }
+                            if ip.is_reserved:
+                                return { "error": "reserved ip (resolved from dns)" }
+                            if ip.is_multicast:
+                                return { "error": "multicast ip (resolved from dns)" }
+                            if ip.is_unspecified:
+                                return { "error": "unspecified ip (resolved from dns)" }
+                            if ip.is_loopback:
+                                return { "error": "loopback ip (resolved from dns)" }
+                            if ip.is_link_local:
+                                return { "error": "link local ip (resolved from dns)" }
+                            # if ipv6
+                            if ip.version == 6:
+                                if ip.sixtofour is not None:
+                                    #verify the ipv4 address inside the ipv6 address is not private
+                                    sixtofour = ipaddress.ip_address(ip.sixtofour)
+                                    if sixtofour.is_private:
+                                        return { "error": "private ip (nice try though)" }
+                                    if sixtofour.is_reserved:
+                                        return { "error": "reserved ip (nice try though)" }
+                                    if sixtofour.is_multicast:  
+                                        return { "error": "multicast ip (nice try though)" }
+                                    if sixtofour.is_unspecified:
+                                        return { "error": "unspecified ip (nice try though)" }
+                                    if sixtofour.is_loopback:
+                                        return { "error": "loopback ip (nice try though)" }
+                                    if sixtofour.is_link_local:
+                                        return { "error": "link local ip (nice try though)" }
                 except Exception as error:
                     return { "error": f"error resolving domain: {error}" }
                 self.slog(f"domain {input} is valid")

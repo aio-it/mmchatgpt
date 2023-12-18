@@ -1455,43 +1455,11 @@ class ChatGPT(Plugin):
     def validatecommand(self, command):
         """check if commands is in a list of commands allowed"""
         commands_and_allowed_input_types = {
-            "ping6": {
+            "ping": {
                 "validators": ["ip", "domain"],
-                "command": "ping6",
+                "command": "ping",
                 "args": "-c 4 -W 1",
-                }
-                
-            ],
-            "ping": [
-                "ip",
-                "domain"
-            ],
-            "dig": [
-                "ip",
-                "domain"
-            ],
-            "whois": [
-                "ip",
-                "domain",
-                "asn"
-            ],
-            "curl": [
-                "ip",
-                "domain",
-                "url"
-            ],
-            "nmap": [
-                "ip",
-                "domain"
-            ],
-            "traceroute": [
-                "ip",
-                "domain"
-            ],
-            "traceroute6": [
-                "ip",
-                "domain"
-            ],
+            }
         }
         if command in commands_and_allowed_input_types:
             return commands_and_allowed_input_types[command]

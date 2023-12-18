@@ -1537,36 +1537,36 @@ class ChatGPT(Plugin):
                 # verify that it is not a private ip
                 import ipaddress
                 if ipaddress.ip_address(input).is_private:
-                    return False
+                    return { "error": "private ip" }
                 if ipaddress.ip_address(input).is_reserved:
-                    return False
+                    return { "error": "reserved ip" }
                 if ipaddress.ip_address(input).is_multicast:
-                    return False
+                    return { "error": "multicast ip"}
                 if ipaddress.ip_address(input).is_unspecified:
-                    return False
+                    return { "error": "unspecified ip"}
                 if ipaddress.ip_address(input).is_loopback:
-                    return False
+                    return { "error": "loopback ip"}
                 return True
         if "ipv6" in types or "ip" in types:
             if validators.ipv6(input):
                 # verify that it is not a private ip
                 import ipaddress
                 if ipaddress.ip_address(input).is_private:
-                    return False
+                    return { "error": "private ip" }
                 if ipaddress.ip_address(input).is_reserved:
-                    return False
+                    return { "error": "reserved ip" }
                 if ipaddress.ip_address(input).is_multicast:
-                    return False
+                    return { "error": "multicast ip" }
                 if ipaddress.ip_address(input).is_unspecified:
-                    return False
+                    return { "error": "unspecified ip" }
                 if ipaddress.ip_address(input).is_loopback:
-                    return False
+                    return { "error": "loopback ip" }
                 if ipaddress.ip_address(input).is_link_local:
-                    return False
+                    return { "error": "link local ip" }
                 if ipaddress.ip_address(input).sixtofour is not None:
                     #verify the ipv4 address inside the ipv6 address is not private
                     if ipaddress.ip_address(ipaddress.ip_address(input).sixtofour).is_private:
-                        return False
+                        return { "error": "private ip (nice try)" }
                 return True
         if "url" in types:
             if validators.url(input):

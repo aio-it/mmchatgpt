@@ -1495,11 +1495,11 @@ class ChatGPT(Plugin):
             return SHELL_COMMANDS[command]
         else:
             return { "error": f"invalid command. supported commands: {' '.join(list(SHELL_COMMANDS.keys()))}" }
-    async def validateinput(self,input,types=["domain","ip"]):
+    def validateinput(self,input,types=["domain","ip"]):
         """function that takes a string and validates that it matches against one or more of the types given in the list"""
         import re
         import validators
-        await self.log(f"validateinput: {input}, types: {' '.join(types)}")
+        self.log(f"validateinput: {input}, types: {' '.join(types)}")
         bad_chars = [" ", "\n", "\t", "\r",";","#"]
         valid_types = [
             "domain",
@@ -1521,18 +1521,18 @@ class ChatGPT(Plugin):
             if ctype not in valid_types:
                 return { "error": f"invalid type: {ctype}" }
         if "domain" in types:
-            await self.log(f"validating domain {input}")
+            self.log(f"validating domain {input}")
             if validators.domain(input):
                 # verify that the ip returned from a dns lookup is not a private ip
                 import dns.resolver
                 try:
-                    await self.log(f"resolving {input}")
+                    self.log(f"resolving {input}")
                     answers = dns.resolver.resolve(input, "A")
-                    await self.log(f"answers: {answers}")
+                    self.log(f"answers: {answers}")
                     if len(answers) == 0:
                         return { "error": f"no dns records found for {domain}" }
                     for rdata in answers:
-                        await self.log(f"rdata: {rdata.address}")
+                        self.log(f"rdata: {rdata.address}")
                         import ipaddress
                         ip = ipaddress.ip_address(rdata.address)
                         if ip.is_private:
@@ -1612,15 +1612,15 @@ class ChatGPT(Plugin):
                     # no domain found in url
                     return { "error": "no domain found in url (or localhost)" }
                 # call validateinput again with domain
-                await self.log(f"validating domain: {domain}")
-                result = await self.validateinput(domain,["domain"])
+                self.log(f"validating domain: {domain}")
+                result = self.validateinput(domain,["domain"])
                 # check if dict
                 if type(result) is dict:
                     if "error" not in result:
                         return True
                     else: 
                         return { "error": f"domain: {result['error']}" }
-                await self.log(f"result: (shouldn't get to here) {result}")
+                self.log(f"result: (shouldn't get to here) {result}")
         if "asn" in types:
             if re.match(r"(AS|as)[0-9]+",input):
                 return True

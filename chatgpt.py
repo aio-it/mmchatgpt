@@ -1546,7 +1546,7 @@ class ChatGPT(Plugin):
             if re.match(r"(AS|as)[0-9]+",input):
                 return True
         if "string" in types:
-            re.match(r"[a-zA-Z0-9_- ]+",input)
+            re.match(r"[a-zA-Z0-9_-]+",input)
 
     @listen_to(r"^!(.*) (.*)")
     async def run_command(self,message: Message, command, input):

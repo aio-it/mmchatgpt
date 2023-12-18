@@ -76,12 +76,6 @@ SHELL_COMMANDS = {
                 "args": "-L",
                 "allowed_args": ["-k"]
             },
-            "post": {
-                "validators": ["url","domain"],
-                "command": "curl",
-                "args": "-L -X POST",
-                "allowed_args": ["-k"]
-            },
             "date": {
                 "validators": [],
                 "command": "date",
@@ -97,15 +91,35 @@ SHELL_COMMANDS = {
                 "command": "dig",
                 "args": "+short -x"
             },
-            "dig aaaa": {
+            "aaaa": {
                 "validators": ["domain"],
                 "command": "dig",
                 "args": "+short -t AAAA"
             },
-            "dig a": {
+            "cname": {
                 "validators": ["domain"],
                 "command": "dig",
-                "args": "+short -t A"
+                "args": "+short -t CNAME"
+            },
+            "mx": {
+                "validators": ["domain"],
+                "command": "dig",
+                "args": "+short -t MX"
+            },
+            "ns": {
+                "validators": ["domain"],
+                "command": "dig",
+                "args": "+short -t NS"
+            },
+            "soa": {
+                "validators": ["domain"],
+                "command": "dig",
+                "args": "+short -t SOA"
+            },
+            "txt": {
+                "validators": ["domain"],
+                "command": "dig",
+                "args": "+short -t TXT"
             },
             "nmap": {
                 "validators": ["ip"],

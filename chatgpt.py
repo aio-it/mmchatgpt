@@ -1629,7 +1629,7 @@ class ChatGPT(Plugin):
         if "string" in types:
             if re.match(r"[a-zA-Z0-9_-]+",input):
                 return True
-        return { "error": f"invalid input: {input} (no matches)" }
+        return { "error": f"invalid input: {input} (no matches) for {' '.join(types)}" }
 
     @listen_to(r"^!(.*)")
     async def run_command(self,message: Message, command):

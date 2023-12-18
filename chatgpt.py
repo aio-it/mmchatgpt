@@ -1656,6 +1656,10 @@ class ChatGPT(Plugin):
                 self.driver.reply_to(message, messagetxt)
                 return
             valid_commands = self.validatecommand(command)
+            if (type(valid_commands) is bool):
+                if valid_commands is False:
+                    self.driver.reply_to(message, f"Error: {command} is not a valid command")
+                    return
             if "error" in valid_commands:
                 self.driver.reply_to(message, f"Error: {valid_commands['error']}")
                 return

@@ -1475,6 +1475,11 @@ class ChatGPT(Plugin):
                 "command": "traceroute",
                 "args": "-w 1"
             },
+            "traceroute6": {
+                "validators": ["ip", "domain"],
+                "command": "traceroute6",
+                "args": "-w 1"
+            },
             "whois": {
                 "validators": ["ip", "domain","asn"],
                 "command": "whois",
@@ -1486,7 +1491,7 @@ class ChatGPT(Plugin):
                 "args": "-I -L"
             },
         }
-        
+
         if command in commands_and_allowed_input_types:
             return commands_and_allowed_input_types[command]
         else:

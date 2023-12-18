@@ -124,12 +124,8 @@ SHELL_COMMANDS = {
             "nmap": {
                 "validators": ["ip"],
                 "command": "nmap",
-                "args": "-Pn -sC -O -T4 -p-"
-            },
-            "nmap-fast": {
-                "validators": ["ip"],
-                "command": "nmap",
-                "args": "-Pn -sC -O -T4 -F"
+                "args": "-Pn",
+                "allowed_args": ["-Pn","-sC","-O","-T4","-p-"]
             },
         }
 

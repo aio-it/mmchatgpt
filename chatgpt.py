@@ -1572,6 +1572,7 @@ class ChatGPT(Plugin):
                                     return { "error": "link local ip (nice try though)" }
                 except Exception as error:
                     return { "error": f"error resolving domain: {error}" }
+                self.slog(f"domain {input} is valid")
                 return True
         if "ipv4" in types or "ip" in types:
             if validators.ipv4(input):

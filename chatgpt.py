@@ -1582,8 +1582,8 @@ class ChatGPT(Plugin):
             valid_commands = self.validatecommand(command)
             if valid_commands:
                 # validate input for each word in input
-                input = input.split(" ")
-                for word in input:
+                inputs = input.split(" ")
+                for word in inputs:
                     valid_input = self.validateinput(word,valid_commands)
                     if not valid_input:
                         self.driver.reply_to(message, f"Error: invalid input")

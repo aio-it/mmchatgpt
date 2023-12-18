@@ -1603,8 +1603,6 @@ class ChatGPT(Plugin):
             if validators.ipv4(input):
                 # verify that it is not a private ip
                 import ipaddress
-                if ipaddress.ip_address(input).is_private:
-                    return { "error": "private ip" }
                 if ipaddress.ip_address(input).is_reserved:
                     return { "error": "reserved ip" }
                 if ipaddress.ip_address(input).is_multicast:
@@ -1613,13 +1611,13 @@ class ChatGPT(Plugin):
                     return { "error": "unspecified ip"}
                 if ipaddress.ip_address(input).is_loopback:
                     return { "error": "loopback ip"}
+                if ipaddress.ip_address(input).is_private:
+                    return { "error": "private ip" }
                 return True
         if "ipv6" in types or "ip" in types:
             if validators.ipv6(input):
                 # verify that it is not a private ip
                 import ipaddress
-                if ipaddress.ip_address(input).is_private:
-                    return { "error": "private ip" }
                 if ipaddress.ip_address(input).is_reserved:
                     return { "error": "reserved ip" }
                 if ipaddress.ip_address(input).is_multicast:
@@ -1630,6 +1628,8 @@ class ChatGPT(Plugin):
                     return { "error": "loopback ip" }
                 if ipaddress.ip_address(input).is_link_local:
                     return { "error": "link local ip" }
+                if ipaddress.ip_address(input).is_private:
+                    return { "error": "private ip" }
                 if ipaddress.ip_address(input).sixtofour is not None:
                     #verify the ipv4 address inside the ipv6 address is not private
                     if ipaddress.ip_address(ipaddress.ip_address(input).sixtofour).is_private:

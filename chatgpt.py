@@ -1528,7 +1528,7 @@ class ChatGPT(Plugin):
                     for rdata in answers:
                         import ipaddress
                         if ipaddress.ip_address(rdata.address).is_private:
-                            return False
+                            return { "error": "private ip (resolved from dns)" }
                 except Exception as error:
                     return False
                 return True

@@ -33,7 +33,43 @@ MODEL = "gpt-3.5-turbo-0301"
 ADMINS = []  # put admins in here to prepopulate the redis db
 USERS = []  # put users in here to prepopulate the redis db
 REDIS_PREPEND = "thread_"
-
+SHELL_COMMANDS = {
+            "ping": {
+                "validators": ["ip", "domain"],
+                "command": "ping",
+                "args": "-c 4 -W 1"
+            },
+            "ping6": {
+                "validators": ["ip", "domain"],
+                "command": "ping6",
+                "args": "-c 4 -W 1"
+            },
+            "dig": {
+                "validators": ["ip", "domain"],
+                "command": "dig",
+                "args": "+short"
+            },
+            "traceroute": {
+                "validators": ["ip", "domain"],
+                "command": "traceroute",
+                "args": "-w 1"
+            },
+            "traceroute6": {
+                "validators": ["ip", "domain"],
+                "command": "traceroute6",
+                "args": "-w 1"
+            },
+            "whois": {
+                "validators": ["ip", "domain","asn"],
+                "command": "whois",
+                "args": ""
+            },
+            "head": {
+                "validators": ["url","domain"],
+                "command": "curl",
+                "args": "-I -L"
+            },
+        }
 
 # Custom Exceptions
 
@@ -1452,43 +1488,6 @@ class ChatGPT(Plugin):
                     self.driver.reply_to(message, f"Error: {error}")
                     return
             self.driver.reply_to(message, f"Result:\n{text}")
-        self.shell_commands = {
-            "ping": {
-                "validators": ["ip", "domain"],
-                "command": "ping",
-                "args": "-c 4 -W 1"
-            },
-            "ping6": {
-                "validators": ["ip", "domain"],
-                "command": "ping6",
-                "args": "-c 4 -W 1"
-            },
-            "dig": {
-                "validators": ["ip", "domain"],
-                "command": "dig",
-                "args": "+short"
-            },
-            "traceroute": {
-                "validators": ["ip", "domain"],
-                "command": "traceroute",
-                "args": "-w 1"
-            },
-            "traceroute6": {
-                "validators": ["ip", "domain"],
-                "command": "traceroute6",
-                "args": "-w 1"
-            },
-            "whois": {
-                "validators": ["ip", "domain","asn"],
-                "command": "whois",
-                "args": ""
-            },
-            "head": {
-                "validators": ["url","domain"],
-                "command": "curl",
-                "args": "-I -L"
-            },
-        }
 
     def validatecommand(self, command):
         """check if commands is in a list of commands allowed"""

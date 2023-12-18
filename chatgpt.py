@@ -1503,7 +1503,6 @@ class ChatGPT(Plugin):
         """function that takes a string and validates that it matches against one or more of the types given in the list"""
         import re
         import validators
-        self.slog(f"validateinput: {input}, types: {' '.join(types)}")
         bad_chars = [" ", "\n", "\t", "\r",";","#"]
         valid_types = [
             "domain",
@@ -1525,12 +1524,10 @@ class ChatGPT(Plugin):
             if ctype not in valid_types:
                 return { "error": f"invalid type: {ctype}" }
         if "domain" in types:
-            self.slog(f"validating domain {input}")
             if validators.domain(input):
                 # verify that the ip returned from a dns lookup is not a private ip
                 import dns.resolver
                 try:
-                    self.slog(f"resolving {input}")
                     answers = dns.resolver.resolve(input, "A")
                 except (dns.resolver.NoAnswer):
                     answers = []
@@ -1553,7 +1550,6 @@ class ChatGPT(Plugin):
                 # loop over answers6 and answers and check if any of them are private ips
                 for a in [answersc,answers6,answers]:
                     for rdata in a:
-                        self.slog(f"rdata: {rdata.address}")
                         import ipaddress
                         ip = ipaddress.ip_address(rdata.address)
                         if ip.is_private:
@@ -1585,7 +1581,6 @@ class ChatGPT(Plugin):
                                     return { "error": "loopback ip (nice try though)" }
                                 if sixtofour.is_link_local:
                                     return { "error": "link local ip (nice try though)" }
-                self.slog(f"domain {input} is valid")
                 return True
         if "ipv4" in types or "ip" in types:
             if validators.ipv4(input):
@@ -1625,7 +1620,6 @@ class ChatGPT(Plugin):
                 return True
         if "url" in types:
             if validators.url(input):
-                self.slog(f"validating url: {input}")
                 #get domain from url and validate it as a domain so we can check if it is a private ip
                 import urllib.parse
                 domain = urllib.parse.urlparse(input).netloc
@@ -1633,13 +1627,11 @@ class ChatGPT(Plugin):
                     # no domain found in url
                     return { "error": "no domain found in url (or localhost)" }
                 # call validateinput again with domain
-                self.slog(f"validating domain: {domain}")
                 result = self.validateinput(domain,["domain"])
                 # check if dict
                 if type(result) is dict:
                     if "error" in result:
                         return { "error": f"domain: {result['error']}" }
-                self.slog(f"url: {input} is valid")
                 return True
         if "asn" in types:
             if re.match(r"(AS|as)[0-9]+",input):

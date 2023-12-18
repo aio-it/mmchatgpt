@@ -1494,7 +1494,7 @@ class ChatGPT(Plugin):
             return commands_and_allowed_input_types[command]
         else:
             return False
-    def validateinput(input,types=["domain","ip"]):
+    def validateinput(self,input,types=["domain","ip"]):
         """function that takes a string and validates that it matches against one or more of the types given in the list"""
         import re
         import validators

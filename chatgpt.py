@@ -74,13 +74,13 @@ SHELL_COMMANDS = {
                 "validators": ["url","domain"],
                 "command": "curl",
                 "args": "-L",
-                "allowed_args": ["-I","-L","-k"]
+                "allowed_args": ["-k"]
             },
             "post": {
                 "validators": ["url","domain"],
                 "command": "curl",
                 "args": "-L -X POST",
-                "allowed_args": ["-I","-L","-k"]
+                "allowed_args": ["-k"]
             },
             "date": {
                 "validators": [],
@@ -95,7 +95,7 @@ SHELL_COMMANDS = {
             "ptr": {
                 "validators": ["ip"],
                 "command": "dig",
-                "args": "-x +short"
+                "args": "+short -x"
             },
             "aaaa": {
                 "validators": ["domain"],

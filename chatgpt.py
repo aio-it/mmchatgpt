@@ -1594,10 +1594,10 @@ class ChatGPT(Plugin):
                 input = input.lower()
             if command == "help":
                 # send a list of commands from SHELL_COMMANDS
-                messagetxt = f"!help - show this help message\n"
-                messagetxt += f"allowed commands:"
+                messagetxt = f"Allowed commands:\n"
                 for command in SHELL_COMMANDS.keys():
                     messagetxt += f" {command}"
+                self.driver.reply_to(message, messagetxt)
                 return
             valid_commands = self.validatecommand(command)
             if "error" in valid_commands:

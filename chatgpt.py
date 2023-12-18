@@ -1740,6 +1740,8 @@ class ChatGPT(Plugin):
                 self.driver.reply_to(message, f"Error:\n```\n{error}\n```")
             if timeout:
                 self.driver.reply_to(message, f"Timed out: 10 seconds")
+            await self.log(f"{message.sender_name} ran command: {command} {args} {input}")
+
 
     @listen_to(r"^\.help")
     async def help_function(self, message):

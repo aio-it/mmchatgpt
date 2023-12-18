@@ -1566,7 +1566,7 @@ class ChatGPT(Plugin):
                 if ipaddress.ip_address(input).sixtofour is not None:
                     #verify the ipv4 address inside the ipv6 address is not private
                     if ipaddress.ip_address(ipaddress.ip_address(input).sixtofour).is_private:
-                        return { "error": "private ip (nice try)" }
+                        return { "error": "private ip (nice try though)" }
                 return True
         if "url" in types:
             if validators.url(input):

@@ -1503,7 +1503,7 @@ class ChatGPT(Plugin):
         """function that takes a string and validates that it matches against one or more of the types given in the list"""
         import re
         import validators
-        self.log(f"validateinput: {input}, types: {' '.join(types)}")
+        self.slog(f"validateinput: {input}, types: {' '.join(types)}")
         bad_chars = [" ", "\n", "\t", "\r",";","#"]
         valid_types = [
             "domain",
@@ -1527,18 +1527,18 @@ class ChatGPT(Plugin):
                 return { "error": f"invalid type: {ctype}" }
             return True
         if "domain" in types:
-            self.log(f"validating domain {input}")
+            self.slog(f"validating domain {input}")
             if validators.domain(input):
                 # verify that the ip returned from a dns lookup is not a private ip
                 import dns.resolver
                 try:
-                    self.log(f"resolving {input}")
+                    self.slog(f"resolving {input}")
                     answers = dns.resolver.resolve(input, "A")
-                    self.log(f"answers: {answers}")
+                    self.slog(f"answers: {answers}")
                     if len(answers) == 0:
                         return { "error": f"no dns records found for {domain}" }
                     for rdata in answers:
-                        self.log(f"rdata: {rdata.address}")
+                        self.slog(f"rdata: {rdata.address}")
                         import ipaddress
                         ip = ipaddress.ip_address(rdata.address)
                         if ip.is_private:
@@ -1618,7 +1618,7 @@ class ChatGPT(Plugin):
                     # no domain found in url
                     return { "error": "no domain found in url (or localhost)" }
                 # call validateinput again with domain
-                self.log(f"validating domain: {domain}")
+                self.slog(f"validating domain: {domain}")
                 result = self.validateinput(domain,["domain"])
                 # check if dict
                 if type(result) is dict:

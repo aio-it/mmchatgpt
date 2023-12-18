@@ -1533,23 +1533,25 @@ class ChatGPT(Plugin):
                         return { "error": f"no dns records found for {domain}" }
                     for rdata in answers:
                         import ipaddress
-                        if ipaddress.ip_address(rdata.address).is_private:
+                        ip = ipaddress.ip_address(rdata.address)
+                        if ip.is_private:
                             return { "error": "private ip (resolved from dns)" }
-                        if ipaddress.ip_address(rdata.address).is_reserved:
+                        if ip.is_reserved:
                             return { "error": "reserved ip (resolved from dns)" }
-                        if ipaddress.ip_address(rdata.address).is_multicast:
+                        if ip.is_multicast:
                             return { "error": "multicast ip (resolved from dns)" }
-                        if ipaddress.ip_address(rdata.address).is_unspecified:
+                        if ip.is_unspecified:
                             return { "error": "unspecified ip (resolved from dns)" }
-                        if ipaddress.ip_address(rdata.address).is_loopback:
+                        if ip.is_loopback:
                             return { "error": "loopback ip (resolved from dns)" }
-                        if ipaddress.ip_address(rdata.address).is_link_local:
+                        if ip.is_link_local:
                             return { "error": "link local ip (resolved from dns)" }
                         # if ipv6
-                        if ipaddress.ip_address(rdata.address).version == 6:
-                            if ipaddress.ip_address(rdata.address).sixtofour is not None:
+                        if ip.version == 6:
+                            if ip.sixtofour is not None:
                                 #verify the ipv4 address inside the ipv6 address is not private
-                                if ipaddress.ip_address(ipaddress.ip_address(rdata.address).sixtofour).is_private:
+                                sixtofour = ipaddress.ip_address(ip.sixtofour)
+                                if sixtofour.is_private:
                                     return { "error": "private ip (nice try though)" }
                 except Exception as error:
                     return { "error": f"error resolving domain: {error}" }

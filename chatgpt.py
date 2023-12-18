@@ -122,7 +122,7 @@ SHELL_COMMANDS = {
                 "args": "+short -t TXT"
             },
             "nmap": {
-                "validators": ["ip"],
+                "validators": ["ip", "domain"],
                 "command": "nmap",
                 "args": "-Pn",
                 "allowed_args": ["-Pn","-sC","-O","-T4","-p-"]

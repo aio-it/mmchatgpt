@@ -1593,6 +1593,9 @@ class ChatGPT(Plugin):
                 #get domain from url and validate it as a domain so we can check if it is a private ip
                 import urllib.parse
                 domain = urllib.parse.urlparse(input).netloc
+                if domain == input:
+                    # no domain found in url
+                    return False
                 # call validateinput again with domain
                 await self.log(f"validating domain: {domain}")
                 result = await self.validateinput(domain,["domain"])

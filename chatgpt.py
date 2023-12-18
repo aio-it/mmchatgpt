@@ -1530,7 +1530,7 @@ class ChatGPT(Plugin):
                     answers = dns.resolver.resolve(input, "A")
                     await self.log(answers)
                     if len(answers) == 0:
-                        return { "error": "no dns records found" }
+                        return { "error": f"no dns records found for {domain}" }
                     for rdata in answers:
                         import ipaddress
                         if ipaddress.ip_address(rdata.address).is_private:

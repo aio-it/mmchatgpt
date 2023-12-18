@@ -319,7 +319,11 @@ class ChatGPT(Plugin):
             return "user"
         if uid is not None:
             return "uid"
-
+    def user_exists(self, username):
+        """check if user exists"""
+        if self.check_if_username_or_id(username) == "not found":
+            return False
+        return True
     def get_user_by_username(self, username):
         """get user from username"""
         # check if user is cached in redis
@@ -1445,6 +1449,148 @@ class ChatGPT(Plugin):
                     self.driver.reply_to(message, f"Error: {error}")
                     return
             self.driver.reply_to(message, f"Result:\n{text}")
+    def validatecommand(self, command):
+        """check if commands is in a list of commands allowed"""
+        commands_and_allowed_input_types = {
+            "ping6": [
+                "ip",
+                "domain"
+            ],
+            "ping": [
+                "ip",
+                "domain"
+            ],
+            "dig": [
+                "ip",
+                "domain"
+            ],
+            "whois": [
+                "ip",
+                "domain",
+                "asn"
+            ],
+            "curl": [
+                "ip",
+                "domain",
+                "url"
+            ],
+            "nmap": [
+                "ip",
+                "domain"
+            ],
+            "traceroute": [
+                "ip",
+                "domain"
+            ],
+            "traceroute6": [
+                "ip",
+                "domain"
+            ],
+        }
+        if command in commands_and_allowed_input_types:
+            return commands_and_allowed_input_types[command]
+        else:
+            return False
+    def validateinput(input,types=["domain","ip"]):
+        """function that takes a string and validates that it matches against one or more of the types given in the list"""
+        import re
+        import validators
+        bad_chars = [" ", "\n", "\t", "\r",";"]
+        valid_types = [
+            "domain",
+            "ip",
+            "ipv4",
+            "ipv6",
+            "url",
+            "asn"
+        ]
+        if type(types) is not list:
+            types = [types]
+        if bad_chars in input:
+            return False
+        for type in types:
+            if type not in valid_types:
+                return False
+        if "domain" in types:
+            if validators.domain(input):
+                # verify that the ip returned from a dns lookup is not a private ip
+                import dns.resolver
+                try:
+                    answers = dns.resolver.resolve(input, "A")
+                    for rdata in answers:
+                        import ipaddress
+                        if ipaddress.ip_address(rdata.address).is_private:
+                            return False
+                except Exception as error:
+                    return False
+                return True
+        if "ipv4" in types or "ip" in types:
+            if validators.ipv4(input):
+                # verify that it is not a private ip
+                import ipaddress
+                if ipaddress.ip_address(input).is_private:
+                    return False
+                if ipaddress.ip_address(input).is_reserved:
+                    return False
+                if ipaddress.ip_address(input).is_multicast:
+                    return False
+                if ipaddress.ip_address(input).is_unspecified:
+                    return False
+                if ipaddress.ip_address(input).is_loopback:
+                    return False
+                return True
+        if "ipv6" in types or "ip" in types:
+            if validators.ipv6(input):
+                # verify that it is not a private ip
+                import ipaddress
+                if ipaddress.ip_address(input).is_private:
+                    return False
+                if ipaddress.ip_address(input).is_reserved:
+                    return False
+                if ipaddress.ip_address(input).is_multicast:
+                    return False
+                if ipaddress.ip_address(input).is_unspecified:
+                    return False
+                if ipaddress.ip_address(input).is_loopback:
+                    return False
+                if ipaddress.ip_address(input).is_link_local:
+                    return False
+                if ipaddress.ip_address(input).sixtofour is not None:
+                    #verify the ipv4 address inside the ipv6 address is not private
+                    if ipaddress.ip_address(ipaddress.ip_address(input).sixtofour).is_private:
+                        return False
+                return True
+        if "url" in types:
+            if validators.url(input):
+                return True
+        if "asn" in types:
+            if re.match(r"(AS|as)[0-9]+",input):
+                return True
+    @listen_to(r"^!!(.*) (.*)")
+    async def run_command(self,message: Message, command, input):
+        """ runs a command after validating the command and the input"""
+        if self.is_admin(message.sender_name):
+            # validate command
+            command = command.lower()
+            input = input.lower()
+            valid_commands = self.validatecommand(command)
+            if valid_commands:
+                valid_input = self.validateinput(input,valid_commands)
+                if valid_input:
+                    # run command
+                    self.add_reaction(message, "hourglass")
+                    import subprocess
+                    import shlex
+                    cmd = shlex.split(f"{command} {input}")
+                    process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+                    output, error = process.communicate()
+                    output = output.decode("utf-8")
+                    self.remove_reaction(message, "hourglass")
+                    self.driver.reply_to(message, f"Result:\n```\n{output}\n```")
+                else:
+                    self.driver.reply_to(message, f"Error: invalid input")
+            else:
+                self.driver.reply_to(message, f"Error: invalid command")
 
     @listen_to(r"^\.whois (.*)")
     async def whois(self, message: Message, url: str):
@@ -1707,9 +1853,9 @@ class ChatGPT(Plugin):
         """shell function that allows admins to run arbitrary shell commands and return the result to the chat"""
         reply = ""
         shellescaped_code = shlex.quote(code)
-        shell_part = f"docker run --rm lbr/ubuntu:utils /bin/bash -c "
+        shell_part = f"docker run lbr/ubuntu:utils /bin/bash -c "
         shellcode = (
-            f'docker run --rm lbr/ubuntu:utils /bin/bash -c "{shellescaped_code}"'
+            f'docker run lbr/ubuntu:utils /bin/bash -c "{shellescaped_code}"'
         )
         command = f"{shell_part} {shellcode}"
         command_parts = shlex.split(command)

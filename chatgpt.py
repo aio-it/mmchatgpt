@@ -1603,6 +1603,8 @@ class ChatGPT(Plugin):
                 if type(result) is dict:
                     if "error" not in result:
                         return True
+                    else: 
+                        return { "error": f"domain: {result['error']}" }
         if "asn" in types:
             if re.match(r"(AS|as)[0-9]+",input):
                 return True

@@ -1529,7 +1529,8 @@ class ChatGPT(Plugin):
             "ipv6",
             "url",
             "asn",
-            "string"
+            "string",
+            "argument"
         ]
         if types and type(types) is not list:
             types = [types]

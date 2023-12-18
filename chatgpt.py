@@ -1458,7 +1458,7 @@ class ChatGPT(Plugin):
             "ping": {
                 "validators": ["ip", "domain"],
                 "command": "ping",
-                "args": "-c 4 -W 1",
+                "args": "-c 4 -W 1"
             }
         }
         if command in commands_and_allowed_input_types:

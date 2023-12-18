@@ -1625,8 +1625,14 @@ class ChatGPT(Plugin):
                 import shlex
                 cmd = shlex.split(f"{command} {args} {input}")
                 process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-                output, error = process.communicate()
-                output = output.decode("utf-8")
+                try:
+                    output, error = process.communicate(timeout=10)
+                    output = output.decode("utf-8")
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    output, error = process.communicate()
+                    output = output.decode("utf-8")
+                    error = error.decode("utf-8")
                 self.remove_reaction(message, "hourglass")
                 self.driver.reply_to(message, f"Result:\n```\n{output}\n```")
                 if error:

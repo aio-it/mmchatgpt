@@ -1507,7 +1507,7 @@ class ChatGPT(Plugin):
             "url",
             "asn"
         ]
-        if type and type(types) is not list:
+        if types and type(types) is not list:
             types = [types]
         if bad_chars in input:
             return False

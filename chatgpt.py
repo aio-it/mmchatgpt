@@ -97,6 +97,16 @@ SHELL_COMMANDS = {
                 "command": "dig",
                 "args": "-x +short"
             },
+            "aaaa": {
+                "validators": ["domain"],
+                "command": "dig",
+                "args": "+short -t AAAA"
+            },
+            "a": {
+                "validators": ["domain"],
+                "command": "dig",
+                "args": "+short -t A"
+            },
         }
 
 # Custom Exceptions

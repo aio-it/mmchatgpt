@@ -1644,6 +1644,10 @@ class ChatGPT(Plugin):
     @listen_to(r"^!(.*)")
     async def run_command(self,message: Message, command):
         """ runs a command after validating the command and the input"""
+        # check if user is banned
+        if self.is_banned(message.sender_name):
+            self.driver.reply_to(message, f"You are banned from running commands")
+            return
         # split command into command and input
         command = command.split(" ", 1)
         if len(command) == 1:

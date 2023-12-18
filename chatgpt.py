@@ -1452,9 +1452,7 @@ class ChatGPT(Plugin):
                     self.driver.reply_to(message, f"Error: {error}")
                     return
             self.driver.reply_to(message, f"Result:\n{text}")
-    def validatecommand(self, command):
-        """check if commands is in a list of commands allowed"""
-        commands_and_allowed_input_types = {
+        shell_commands = {
             "ping": {
                 "validators": ["ip", "domain"],
                 "command": "ping",
@@ -1492,8 +1490,10 @@ class ChatGPT(Plugin):
             },
         }
 
-        if command in commands_and_allowed_input_types:
-            return commands_and_allowed_input_types[command]
+    def validatecommand(self, command):
+        """check if commands is in a list of commands allowed"""
+        if command in shell_commands:
+            return shell_commands[command]
         else:
             return { "error": f"invalid command. supported commands: {' '.join(list(commands_and_allowed_input_types.keys()))}" }
     def validateinput(self,input,types=["domain","ip"]):

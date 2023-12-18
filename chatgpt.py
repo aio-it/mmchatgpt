@@ -127,6 +127,12 @@ SHELL_COMMANDS = {
                 "args": "-Pn",
                 "allowed_args": ["-Pn","-sC","-O","-T4","-p-"]
             },
+            "tcp": {
+                "validators": ["ip", "domain", "port"],
+                "command": "nc",
+                "args": "-vz",
+                "allowed_args": ["-vz"]
+            },
         }
 
 # Custom Exceptions
@@ -1699,6 +1705,11 @@ class ChatGPT(Plugin):
                 return True
         if "string" in types:
             if re.match(r"[a-zA-Z0-9_-]+",input):
+                return True
+        if "port" in types:
+            if re.match(r"[0-9]+",input):
+                if int(input) > 65535:
+                    return { "error": "port can not be higher than 65535" }
                 return True
         if "argument" in types:
             if input in allowed_args:

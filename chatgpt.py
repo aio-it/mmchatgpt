@@ -1599,7 +1599,7 @@ class ChatGPT(Plugin):
                 for word in inputs:
                     valid_input = self.validateinput(word,validators)
                     if not valid_input:
-                        self.driver.reply_to(message, f"Error: invalid input {word} types allowed: {' '.join(validators)}")
+                        self.driver.reply_to(message, f"Error: invalid input {word} types allowed: {', '.join(validators)}")
                         return
                     # run command
                 self.add_reaction(message, "hourglass")

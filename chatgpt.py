@@ -1551,6 +1551,7 @@ class ChatGPT(Plugin):
                                 return { "error": "private ip (nice try though)" }
                 except Exception as error:
                     return { "error": f"error resolving domain: {error}" }
+                return True
         if "ipv4" in types or "ip" in types:
             if validators.ipv4(input):
                 # verify that it is not a private ip

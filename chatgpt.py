@@ -50,12 +50,12 @@ SHELL_COMMANDS = {
                 "args": "+short"
             },
             "traceroute": {
-                "validators": ["ip", "domain"],
+                "validators": ["ipv4", "domain"],
                 "command": "traceroute",
                 "args": "-w 1"
             },
             "traceroute6": {
-                "validators": ["ip", "domain"],
+                "validators": ["ipv6", "domain"],
                 "command": "traceroute6",
                 "args": "-w 1"
             },

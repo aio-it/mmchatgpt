@@ -1666,8 +1666,9 @@ class ChatGPT(Plugin):
                 # validate input for each word in input
                 inputs = input.split(" ")
                 for word in inputs:
+                    await self.log(f"word: {word}")
                     valid_input = self.validateinput(word,validators)
-                    self.log(f"valid_input: {valid_input}")
+                    await self.log(f"valid_input: {valid_input}")
                     #check if dict
                     if type(valid_input) is dict:
                         if "error" in valid_input:

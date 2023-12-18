@@ -35,12 +35,12 @@ USERS = []  # put users in here to prepopulate the redis db
 REDIS_PREPEND = "thread_"
 SHELL_COMMANDS = {
             "ping": {
-                "validators": ["ip", "domain"],
+                "validators": ["ipv4", "domain"],
                 "command": "ping",
                 "args": "-c 4 -W 1"
             },
             "ping6": {
-                "validators": ["ip", "domain"],
+                "validators": ["ipv6", "domain"],
                 "command": "ping6",
                 "args": "-c 4 -W 1"
             },

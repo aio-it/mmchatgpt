@@ -1578,8 +1578,6 @@ class ChatGPT(Plugin):
                 self.driver.reply_to(message, f"Result:\n```\n{output}\n```")
                 if error:
                     self.driver.reply_to(message, f"Error:\n```\n{error}\n```")
-            else:
-                self.driver.reply_to(message, f"Error: invalid command")
 
     @listen_to(r"^\.whois (.*)")
     async def whois(self, message: Message, url: str):

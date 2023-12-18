@@ -1577,14 +1577,20 @@ class ChatGPT(Plugin):
         if "string" in types:
             if re.match(r"[a-zA-Z0-9_-]+",input):
                 return True
-
-    @listen_to(r"^!(.*) (.*)")
-    async def run_command(self,message: Message, command, input):
+    @listen_to(r"^!help")
+    @listen_to(r"^!(.*)")
+    async def run_command(self,message: Message, command):
         """ runs a command after validating the command and the input"""
         if self.is_admin(message.sender_name):
             # validate command
-            command = command.lower()
-            input = input.lower()
+            # split command into command and input
+            command = command.split(" ", 1)
+            if len(command) == 1:
+                command = command[0]
+                input = ""
+            else:
+                command, input = command
+                input = input.lower()
             valid_commands = self.validatecommand(command)
             if "error" in valid_commands:
                 self.driver.reply_to(message, f"Error: {valid_commands['error']}")

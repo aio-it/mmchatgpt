@@ -1685,10 +1685,11 @@ class ChatGPT(Plugin):
             # send a list of commands from SHELL_COMMANDS
             messagetxt = f"Allowed commands:\n"
             for command in SHELL_COMMANDS.keys():
-                messagetxt += f" {command}\n"
                 if "allowed_args" in SHELL_COMMANDS[command]:
                     messagetxt += f" {command} <{'/'.join(SHELL_COMMANDS[command]['allowed_args'])}>\n"
-                messagetxt += f"{SHELL_COMMANDS[command]['command']} {SHELL_COMMANDS[command]['args']}\n"
+                else:
+                    messagetxt += f" {command}\n"
+                #messagetxt += f"{SHELL_COMMANDS[command]['command']} {SHELL_COMMANDS[command]['args']}\n"
             self.driver.reply_to(message, messagetxt)
             return
         validators = []

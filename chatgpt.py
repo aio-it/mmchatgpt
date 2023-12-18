@@ -1486,7 +1486,7 @@ class ChatGPT(Plugin):
                 "args": ""
             },
             "head": {
-                "validators": ["url"],
+                "validators": ["url","domain"],
                 "command": "curl",
                 "args": "-I -L"
             },

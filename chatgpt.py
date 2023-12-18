@@ -1598,7 +1598,6 @@ class ChatGPT(Plugin):
                 messagetxt += f"allowed commands:"
                 for command in SHELL_COMMANDS.keys():
                     messagetxt += f" {command}"
-                
                 return
             valid_commands = self.validatecommand(command)
             if "error" in valid_commands:

@@ -1591,7 +1591,8 @@ class ChatGPT(Plugin):
                 import urllib.parse
                 domain = urllib.parse.urlparse(input).netloc
                 # call validateinput again with domain
-                if "error" not in await self.validateinput(domain,["domain"]):
+                result = await self.validateinput(domain,["domain"])
+                if "error" not in result:
                     return True
         if "asn" in types:
             if re.match(r"(AS|as)[0-9]+",input):

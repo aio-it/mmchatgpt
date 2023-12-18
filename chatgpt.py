@@ -1582,6 +1582,9 @@ class ChatGPT(Plugin):
     async def run_command(self,message: Message, command):
         """ runs a command after validating the command and the input"""
         if self.is_admin(message.sender_name):
+            # if help
+            if command == "help":
+                return
             # validate command
             # split command into command and input
             command = command.split(" ", 1)

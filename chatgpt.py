@@ -1536,7 +1536,7 @@ class ChatGPT(Plugin):
                     self.slog(f"answers: {answers}")
                     if len(answers) == 0 and len(answers6) == 0:
                         return { "error": f"no dns records found for {domain}" }
-                    for rdata in answers:
+                    for rdata in answers + answers6:
                         self.slog(f"rdata: {rdata.address}")
                         import ipaddress
                         ip = ipaddress.ip_address(rdata.address)

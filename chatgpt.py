@@ -1595,7 +1595,7 @@ class ChatGPT(Plugin):
                 domain = urllib.parse.urlparse(input).netloc
                 if domain == input:
                     # no domain found in url
-                    return False
+                    return { "error": "no domain found in url" }
                 # call validateinput again with domain
                 await self.log(f"validating domain: {domain}")
                 result = await self.validateinput(domain,["domain"])

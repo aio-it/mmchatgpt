@@ -1499,7 +1499,7 @@ class ChatGPT(Plugin):
         """function that takes a string and validates that it matches against one or more of the types given in the list"""
         import re
         import validators
-        await self.log(f"validateinput: {input}")
+        await self.log(f"validateinput: {input}, types: {types}")
         bad_chars = [" ", "\n", "\t", "\r",";","#"]
         valid_types = [
             "domain",
@@ -1612,6 +1612,7 @@ class ChatGPT(Plugin):
             if re.match(r"[a-zA-Z0-9_-]+",input):
                 return True
         return { "error": f"invalid input: {input}" }
+
     @listen_to(r"^!(.*)")
     async def run_command(self,message: Message, command):
         """ runs a command after validating the command and the input"""

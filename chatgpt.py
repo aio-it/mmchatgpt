@@ -1591,6 +1591,7 @@ class ChatGPT(Plugin):
                 import urllib.parse
                 domain = urllib.parse.urlparse(input).netloc
                 # call validateinput again with domain
+                await self.log(f"validating domain: {domain}")
                 result = await self.validateinput(domain,["domain"])
                 # check if dict
                 if type(result) is dict:

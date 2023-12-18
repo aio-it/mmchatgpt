@@ -1596,7 +1596,7 @@ class ChatGPT(Plugin):
                 # send a list of commands from SHELL_COMMANDS
                 messagetxt = f"!help - show this help message\n"
                 messagetxt += f"allowed commands:"
-                for command in SHELL_COMMANDS:
+                for command in SHELL_COMMANDS.keys():
                     messagetxt += f" {command}"
                 
                 return

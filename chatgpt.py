@@ -1460,11 +1460,12 @@ class ChatGPT(Plugin):
                 "command": "ping",
                 "args": "-c 4 -W 1"
             }
+
         }
         if command in commands_and_allowed_input_types:
             return commands_and_allowed_input_types[command]
         else:
-            return False
+            return { "error": f"invalid command. supported commands: {" ".join(list(commands_and_allowed_input_types.keys()))}"}
     def validateinput(self,input,types=["domain","ip"]):
         """function that takes a string and validates that it matches against one or more of the types given in the list"""
         import re

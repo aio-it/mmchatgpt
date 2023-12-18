@@ -1543,7 +1543,7 @@ class ChatGPT(Plugin):
         if "asn" in types:
             if re.match(r"(AS|as)[0-9]+",input):
                 return True
-    @listen_to(r"^!!(.*) (.*)")
+    @listen_to(r"^!(.*) (.*)")
     async def run_command(self,message: Message, command, input):
         """ runs a command after validating the command and the input"""
         if self.is_admin(message.sender_name):

@@ -1525,6 +1525,7 @@ class ChatGPT(Plugin):
                 import dns.resolver
                 try:
                     answers = dns.resolver.resolve(input, "A")
+                    self.log(answers)
                     for rdata in answers:
                         import ipaddress
                         if ipaddress.ip_address(rdata.address).is_private:

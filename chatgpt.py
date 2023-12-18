@@ -1596,7 +1596,7 @@ class ChatGPT(Plugin):
                 # send a list of commands from SHELL_COMMANDS
                 messagetxt = f"Allowed commands:\n"
                 for command in SHELL_COMMANDS.keys():
-                    messagetxt += f" {command}"
+                    messagetxt += f" {command}\n"
                 self.driver.reply_to(message, messagetxt)
                 return
             valid_commands = self.validatecommand(command)

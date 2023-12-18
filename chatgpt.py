@@ -1525,6 +1525,7 @@ class ChatGPT(Plugin):
                 # verify that the ip returned from a dns lookup is not a private ip
                 import dns.resolver
                 try:
+                    self.log(f"resolving {input}")
                     answers = dns.resolver.resolve(input, "A")
                     self.log(answers)
                     for rdata in answers:

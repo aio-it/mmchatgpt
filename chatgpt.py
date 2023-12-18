@@ -1459,6 +1459,32 @@ class ChatGPT(Plugin):
                 "validators": ["ip", "domain"],
                 "command": "ping",
                 "args": "-c 4 -W 1"
+            },
+            "ping6": {
+                "validators": ["ip", "domain"],
+                "command": "ping6",
+                "args": "-c 4 -W 1"
+            },
+            "dig": {
+                "validators": ["ip", "domain"],
+                "command": "dig",
+                "args": "+short"
+            },
+            "traceroute": {
+                "validators": ["ip", "domain"],
+                "command": "traceroute",
+                "args": "-w 1"
+            },
+            "whois": {
+                "validators": ["ip", "domain","asn"],
+                "command": "whois",
+                "args": ""
+            },
+            "head": {
+                "validators": ["url"],
+                "command": "curl",
+                "args": "-I -L"
+            },
             }
 
         }

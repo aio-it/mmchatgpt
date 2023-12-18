@@ -1514,7 +1514,7 @@ class ChatGPT(Plugin):
         # check if any of the bad chars exist in input
         for char in bad_chars:
             if char in input:
-                return False
+                return { "error": f"bad char: {char}" }
         
         for ctype in types:
             if ctype not in valid_types:

@@ -1710,6 +1710,8 @@ class ChatGPT(Plugin):
             if re.match(r"[0-9]+",input):
                 if int(input) > 65535:
                     return { "error": "port can not be higher than 65535" }
+                if int(input) < 1:
+                    return { "error": "port can not be lower than 1" }
                 return True
         if "argument" in types:
             if input in allowed_args:

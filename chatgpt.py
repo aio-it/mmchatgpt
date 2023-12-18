@@ -1690,8 +1690,8 @@ class ChatGPT(Plugin):
                 if "allowed_args" in SHELL_COMMANDS[command]:
                     argstxt = f"[{' / '.join(SHELL_COMMANDS[command]['allowed_args'])}]"
                 if "validators" in SHELL_COMMANDS[command]:
-                    valtxt = f"[{' / '.join(SHELL_COMMANDS[command]['validators'])}]"
-                messagetxt += f"{command} {argstxt} {valtxt}>\n"
+                    valtxt = f"<{' / '.join(SHELL_COMMANDS[command]['validators'])}>"
+                messagetxt += f"{command} {argstxt} {valtxt}\n"
             self.driver.reply_to(message, messagetxt)
             return
         validators = []

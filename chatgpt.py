@@ -1620,6 +1620,7 @@ class ChatGPT(Plugin):
                         return True
                     else: 
                         return { "error": f"domain: {result['error']}" }
+                await self.log(f"result: (shouldn't get to here) {result}")
         if "asn" in types:
             if re.match(r"(AS|as)[0-9]+",input):
                 return True

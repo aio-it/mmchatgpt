@@ -1640,7 +1640,7 @@ class ChatGPT(Plugin):
                 if error:
                     self.driver.reply_to(message, f"Error:\n```\n{error}\n```")
                 if timeout:
-                    self.driver.reply_to(message, f"Timeout: 10 seconds")
+                    self.driver.reply_to(message, f"Timed out: 10 seconds")
 
     @listen_to(r"^\.whois (.*)")
     async def whois(self, message: Message, url: str):

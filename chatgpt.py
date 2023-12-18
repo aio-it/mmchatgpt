@@ -69,10 +69,15 @@ SHELL_COMMANDS = {
                 "command": "curl",
                 "args": "-I -L"
             },
-            "curl": {
+            "get": {
                 "validators": ["url","domain"],
                 "command": "curl",
                 "args": "-L"
+            },
+            "post": {
+                "validators": ["url","domain"],
+                "command": "curl",
+                "args": "-L -X POST"
             },
         }
 

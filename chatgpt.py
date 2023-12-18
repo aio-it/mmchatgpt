@@ -1533,11 +1533,12 @@ class ChatGPT(Plugin):
                     self.slog(f"resolving {input}")
                     answers = dns.resolver.resolve(input, "A")
                     answers6 = dns.resolver.resolve(input, "AAAA")
+                    answersc = dns.resolver.resolve(input, "CNAME")
                     self.slog(f"answers: {answers}")
-                    if len(answers) == 0 and len(answers6) == 0:
+                    if len(answers) == 0 and len(answers6) == 0 and len(answersc) == 0:
                         return { "error": f"no dns records found for {domain}" }
                     # loop over answers6 and answers and check if any of them are private ips
-                    for a in [answers,answers6]:
+                    for a in [answers,answers6,answersc]:
                         for rdata in a:
                             self.slog(f"rdata: {rdata.address}")
                             import ipaddress

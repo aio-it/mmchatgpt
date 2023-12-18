@@ -1662,7 +1662,8 @@ class ChatGPT(Plugin):
                     process.kill()
                     output, error = process.communicate()
                     output = output.decode("utf-8")
-                    error = error.decode("utf-8")
+                    if error:
+                        error = error.decode("utf-8")
                     timeout=True
                 self.remove_reaction(message, "hourglass")
                 self.driver.reply_to(message, f"Result:\n```\n{output}\n```")

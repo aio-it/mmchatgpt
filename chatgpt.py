@@ -1686,7 +1686,7 @@ class ChatGPT(Plugin):
             messagetxt = f"Allowed commands:\n"
             for command in SHELL_COMMANDS.keys():
                 if "allowed_args" in SHELL_COMMANDS[command]:
-                    messagetxt += f"{command} <{' / '.join(SHELL_COMMANDS[command]['allowed_args'])}> {' / '.join(SHELL_COMMANDS[command]['validators'])}>\n"
+                    messagetxt += f"{command} [{' / '.join(SHELL_COMMANDS[command]['allowed_args'])}] <{' / '.join(SHELL_COMMANDS[command]['validators'])}>\n"
                 else:
                     messagetxt += f"{command}\n"
                 #messagetxt += f"{SHELL_COMMANDS[command]['command']} {SHELL_COMMANDS[command]['args']}\n"

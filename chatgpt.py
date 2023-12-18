@@ -1704,6 +1704,7 @@ class ChatGPT(Plugin):
         if command == "help" or command not in SHELL_COMMANDS.keys():
             # send a list of commands from SHELL_COMMANDS
             messagetxt = f"Allowed commands:\n"
+            messagetxt += f"!help\n"
             for command in SHELL_COMMANDS.keys():
                 argstxt = ""
                 valtxt = ""

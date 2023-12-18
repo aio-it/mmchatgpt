@@ -1583,8 +1583,6 @@ class ChatGPT(Plugin):
         """ runs a command after validating the command and the input"""
         if self.is_admin(message.sender_name):
             # if help
-            if command == "help":
-                return
             # validate command
             # split command into command and input
             command = command.split(" ", 1)
@@ -1594,6 +1592,8 @@ class ChatGPT(Plugin):
             else:
                 command, input = command
                 input = input.lower()
+            if command == "help":
+                return
             valid_commands = self.validatecommand(command)
             if "error" in valid_commands:
                 self.driver.reply_to(message, f"Error: {valid_commands['error']}")

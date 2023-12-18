@@ -1615,6 +1615,7 @@ class ChatGPT(Plugin):
                         return
                     # run command
                 self.add_reaction(message, "hourglass")
+                self.log(f"{message.sender_name} ran command: {command} {args} {input}")
                 import subprocess
                 import shlex
                 cmd = shlex.split(f"{command} {args} {input}")

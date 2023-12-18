@@ -455,7 +455,10 @@ class ChatGPT(Plugin):
         """send message to log channel"""
         if self.log_to_channel:
             self.driver.create_post(self.log_channel, message)
-
+    def alog(self,message: str):
+        """async log"""
+        asyncio.create_task(self.log(message))
+    
     async def debug(self, message: str, private: bool = False):
         """send debug message to log channel. if private is true send to all admins"""
         print(f"DEBUG: {message}")

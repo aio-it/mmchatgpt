@@ -1520,12 +1520,10 @@ class ChatGPT(Plugin):
         for char in bad_chars:
             if char in input:
                 return { "error": f"bad char: {char}" }
-            return True
         
         for ctype in types:
             if ctype not in valid_types:
                 return { "error": f"invalid type: {ctype}" }
-            return True
         if "domain" in types:
             self.slog(f"validating domain {input}")
             if validators.domain(input):

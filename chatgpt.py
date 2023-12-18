@@ -1570,7 +1570,12 @@ class ChatGPT(Plugin):
                 return True
         if "url" in types:
             if validators.url(input):
-                return True
+                #get domain from url and validate it as a domain so we can check if it is a private ip
+                import urllib.parse
+                domain = urllib.parse.urlparse(input).netloc
+                # call validateinput again with domain
+                if "error" not in self.validateinput(domain,["domain"]):
+                    return True
         if "asn" in types:
             if re.match(r"(AS|as)[0-9]+",input):
                 return True

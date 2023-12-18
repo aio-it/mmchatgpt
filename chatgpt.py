@@ -1530,6 +1530,9 @@ class ChatGPT(Plugin):
         ]
         if types and type(types) is not list:
             types = [types]
+        # if types is empty
+        if not types:
+            types = valid_types
         # check if any of the bad chars exist in input
         for char in bad_chars:
             if char in input:

@@ -1615,7 +1615,7 @@ class ChatGPT(Plugin):
                 await self.log(f"validating domain: {domain}")
                 result = await self.validateinput(domain,["domain"])
                 # check if dict
-                await if type(result) is dict:
+                if type(result) is dict:
                     if "error" not in result:
                         return True
                     else: 

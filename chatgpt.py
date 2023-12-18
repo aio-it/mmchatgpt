@@ -1626,6 +1626,7 @@ class ChatGPT(Plugin):
                 if type(result) is dict:
                     if "error" in result:
                         return { "error": f"domain: {result['error']}" }
+                self.slog(f"domain: {domain} is valid")
                 return True
         if "asn" in types:
             if re.match(r"(AS|as)[0-9]+",input):

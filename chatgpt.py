@@ -1514,7 +1514,7 @@ class ChatGPT(Plugin):
             return SHELL_COMMANDS[command]
         else:
             return { "error": f"invalid command. supported commands: {' '.join(list(SHELL_COMMANDS.keys()))}" }
-    def validateinput(self,input,types=["domain","ip"]):
+    def validateinput(self,input,types=["domain","ip"], allowed_args=[]):
         """function that takes a string and validates that it matches against one or more of the types given in the list"""
         import re
         import validators

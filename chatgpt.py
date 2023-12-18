@@ -1492,7 +1492,7 @@ class ChatGPT(Plugin):
 
     def validatecommand(self, command):
         """check if commands is in a list of commands allowed"""
-        if command in shell_commands:
+        if command in self.shell_commands:
             return self.shell_commands[command]
         else:
             return { "error": f"invalid command. supported commands: {' '.join(list(self.shell_commands.keys()))}" }

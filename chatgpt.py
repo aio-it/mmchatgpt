@@ -1685,6 +1685,8 @@ class ChatGPT(Plugin):
             # send a list of commands from SHELL_COMMANDS
             messagetxt = f"Allowed commands:\n"
             for command in SHELL_COMMANDS.keys():
+                argstxt = ""
+                valtxt = ""
                 if "allowed_args" in SHELL_COMMANDS[command]:
                     argstxt = f"[{' / '.join(SHELL_COMMANDS[command]['allowed_args'])}]"
                 if "validators" in SHELL_COMMANDS[command]:

@@ -79,6 +79,11 @@ SHELL_COMMANDS = {
                 "command": "curl",
                 "args": "-L -X POST"
             },
+            "date": {
+                "validators": [],
+                "command": "date",
+                "args": ""
+            },
         }
 
 # Custom Exceptions

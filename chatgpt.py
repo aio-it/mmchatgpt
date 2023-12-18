@@ -97,12 +97,12 @@ SHELL_COMMANDS = {
                 "command": "dig",
                 "args": "+short -x"
             },
-            "aaaa": {
+            "dig aaaa": {
                 "validators": ["domain"],
                 "command": "dig",
                 "args": "+short -t AAAA"
             },
-            "a": {
+            "dig a": {
                 "validators": ["domain"],
                 "command": "dig",
                 "args": "+short -t A"

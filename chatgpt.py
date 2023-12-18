@@ -1671,7 +1671,7 @@ class ChatGPT(Plugin):
         if not self.is_user(message.sender_name):
             self.driver.reply_to(message, f"Error: {message.sender_name} is not a user")
             return
-        await self.log(f"{message.sender_name} tried to run command: {command}")
+        await self.log(f"{message.sender_name} tried to run command: !{command}")
         # split command into command and input
         command = command.split(" ", 1)
         if len(command) == 1:

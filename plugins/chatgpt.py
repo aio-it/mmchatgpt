@@ -360,12 +360,12 @@ class ChatGPT(Plugin):
         """get user from username"""
         # check if user is cached in redis
         if self.redis.exists(f"user:{username}"):
-            return self.redis_deserialize_json(self.redis.get(f"user:{username}"))
+            return self.helper.redis_deserialize_json(self.redis.get(f"user:{username}"))
         users = self.driver.users.get_users_by_usernames([username])
         if len(users) == 1:
             # cache the user in redis for 1 hour
             self.redis.set(
-                f"user:{username}", self.redis_serialize_json(users[0]), ex=60 * 60
+                f"user:{username}", self.helper.redis_serialize_json(users[0]), ex=60 * 60
             )
             return users[0]
         if len(users) > 1:
@@ -379,12 +379,12 @@ class ChatGPT(Plugin):
         """get user id from user_id"""
         # check if user is cached in redis
         if self.redis.exists(f"user:{user_id}"):
-            return self.redis_deserialize_json(self.redis.get(f"user:{user_id}"))
+            return self.helper.redis_deserialize_json(self.redis.get(f"user:{user_id}"))
         try:
             user = self.driver.users.get_user(user_id)
             # cache the user in redis for 1 hour
             self.redis.set(
-                f"user:{user_id}", self.redis_serialize_json(user), ex=60 * 60
+                f"user:{user_id}", self.helper.redis_serialize_json(user), ex=60 * 60
             )
             return user
         except:
@@ -1119,7 +1119,7 @@ class ChatGPT(Plugin):
                     # post is from user, set role to user
                     role = "user"
 
-                # self.redis.rpush(thread_key, self.redis_serialize_json(
+                # self.redis.rpush(thread_key, self.helper.redis_serialize_json(
                 #    {"role": role, "content": thread_post['message']}))
                 messages = self.append_chatlog(
                     thread_id, {"role": role, "content": thread_post["message"]}
@@ -1720,9 +1720,9 @@ class ChatGPT(Plugin):
         """append a message to a chatlog"""
         expiry = 60 * 60 * 24 * 7
         thread_key = REDIS_PREPEND + thread_id
-        self.redis.rpush(thread_key, self.redis_serialize_json(msg))
+        self.redis.rpush(thread_key, self.helper.redis_serialize_json(msg))
         self.redis.expire(thread_key, expiry)
-        messages = self.redis_deserialize_json(self.redis.lrange(thread_key, 0, -1))
+        messages = self.helper.redis_deserialize_json(self.redis.lrange(thread_key, 0, -1))
         return messages
 
     def redis_serialize_json(self, msg):

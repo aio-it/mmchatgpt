@@ -56,4 +56,4 @@ class Docker(Plugin):
     container = await self.dockerclient.containers.create(config=config)
     self.driver.reply_to(message, f"```{container}```")
     logs = await container.log(stdout=True)
-    self.driver.reply_to(''.join(logs))
+    self.driver.reply_to(message,''.join(logs))

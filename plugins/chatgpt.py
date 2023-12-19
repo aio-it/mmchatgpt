@@ -192,28 +192,6 @@ class ChatGPT(Plugin):
             raise MissingApiKey("No OPENAI API key provided")
         self.openai_api_key = openai_api_key
         self.log_channel = log_channel
-    def initialize(self,
-            driver: Driver,
-            plugin_manager: PluginManager,
-            settings: Settings
-            ):
-        self.driver = driver
-        self.settings = settings
-        self.plugin_manager = plugin_manager
-        self.helper = Helper(self.driver, self.redis)
-        self.users = Users(self.helper.log_channel)
-        if self.redis.scard("admins") <= 0 and len(ADMINS) > 0:
-            self.redis.sadd("admins", *ADMINS)
-        if self.redis.scard("users") <= 0 and len(USERS) > 0:
-            self.redis.sadd("users", *USERS)
-        if self.redis.scard("admins") > 0 and len(ADMINS) > 0:
-            self.redis.sadd("users", *ADMINS)
-        if self.log_channel is None:
-            self.helper.log_to_channel = False
-        else:
-            self.helper.log_to_channel = True
-            self.helper.log_channel = self.log_channel
-
         if "giphy_api_key" in kwargs:
             self.giphy_api_key = kwargs["giphy_api_key"]
         else:
@@ -230,6 +208,23 @@ class ChatGPT(Plugin):
         print(f"Allowed users: {self.redis.smembers('users')}")
         print(f"Allowed admins: {self.redis.smembers('admins')}")
         print(f"Allowed models: {self.ALLOWED_MODELS}")
+    def initialize(self,
+            driver: Driver,
+            plugin_manager: PluginManager,
+            settings: Settings
+            ):
+        self.driver = driver
+        self.settings = settings
+        self.plugin_manager = plugin_manager
+        self.helper = Helper(self.driver, self.redis)
+        self.users = Users(self.helper.log_channel)
+        if self.redis.scard("admins") <= 0 and len(ADMINS) > 0:
+            self.redis.sadd("admins", *ADMINS)
+        if self.redis.scard("users") <= 0 and len(USERS) > 0:
+            self.redis.sadd("users", *USERS)
+        if self.redis.scard("admins") > 0 and len(ADMINS) > 0:
+            self.redis.sadd("users", *ADMINS)
+            
     def return_last_x_messages(self, messages, max_length_in_tokens):
         """return last x messages from list of messages limited by max_length_in_tokens"""
         limited_messages = []

@@ -317,14 +317,14 @@ class Users(Plugin):
 
 class Helper:
     """helper functions"""
-    def __init__(self, driver, redis=None, log_channel=None):
+    def __init__(self, driver, rediss=None, log_channel=None):
         self.driver = driver
-        if redis is None:
+        if rediss is None:
             self.redis = redis.Redis(
                 host="localhost", port=6379, db=0, decode_responses=True
             )
         else:
-            self.redis = redis
+            self.redis = rediss
         self.log_channel = log_channel
         if self.log_channel is None:
             self.log_to_channel = False

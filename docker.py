@@ -44,9 +44,8 @@ class Docker(Plugin):
     self.driver.reply_to(message,f"containers:")
     for c in containers:
       container = await self.dockerclient.containers.get(c.id)
-      show = await container.show()
-      self.driver.reply_to(message, f"show?: ```{show}```")
-      self.driver.reply_to(message,f"```{container.id} {container.name} {container.status}```")
+      info = await container.show()
+      self.driver.reply_to(message,f"```{info.id} {info.name} {info.status}```")
 
   @listen_to("^\.docker run (.*)")
   async def dockerrun(self, message: Message, command: str):

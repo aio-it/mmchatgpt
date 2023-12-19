@@ -30,6 +30,7 @@ bot = Bot(
         Pushups(),
         TTS(),
         ShellCmds(),
-    ], enable_logging=True
+    ],
+    enable_logging=True
 )
 bot.run()

@@ -12,7 +12,7 @@ USERS = []  # put users in here to prepopulate the redis db
 
 class Users:
     """manage users"""
-    def __init__(self, log_channel):
+    def __init__(self):
         self.redis = redis.Redis(
             host="localhost", port=6379, db=0, decode_responses=True
         )

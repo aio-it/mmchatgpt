@@ -81,3 +81,8 @@ class Docker(Plugin):
     container = await self.dockerclient.containers.get(container_id)
     logs = await container.log(stdout=True)
     self.driver.reply_to(message,''.join(logs))
+  @listen_to("^\.docker image pull (.*)")
+  async def dockerimagepull(self, message: Message, image: str):
+    """pull a docker image"""
+    await self.dockerclient.images.pull(image)
+    self.driver.reply_to(message, f"pulled ```{image}```")

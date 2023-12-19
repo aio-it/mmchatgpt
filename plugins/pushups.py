@@ -31,7 +31,7 @@ class Pushups(Plugin):
                 self.redis.delete(key)
             messagetxt = f"{user} pushups reset"
             self.driver.reply_to(message, messagetxt)
-            await self.log(messagetxt)
+            await self.helper.log(messagetxt)
 
     @listen_to("^\.pushups reset$")
     async def pushups_reset_self(self, message: Message):
@@ -44,7 +44,7 @@ class Pushups(Plugin):
                 self.redis.delete(key)
             messagetxt = f"{message.sender_name} pushups reset"
             self.driver.reply_to(message, messagetxt)
-            await self.log(messagetxt)
+            await self.helper.log(messagetxt)
 
     async def pushups_return_score_string(self, user):
         """return score string for user"""
@@ -74,7 +74,7 @@ class Pushups(Plugin):
                 return
             pushups_sub = int(pushups_sub)
             messagetxt = f"{message.sender_name} substracted {pushups_sub} pushups\n"
-            await self.log(messagetxt)
+            await self.helper.log(messagetxt)
             # store pushups in redis per day
             self.redis.decr(key, pushups_sub)
             pushups_today = self.redis.get(today_key)
@@ -106,7 +106,7 @@ class Pushups(Plugin):
                 # ban user for 6 hours
                 self.ban_user(message.sender_name, 0, 6)
                 # log the ban
-                await self.log(
+                await self.helper.log(
                     f"{message.sender_name} banned for 6 hours trying to bullshit their way through life"
                 )
                 # react hammer
@@ -115,7 +115,7 @@ class Pushups(Plugin):
                 # await self.pushups_reset_self(message)
                 return
             messagetxt = f"{message.sender_name} did {pushups_add} pushups\n"
-            await self.log(f"{message.sender_name} did {pushups_add} pushups")
+            await self.helper.log(f"{message.sender_name} did {pushups_add} pushups")
             # store pushups in redis per day
             today = datetime.datetime.now().strftime("%Y-%m-%d")
             key = f"pushupsdaily:{message.sender_name}:{today}"

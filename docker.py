@@ -75,17 +75,20 @@ class Docker(Plugin):
     self.driver.reply_to(message, f"removing ```{container.id}```")
     await container.delete()
     self.driver.reply_to(message, f"removed ```{container.id}```")
+
   @listen_to("^\.docker logs (.*)")
   async def dockerlogs(self, message: Message, container_id: str):
     """logs from a docker container"""
     container = await self.dockerclient.containers.get(container_id)
     logs = await container.log(stdout=True)
     self.driver.reply_to(message,''.join(logs))
+
   @listen_to("^\.docker image pull (.*)")
   async def dockerimagepull(self, message: Message, image: str):
     """pull a docker image"""
     await self.dockerclient.images.pull(image)
     self.driver.reply_to(message, f"pulled ```{image}```")
+    
   @listen_to("^\.docker image ls")
   async def dockerimagels(self, message: Message):
     """list docker images"""

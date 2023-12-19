@@ -43,6 +43,7 @@ class Users(Plugin):
         # self.log("ChatGPT Bot started")
         # self.log("model: " + self.model)
         # convert all admins usernames to user ids and save to redis
+        self.helper.slog("on_start called")
         for admin in self.redis.smembers("admins"):
             # check if it is already a uid
             if self.check_if_username_or_id(admin) == "uid":

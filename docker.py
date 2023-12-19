@@ -3,6 +3,7 @@ from mmpy_bot.function import listen_to
 from mmpy_bot.plugins.base import Plugin, PluginManager
 from mmpy_bot.settings import Settings
 from mmpy_bot.wrappers import Message
+from common import Helper
 
 import redis
 import aiodocker
@@ -24,6 +25,7 @@ class Docker(Plugin):
     self.redis = redis.Redis(
       host="localhost", port=6379, db=0, decode_responses=True
     )
+    self.helper = Helper()
     #self.dockerclient = docker.from_env()
     self.dockerclient = aiodocker.Docker()
   def initialize(        self,
@@ -42,6 +44,7 @@ class Docker(Plugin):
     self.driver.reply_to(message,f"plugins:")
     for plugin in plugins:
       info = dir(plugin)
+      classname = plugin.__class__
       self.driver.reply_to(message,f"```{info}```")
   
   @listen_to("^\.docker ps")

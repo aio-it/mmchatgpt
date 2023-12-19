@@ -18,6 +18,7 @@ pyttsx3 = "*"
 wheel = "*"
 validators = "*"
 dnspython = "*"
+aiodocker = "*"
 
 [dev-packages]
 autopep8 = "*"

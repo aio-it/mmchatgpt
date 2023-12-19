@@ -314,7 +314,7 @@ class ChatGPT(Plugin):
                 continue
             # replace current admin username with uid in redis
             self.redis.srem("admins", admin)
-            self.redis.sadd("admins", self.get_uid(admin))
+            self.redis.sadd("admins", self.users.get_uid(admin))
         # convert all users usernames to user ids and save to redis
         for user in self.redis.smembers("users"):
             # check if it is already a uid
@@ -322,7 +322,7 @@ class ChatGPT(Plugin):
                 continue
             # replace current user username with uid in redis
             self.redis.srem("users", user)
-            self.redis.sadd("users", self.get_uid(user))
+            self.redis.sadd("users", self.users.get_uid(user))
         # convert all bans usernames to user ids and save to redis
         for key in self.redis.scan_iter("ban:*"):
             user = key.split(":")[1]
@@ -333,7 +333,7 @@ class ChatGPT(Plugin):
             expire = self.redis.ttl(key)
             # replace current ban username with uid in redis
             self.redis.delete(key)
-            self.redis.set(f"ban:{self.get_uid(user)}", expire)
+            self.redis.set(f"ban:{self.users.get_uid(user)}", expire)
 
     def on_stop(self):
         """send startup message to all admins"""

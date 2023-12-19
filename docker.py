@@ -17,10 +17,7 @@ CONTAINER_CONFIG = {
      "OpenStdin": False,
 }
 class Docker(Plugin):
-# import serialized_redis
-  from mmpy_bot import Plugin, listen_to
-  from mmpy_bot import Message
-  def __init__(self, log_channel):
+  def __init__(self, log_channel, driver, plugin_manager, settings):
     self.log_channel = log_channel
     self.redis = redis.Redis(
       host="localhost", port=6379, db=0, decode_responses=True

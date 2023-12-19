@@ -81,3 +81,31 @@ class Helper:
         """urlencode the text"""
 
         return urllib.parse.quote_plus(text)
+    def create_tmp_filename(self, extension: str) -> str:
+        """create a tmp filename"""
+
+        return f"/tmp/{uuid.uuid4()}.{extension}"
+
+    def download_file(self, url: str, filename: str) -> str:
+        """download file from url using requests and return the filename/location"""
+
+        request = requests.get(url, allow_redirects=True)
+        with open(filename, "wb") as file:
+            file.write(request.content)
+        return filename
+
+    def download_file_to_tmp(self, url: str, extension: str) -> str:
+        """download file using requests and return the filename/location"""
+
+        filename = self.create_tmp_filename(extension)
+        return self.download_file(url, filename)
+
+    def delete_downloaded_file(self, filename: str):
+        """delete the downloaded file"""
+
+        if (
+            os.path.exists(filename)
+            and os.path.isfile(filename)
+            and filename.startswith("/tmp")
+        ):
+            os.remove(filename)

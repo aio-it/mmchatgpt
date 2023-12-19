@@ -285,7 +285,7 @@ class ChatGPT(Plugin):
                     image_url = response.data[0].url
                     revised_prompt = response.data[0].revised_prompt
                     # download the image using the url
-                    filename = self.download_file_to_tmp(image_url, "png")
+                    filename = self.helper.download_file_to_tmp(image_url, "png")
                     # format the image_url as mattermost markdown
                     # image_url_txt = f"![img]({image_url})"
                     # await self.helper.debug(response)
@@ -313,34 +313,7 @@ class ChatGPT(Plugin):
             except:  # pylint: disable=bare-except
                 self.driver.reply_to(message, "Error: OpenAI API error")
 
-    def create_tmp_filename(self, extension: str) -> str:
-        """create a tmp filename"""
 
-        return f"/tmp/{uuid.uuid4()}.{extension}"
-
-    def download_file(self, url: str, filename: str) -> str:
-        """download file from url using requests and return the filename/location"""
-
-        request = requests.get(url, allow_redirects=True)
-        with open(filename, "wb") as file:
-            file.write(request.content)
-        return filename
-
-    def download_file_to_tmp(self, url: str, extension: str) -> str:
-        """download file using requests and return the filename/location"""
-
-        filename = self.create_tmp_filename(extension)
-        return self.download_file(url, filename)
-
-    def delete_downloaded_file(self, filename: str):
-        """delete the downloaded file"""
-
-        if (
-            os.path.exists(filename)
-            and os.path.isfile(filename)
-            and filename.startswith("/tmp")
-        ):
-            os.remove(filename)
 
     @listen_to(r"^\.gif ([\s\S]*)")
     async def gif(self, message: Message, text: str):
@@ -370,7 +343,7 @@ class ChatGPT(Plugin):
                     # get the url from the response
                     gif_url = response.json()["data"][0]["images"]["original"]["url"]
                     # download the gif using the url
-                    filename = self.download_file_to_tmp(gif_url, "gif")
+                    filename = self.helper.download_file_to_tmp(gif_url, "gif")
                     # format the gif_url as mattermost markdown
                     # gif_url_txt = f"![gif]({gif_url})"
                     gif_url_txt = ""

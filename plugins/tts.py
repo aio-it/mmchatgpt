@@ -45,7 +45,7 @@ class TTS(Plugin):
                         f"https://www.dr.dk/tjenester/tts?text={urlencoded_text}"
                     )
                     # download the audio using the url
-                    filename = self.download_file_to_tmp(audio_url, "mp3")
+                    filename = self.helper.download_file_to_tmp(audio_url, "mp3")
                     # format the link in mattermost markdown
                     msg_txt = f"link: [drtts]({audio_url})"
                     self.helper.remove_reaction(message, "speaking_head_in_silhouette")

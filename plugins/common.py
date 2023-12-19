@@ -8,6 +8,8 @@ import json
 import redis
 import datetime
 import urllib
+import requests
+import uuid
 from environs import Env
 env = Env()
 

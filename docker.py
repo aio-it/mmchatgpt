@@ -50,6 +50,9 @@ class Docker(Plugin):
     """run a docker container"""
     config = CONTAINER_CONFIG
     config["Cmd"] = command.split(" ")
+    # pull image 
+    image = config["Image"]
+    await self.dockerclient.images.pull(image)
     container = await self.dockerclient.containers.create(config=config)
     self.driver.reply_to(message, f"```{container}```")
     logs = await container.log(stdout=True)

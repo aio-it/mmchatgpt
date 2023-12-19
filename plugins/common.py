@@ -9,7 +9,7 @@ import redis
 import datetime
 
 class Users:
-    def __init__(self, driver):
+    def __init__(self, driver, redis=None):
         self.driver = driver
         self.redis = redis
         self.helper = Helper(self.driver, self.redis)

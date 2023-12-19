@@ -111,3 +111,83 @@ class Helper:
             return [json.loads(m) for m in msg]
         return json.loads(msg)
 
+    @listen_to(r"^\.banlist")
+    async def banlist(self, message: Message):
+        """list banned users"""
+        if self.helper.is_admin(message.sender_name):
+            # list banned users
+            bans = ""
+            for key in self.redis.scan_iter("ban:*"):
+                # get time left for ban
+                uid = key.split(":")[1]
+                user = self.id2u(uid)
+                time = self.redis.get(key)
+                timeleft = self.redis.ttl(key)
+                if timeleft > 0:
+                    # convert seconds to timeleft string
+                    timeleft = str(datetime.timedelta(seconds=timeleft))
+                    bans += f"{user} ban: {time} days.  left: {timeleft}\n"
+                else:
+                    bans += f"{user} - permanent\n"
+            self.driver.reply_to(message, f"Bans:\n{bans}")
+
+    def ban_user(self, username, days=0, hours=0, minutes=0, seconds=0):
+        """ban user"""
+        # check if user is admin
+        if self.helper.is_admin(username):
+            return False
+        # ban user
+        uid = self.u2id(username)
+        if days == 0:
+            self.redis.set(f"ban:{uid}", 0)
+        else:
+            # calc ban time in seconds
+            days = int(days)
+            hours = int(hours)
+            minutes = int(minutes)
+            seconds = int(seconds)
+            seconds += minutes * 60
+            seconds += hours * 60 * 60
+            seconds += days * 24 * 60 * 60
+            self.redis.set(f"ban:{uid}", seconds, ex=seconds)
+            return True
+
+    @listen_to(r"^\.ban ([a-zA-Z0-9_-]+) ?([0-9]?)")
+    async def ban(self, message: Message, user, days=0):
+        """ban user"""
+        days = int(days)
+        if self.helper.is_admin(message.sender_name):
+            # check if user is admin
+            if self.helper.is_admin(user):
+                self.driver.reply_to(message, f"Can't ban admin: {user}")
+                return
+            # ban user
+            # check if user exists
+            if self.get_user_by_username(user) is None:
+                self.driver.reply_to(message, f"User not found: {user}")
+                return
+            if days == 0:
+                self.driver.reply_to(message, f"Banned {user} forever")
+                self.ban_user(user)
+            else:
+                self.driver.reply_to(message, f"Banned {user} for {days} days")
+                self.ban_user(user, days)
+            await self.log(f"{message.sender_name} banned {user} for {days} days")
+
+    @listen_to(r"^\.unban ([a-zA-Z0-9_-]+)")
+    async def unban(self, message: Message, user):
+        """unban user"""
+        if self.helper.is_admin(message.sender_name):
+            # check if user exists
+            if self.get_user_by_username(user) is None:
+                self.driver.reply_to(message, f"User not found: {user}")
+                return
+            # check if user is banned
+            if not self.redis.exists(f"ban:{self.u2id(user)}"):
+                self.driver.reply_to(message, f"User not banned: {user}")
+                return
+            # unban user
+            uid = self.u2id(user)
+            self.driver.reply_to(message, f"Unbanned {user}")
+            self.redis.delete(f"ban:{uid}")
+            await self.log(f"{message.sender_name} unbanned {user}")

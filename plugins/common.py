@@ -7,8 +7,8 @@ from mmpy_bot.wrappers import Message
 import json
 import redis
 import datetime
-from environs import Env
 import urllib
+from environs import Env
 env = Env()
 
 ADMINS = ['lbr']  # put admins in here to prepopulate the redis db

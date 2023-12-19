@@ -147,7 +147,7 @@ class MissingApiKey(Exception):
 
 class ChatGPT(Plugin):
     """mmypy chatgpt plugin"""
-    
+
     # MODEL = "gpt-3.5-turbo-0301"
     DEFAULT_MODEL = "gpt-4"
     ALLOWED_MODELS = [
@@ -783,6 +783,7 @@ class ChatGPT(Plugin):
     @listen_to(".+", needs_mention=True)
     async def chat(self, message: Message):
         """listen to everything and respond when mentioned"""
+        self.driver.reply_to(message, "Hej")
         if not self.users.is_user(message.sender_name):
             return
         # if message.is_direct_message and not self.is_admin(message.sender_name):

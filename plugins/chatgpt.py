@@ -34,8 +34,6 @@ from mmpy_bot.wrappers import Message
 from redis_rate_limit import RateLimit, TooManyRequests
 
 MODEL = "gpt-3.5-turbo-0301"
-ADMINS = []  # put admins in here to prepopulate the redis db
-USERS = []  # put users in here to prepopulate the redis db
 REDIS_PREPEND = "thread_"
 SHELL_COMMANDS = {
             "ping": {
@@ -217,12 +215,7 @@ class ChatGPT(Plugin):
         self.plugin_manager = plugin_manager
         self.helper = Helper(self.driver, self.redis)
         self.users = Users(self.helper.log_channel)
-        if self.redis.scard("admins") <= 0 and len(ADMINS) > 0:
-            self.redis.sadd("admins", *ADMINS)
-        if self.redis.scard("users") <= 0 and len(USERS) > 0:
-            self.redis.sadd("users", *USERS)
-        if self.redis.scard("admins") > 0 and len(ADMINS) > 0:
-            self.redis.sadd("users", *ADMINS)
+
             
     def return_last_x_messages(self, messages, max_length_in_tokens):
         """return last x messages from list of messages limited by max_length_in_tokens"""

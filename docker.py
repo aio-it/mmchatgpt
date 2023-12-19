@@ -61,7 +61,7 @@ class Docker(Plugin):
   @listen_to("^\.docker run (.*)")
   async def dockerrun(self, message: Message, command: str):
     """run a docker container"""
-    if self.helper.is_admin(message.sender_name) == False:
+    if self.helper.is_admin(message.sender_name) == True:
       self.driver.reply_to(message, f"you are not an admin")
       return
     config = CONTAINER_CONFIG

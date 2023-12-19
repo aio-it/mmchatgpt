@@ -296,7 +296,7 @@ class ChatGPT(Plugin):
                         f"prompt: {text}\nrevised: {revised_prompt}",
                         file_paths=[filename],
                     )
-                    self.delete_downloaded_file(filename)
+                    self.helper.delete_downloaded_file(filename)
                     await self.helper.log(
                         f"{message.sender_name} used .img with {quality} {style} {size}"
                     )
@@ -350,7 +350,7 @@ class ChatGPT(Plugin):
                     self.helper.remove_reaction(message, "frame_with_picture")
                     self.driver.reply_to(message, gif_url_txt, file_paths=[filename])
                     # delete the gif file
-                    self.delete_downloaded_file(filename)
+                    self.helper.delete_downloaded_file(filename)
                     await self.helper.log(f"{message.sender_name} used .gif with {text}")
             except TooManyRequests:
                 self.driver.reply_to(message, "Rate limit exceeded (1/5s)")

@@ -109,7 +109,9 @@ class ChatGPT(Plugin):
         self.driver = driver
         self.settings = settings
         self.plugin_manager = plugin_manager
-        self.helper = Helper(self.driver, self.redis)
+        self.helper = Helper(self.driver)
+        self.redis = self.helper.redis
+
         self.users = Users()
         #self.users.initialize(self.driver, self.settings, self.plugin_manager)
 

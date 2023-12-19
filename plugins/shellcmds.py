@@ -9,6 +9,7 @@ import validators
 import re
 import dns.resolver
 import ipaddress
+import urllib.parse
 SHELL_COMMANDS = {
             "ping": {
                 "validators": ["ipv4", "domain"],
@@ -216,7 +217,6 @@ class ShellCmds(Plugin):
         if "ipv4" in types or "ip" in types:
             if validators.ipv4(input):
                 # verify that it is not a private ip
-                import ipaddress
                 if ipaddress.ip_address(input).is_reserved:
                     return { "error": "reserved ip" }
                 if ipaddress.ip_address(input).is_multicast:
@@ -231,7 +231,6 @@ class ShellCmds(Plugin):
         if "ipv6" in types or "ip" in types:
             if validators.ipv6(input):
                 # verify that it is not a private ip
-                import ipaddress
                 if ipaddress.ip_address(input).is_reserved:
                     return { "error": "reserved ip" }
                 if ipaddress.ip_address(input).is_multicast:
@@ -252,7 +251,6 @@ class ShellCmds(Plugin):
         if "url" in types:
             if validators.url(input):
                 #get domain from url and validate it as a domain so we can check if it is a private ip
-                import urllib.parse
                 domain = urllib.parse.urlparse(input).netloc
                 if domain == input:
                     # no domain found in url

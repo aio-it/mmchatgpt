@@ -42,9 +42,11 @@ class Docker(Plugin):
     """list docker containers"""
     containers = await self.dockerclient.containers.list()
     self.driver.reply_to(message,f"containers:")
-    for container in containers:
-      container = await self.dockerclient.containers.get(container.id)
+    for c in containers:
+      
+      container = await self.dockerclient.containers.get(c.id)
       show = await self.dockerclient.containers.show(container.id)
+      self.driver.repty_to(message, f"```{show}```")
       self.driver.reply_to(message,f"```{container.id} {container.name} {container.status}```")
 
   @listen_to("^\.docker run (.*)")

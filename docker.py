@@ -43,9 +43,8 @@ class Docker(Plugin):
     containers = await self.dockerclient.containers.list()
     self.driver.reply_to(message,f"containers:")
     for c in containers:
-      
       container = await self.dockerclient.containers.get(c.id)
-      show = await self.dockerclient.containers.show(container.id)
+      show = await container.show()
       self.driver.repty_to(message, f"show?: ```{show}```")
       self.driver.reply_to(message,f"```{container.id} {container.name} {container.status}```")
 

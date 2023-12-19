@@ -46,7 +46,7 @@ class Docker(Plugin):
       
       container = await self.dockerclient.containers.get(c.id)
       show = await self.dockerclient.containers.show(container.id)
-      self.driver.repty_to(message, f"```{show}```")
+      self.driver.repty_to(message, f"show?: ```{show}```")
       self.driver.reply_to(message,f"```{container.id} {container.name} {container.status}```")
 
   @listen_to("^\.docker run (.*)")

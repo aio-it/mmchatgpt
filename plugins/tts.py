@@ -38,7 +38,7 @@ class TTS(Plugin):
                     self.helper.add_reaction(message, "speaking_head_in_silhouette")
                     # replace newlines with spaces
                     text = text.replace("\n", " ")
-                    urlencoded_text = self.urlencode_text(text)
+                    urlencoded_text = self.helper.urlencode_text(text)
                     audio_url = (
                         f"https://www.dr.dk/tjenester/tts?text={urlencoded_text}"
                     )

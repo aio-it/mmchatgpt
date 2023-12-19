@@ -188,6 +188,16 @@ class ChatGPT(Plugin):
         self.redis = redis.Redis(
             host="localhost", port=6379, db=0, decode_responses=True
         )
+    def initialize(self,
+            driver: Driver,
+            plugin_manager: PluginManager,
+            settings: Settings
+            ):
+        self.driver = driver
+        self.settings = settings
+        self.plugin_manager = plugin_manager
+        self.helper = Helper(self.redis)
+        self.users = Users(self.helper.log_channel)
         if self.redis.scard("admins") <= 0 and len(ADMINS) > 0:
             self.redis.sadd("admins", *ADMINS)
         if self.redis.scard("users") <= 0 and len(USERS) > 0:
@@ -219,16 +229,6 @@ class ChatGPT(Plugin):
         print(f"Allowed users: {self.redis.smembers('users')}")
         print(f"Allowed admins: {self.redis.smembers('admins')}")
         print(f"Allowed models: {self.ALLOWED_MODELS}")
-    def initialize(self,
-            driver: Driver,
-            plugin_manager: PluginManager,
-            settings: Settings
-            ):
-        self.driver = driver
-        self.settings = settings
-        self.plugin_manager = plugin_manager
-        self.helper = Helper(self.driver, self.redis)
-        self.users = Users(self.helper.log_channel)
     def return_last_x_messages(self, messages, max_length_in_tokens):
         """return last x messages from list of messages limited by max_length_in_tokens"""
         limited_messages = []

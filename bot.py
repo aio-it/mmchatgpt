@@ -6,6 +6,8 @@ from plugins.chatgpt import ChatGPT
 from plugins.docker import Docker
 from plugins.pushups import Pushups
 from plugins.common import Users
+from plugins.tts import TTS
+
 env = Env()
 log_channel = env.str("MM_BOT_LOG_CHANNEL")
 openai_api_key = env.str("OPENAI_API_KEY")
@@ -25,6 +27,7 @@ bot = Bot(
       Docker(),
       Pushups(),
       Users(),
+      TTS(),
     ]
 )
 bot.run()

@@ -76,6 +76,8 @@ class Users(Plugin):
         # check if user is banned
         if self.redis.exists(f"ban:{self.u2id(username)}"):
             return False
+        if NEEDWHITELIST == False
+            return True
         return True if self.u2id(username) in self.redis.smembers("users") else False
     def is_admin(self, username):
         """check if user is admin"""

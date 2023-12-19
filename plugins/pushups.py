@@ -237,5 +237,5 @@ class Pushups(Plugin):
                         place = ":third_place_medal: "
                     else:
                         place = f"{place}. "
-                    messagetxt += f"**{place} {self.nohl(top[i][0])}: {top[i][1]}**\t(avg: {averages[top[i][0]]}. days: {days[top[i][0]]})\n"
+                    messagetxt += f"**{place} {self.helper.nohl(top[i][0])}: {top[i][1]}**\t(avg: {averages[top[i][0]]}. days: {days[top[i][0]]})\n"
             self.driver.reply_to(message, messagetxt)

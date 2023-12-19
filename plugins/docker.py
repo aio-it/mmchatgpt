@@ -22,10 +22,6 @@ CONTAINER_CONFIG = {
 }
 class Docker(Plugin):
   def __init__(self):
-    self.redis = redis.Redis(
-      host="localhost", port=6379, db=0, decode_responses=True
-    )
-    #self.dockerclient = docker.from_env()
     self.dockerclient = aiodocker.Docker()
   def initialize(        self,
         driver: Driver,
@@ -35,7 +31,7 @@ class Docker(Plugin):
     self.driver = driver
     self.settings = settings
     self.plugin_manager = plugin_manager
-    self.helper = Helper(self.driver, self.redis)
+    self.helper = Helper(self.driver)
     self.users = Users(self.driver, self.plugin_manager, self.settings)
 
   @listen_to("^\.plugins list")

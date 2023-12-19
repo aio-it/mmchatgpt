@@ -40,7 +40,7 @@ class Users:
         # convert all users usernames to user ids and save to redis
         for user in self.redis.smembers("users"):
             # check if it is already a uid
-            if self.users.check_if_username_or_id(user) == "uid":
+            if self.check_if_username_or_id(user) == "uid":
                 continue
             # replace current user username with uid in redis
             self.redis.srem("users", user)

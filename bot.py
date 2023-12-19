@@ -24,7 +24,7 @@ bot = Bot(
     ),  # Either specify your settings here or as environment variables.
     # Add your own plugins here.
     plugins=[
-       ChatGPT(openai_api_key, giphy_api_key=giphy_api_key),
+        ChatGPT(openai_api_key, giphy_api_key=giphy_api_key),
         Docker(),
         Pushups(),
         Users(),

@@ -300,9 +300,11 @@ class Users:
 
 class Helper:
     """helper functions"""
-    def __init__(self, driver, redis):
+    def __init__(self, driver, redis, **kwargs):
         self.driver = driver
         self.redis = redis
+        self.log_channel = log_channel
+
 
     def redis_serialize_json(self, msg):
         """serialize a message to json"""

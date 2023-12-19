@@ -707,13 +707,6 @@ class ChatGPT(Plugin):
             value = self.ChatGPT_DEFAULTS[key]
         return value
 
-    def add_reaction(self, message: Message, reaction: str = "thought_balloon"):
-        """set the thread to in progress by adding a reaction to the thread"""
-        self.driver.react_to(message, reaction)
-
-    def remove_reaction(self, message: Message, reaction: str = "thought_balloon"):
-        """set the thread to in progress by removing the reaction from the thread"""
-        self.driver.reactions.delete_reaction(self.driver.user_id, message.id, reaction)
 
     @listen_to(r"^\.vision (.+)")
     async def parseimage(self, message: Message, msg: str):

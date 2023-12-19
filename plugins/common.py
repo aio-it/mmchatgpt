@@ -362,3 +362,11 @@ class Helper:
             await self.log(f"DEBUG: {message}")
         elif private:
             await self.wall(f"DEBUG: {message}")
+
+    def add_reaction(self, message: Message, reaction: str = "thought_balloon"):
+        """set the thread to in progress by adding a reaction to the thread"""
+        self.driver.react_to(message, reaction)
+
+    def remove_reaction(self, message: Message, reaction: str = "thought_balloon"):
+        """set the thread to in progress by removing the reaction from the thread"""
+        self.driver.reactions.delete_reaction(self.driver.user_id, message.id, reaction)

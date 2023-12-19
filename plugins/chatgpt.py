@@ -197,10 +197,10 @@ class ChatGPT(Plugin):
         if openai_api_key is None:
             raise MissingApiKey("No OPENAI API key provided")
         if log_channel is None:
-            self.log_to_channel = False
+            self.helper.log_to_channel = False
         else:
-            self.log_to_channel = True
-            self.log_channel = log_channel
+            self.helper.log_to_channel = True
+            self.helper.log_channel = log_channel
         self.openai_api_key = openai_api_key
 
         if "giphy_api_key" in kwargs:
@@ -228,7 +228,7 @@ class ChatGPT(Plugin):
         self.settings = settings
         self.plugin_manager = plugin_manager
         self.helper = Helper(self.driver, self.redis)
-        self.users = Users(self.log_channel)
+        self.users = Users(self.helper.log_channel)
     def return_last_x_messages(self, messages, max_length_in_tokens):
         """return last x messages from list of messages limited by max_length_in_tokens"""
         limited_messages = []
@@ -309,33 +309,7 @@ class ChatGPT(Plugin):
 
     def on_stop(self):
         """send startup message to all admins"""
-        self.log("ChatGPT Bot stopped")
-
-    def print_to_console(self, message: Message):
-        """print to console"""
-        print(f"{message.sender_name}: {message.text}")
-
-    async def wall(self, message):
-        """send message to all admins"""
-        for admin_uid in self.redis.smembers("admins"):
-            self.driver.direct_message(receiver_id=admin_uid, message=message)
-
-    async def log(self, message: str):
-        """send message to log channel"""
-        if self.log_to_channel:
-            self.driver.create_post(self.log_channel, message)
-    def slog(self,message: str):
-        """sync log"""
-        if self.log_to_channel:
-            self.driver.create_post(self.log_channel, message)
-    
-    async def debug(self, message: str, private: bool = False):
-        """send debug message to log channel. if private is true send to all admins"""
-        print(f"DEBUG: {message}")
-        if self.log_to_channel and not private:
-            await self.log(f"DEBUG: {message}")
-        elif private:
-            await self.wall(f"DEBUG: {message}")
+        self.helper.log("ChatGPT Bot stopped")
 
     @listen_to(r"^\.(?:mk)?i[mn]g$")
     async def img_help(self, message: Message):
@@ -430,7 +404,7 @@ class ChatGPT(Plugin):
                     filename = self.download_file_to_tmp(image_url, "png")
                     # format the image_url as mattermost markdown
                     # image_url_txt = f"![img]({image_url})"
-                    # await self.debug(response)
+                    # await self.helper.debug(response)
                     # self.driver.reply_to(message, image_url_txt, file_paths=[filename])
                     self.remove_reaction(message, "frame_with_picture")
                     self.driver.reply_to(
@@ -439,7 +413,7 @@ class ChatGPT(Plugin):
                         file_paths=[filename],
                     )
                     self.delete_downloaded_file(filename)
-                    await self.log(
+                    await self.helper.log(
                         f"{message.sender_name} used .img with {quality} {style} {size}"
                     )
             except TooManyRequests:
@@ -525,7 +499,7 @@ class ChatGPT(Plugin):
                     self.driver.reply_to(message, gif_url_txt, file_paths=[filename])
                     # delete the gif file
                     self.delete_downloaded_file(filename)
-                    await self.log(f"{message.sender_name} used .gif with {text}")
+                    await self.helper.log(f"{message.sender_name} used .gif with {text}")
             except TooManyRequests:
                 self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
             except:  # pylint: disable=bare-except
@@ -570,7 +544,7 @@ class ChatGPT(Plugin):
                     msg_txt += f"result: {response.text}"
                     self.remove_reaction(message, "abacus")
                     self.driver.reply_to(message, msg_txt)
-                    await self.log(f"{message.sender_name} used .calc with {text}")
+                    await self.helper.log(f"{message.sender_name} used .calc with {text}")
             except TooManyRequests:
                 self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
 
@@ -650,7 +624,7 @@ class ChatGPT(Plugin):
                     self.driver.reply_to(message, msg_txt, file_paths=[filename])
                     # delete the audio file
                     self.delete_downloaded_file(filename)
-                    await self.log(f"{message.sender_name} used .drtts")
+                    await self.helper.log(f"{message.sender_name} used .drtts")
 
             except TooManyRequests:
                 self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
@@ -682,13 +656,13 @@ class ChatGPT(Plugin):
                     filename = self.create_tmp_filename("mp3")
                     voices, rate, volume = await self.create_tts_audio(text, filename)
 
-                    await self.debug(f"voices: {voices}")
-                    await self.debug(f"rate: {rate}")
-                    await self.debug(f"volume: {volume}")
+                    await self.helper.debug(f"voices: {voices}")
+                    await self.helper.debug(f"rate: {rate}")
+                    await self.helper.debug(f"volume: {volume}")
 
                     self.driver.reply_to(message, f"tts: {text}", file_paths=[filename])
                     self.remove_reaction(message, "speaking_head_in_silhouette")
-                    await self.log(f"{message.sender_name} used .tts")
+                    await self.helper.log(f"{message.sender_name} used .tts")
             except TooManyRequests:
                 self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
 
@@ -696,7 +670,7 @@ class ChatGPT(Plugin):
     async def set_chatgpt(self, message: Message, key: str, value: str):
         """set the chatgpt key"""
         settings_key = self.SETTINGS_KEY
-        await self.debug(f"set_chatgpt {key} {value}")
+        await self.helper.debug(f"set_chatgpt {key} {value}")
         if self.users.is_admin(message.sender_name):
             self.redis.hset(settings_key, key, value)
             self.driver.reply_to(message, f"Set {key} to {value}")
@@ -707,7 +681,7 @@ class ChatGPT(Plugin):
         settings_key = self.SETTINGS_KEY
         if self.users.is_admin(message.sender_name) and key in self.ChatGPT_DEFAULTS:
             value = self.ChatGPT_DEFAULTS[key]
-            await self.debug(f"reset_chatgpt {key} {value}")
+            await self.helper.debug(f"reset_chatgpt {key} {value}")
             self.redis.hset(settings_key, key, self.ChatGPT_DEFAULTS[key])
             self.redis.hdel(settings_key, key)
             self.driver.reply_to(message, f"Reset {key} to {value}")
@@ -716,7 +690,7 @@ class ChatGPT(Plugin):
     async def get_chatgpt(self, message: Message, key: str):
         """get the chatgpt key"""
         settings_key = self.SETTINGS_KEY
-        await self.debug(f"get_chatgpt {key}")
+        await self.helper.debug(f"get_chatgpt {key}")
         if self.users.is_admin(message.sender_name):
             value = self.redis.hget(settings_key, key)
             self.driver.reply_to(message, f"Set {key} to {value}")
@@ -725,7 +699,7 @@ class ChatGPT(Plugin):
     async def get_chatgpt_all(self, message: Message):
         """get all the chatgpt keys"""
         settings_key = self.SETTINGS_KEY
-        await self.debug("get_chatgpt_all")
+        await self.helper.debug("get_chatgpt_all")
         if self.users.is_admin(message.sender_name):
             for key in self.redis.hkeys(settings_key):
                 if key in self.ChatGPT_DEFAULTS:
@@ -887,7 +861,7 @@ class ChatGPT(Plugin):
                     self.driver.reply_to(message, gpt_response)
                     self.remove_reaction(message, "thought_balloon")
 
-                    await self.log(f"{message.sender_name} used .vision")
+                    await self.helper.log(f"{message.sender_name} used .vision")
 
     @listen_to(".+", needs_mention=True)
     async def chat(self, message: Message):
@@ -906,7 +880,7 @@ class ChatGPT(Plugin):
         msg = message.text
         # log the message if user is admin
         # if self.is_admin(message.sender_name):
-        #    await self.log(f"{message.sender_name}:  {pformat(message.body)}")
+        #    await self.helper.log(f"{message.sender_name}:  {pformat(message.body)}")
         thread_id = message.reply_id
         thread_key = REDIS_PREPEND + thread_id
         # check if thread exists in redis
@@ -982,7 +956,7 @@ class ChatGPT(Plugin):
                 )
                 self.driver.react_to(message, "x")
                 return
-            # self.debug(response)
+            # self.helper.debug(response)
             # send response to user
             self.driver.reply_to(
                 message,
@@ -1017,9 +991,9 @@ class ChatGPT(Plugin):
                 )
                 self.driver.react_to(message, "x")
                 return
-            # self.debug(response)
+            # self.helper.debug(response)
 
-            # self.debug(f"reply_msg_id: {reply_msg_id}")
+            # self.helper.debug(f"reply_msg_id: {reply_msg_id}")
             # get current time and set that as last_update_time
             last_update_time = time.time()
             # get the setting for how often to update the message
@@ -1028,10 +1002,10 @@ class ChatGPT(Plugin):
             )
             try:
                 async for chunk in response:
-                    # await self.debug(
+                    # await self.helper.debug(
                     #    f"time since last chunk: {(time.time() - last_chunk_time) * 1000}")
                     # last_chunk_time = time.time()
-                    # self.debug(f"chunk: {chunk}")
+                    # self.helper.debug(f"chunk: {chunk}")
                     # check for error in the responses and send error message
                     # TODO: might need fixing
                     if "error" in chunk:
@@ -1057,11 +1031,11 @@ class ChatGPT(Plugin):
                     # if the message has content, add it to the full message
                     if chunk_message.content:
                         full_message += chunk_message.content
-                        # await self.debug((time.time() - last_update_time) * 1000)
+                        # await self.helper.debug((time.time() - last_update_time) * 1000)
                         if (
                             time.time() - last_update_time
                         ) * 1000 > stream_update_delay_ms:
-                            # await self.debug("updating message")
+                            # await self.helper.debug("updating message")
                             # update the message
                             self.driver.posts.patch_post(
                                 reply_msg_id,
@@ -1093,11 +1067,11 @@ class ChatGPT(Plugin):
 
         if not stream:
             # log usage for user
-            await self.log(
+            await self.helper.log(
                 f"User: {message.sender_name} used {response['usage']['total_tokens']} tokens"
             )
         else:
-            await self.log(f"User: {message.sender_name} used {self.model}")
+            await self.helper.log(f"User: {message.sender_name} used {self.model}")
 
     @listen_to(r"^.(de|en)code ([a-zA-Z0-9]+) (.*)")
     async def decode(self, message: Message, method: str, encoding: str, text: str):
@@ -1317,7 +1291,7 @@ class ChatGPT(Plugin):
         if not self.users.is_user(message.sender_name):
             self.driver.reply_to(message, f"Error: {message.sender_name} is not a user")
             return
-        await self.log(f"{message.sender_name} tried to run command: !{command}")
+        await self.helper.log(f"{message.sender_name} tried to run command: !{command}")
         # split command into command and input
         command = command.split(" ", 1)
         if len(command) == 1:
@@ -1344,7 +1318,7 @@ class ChatGPT(Plugin):
         valid_commands = self.validatecommand(command)
         if "error" in valid_commands:
             self.driver.reply_to(message, f"Error: {valid_commands['error']}")
-            await self.log(f"Error: {valid_commands['error']}")
+            await self.helper.log(f"Error: {valid_commands['error']}")
             return
         else:
             validators = valid_commands["validators"]
@@ -1364,15 +1338,15 @@ class ChatGPT(Plugin):
                     if type(valid_input) is dict:
                         if "error" in valid_input:
                             self.driver.reply_to(message, f"Error: {valid_input['error']}")
-                            await self.log(f"Error: {valid_input['error']}")
+                            await self.helper.log(f"Error: {valid_input['error']}")
                             return False
                     if valid_input is False:
                         self.driver.reply_to(message, f"Error: {word} is not a valid input to {command}")
-                        await self.log(f"Error: {word} is not a valid input to {command}")
+                        await self.helper.log(f"Error: {word} is not a valid input to {command}")
                         return False
                     # run command
             self.add_reaction(message, "hourglass")
-            await self.log(f"{message.sender_name} is running command: {command} {args} {input}")
+            await self.helper.log(f"{message.sender_name} is running command: {command} {args} {input}")
             import subprocess
             import shlex
             cmd = shlex.split(f"{command} {args} {input}")
@@ -1396,7 +1370,7 @@ class ChatGPT(Plugin):
                 self.driver.reply_to(message, f"Error:\n```\n{error}\n```")
             if timeout:
                 self.driver.reply_to(message, f"Timed out: 10 seconds")
-            await self.log(f"{message.sender_name} ran command: {command} {args} {input}")
+            await self.helper.log(f"{message.sender_name} ran command: {command} {args} {input}")
 
 
     @listen_to(r"^\.help")

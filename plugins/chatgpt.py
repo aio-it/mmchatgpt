@@ -208,7 +208,7 @@ class ChatGPT(Plugin):
             self.redis.sadd("users", *USERS)
         if self.redis.scard("admins") > 0 and len(ADMINS) > 0:
             self.redis.sadd("users", *ADMINS)
-        if log_channel is None:
+        if self.log_channel is None:
             self.helper.log_to_channel = False
         else:
             self.helper.log_to_channel = True

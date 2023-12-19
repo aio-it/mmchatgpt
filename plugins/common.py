@@ -124,7 +124,7 @@ class Users:
     @listen_to(r"^\.banlist")
     async def banlist(self, message: Message):
         """list banned users"""
-        if self.helper.is_admin(message.sender_name):
+        if self.is_admin(message.sender_name):
             # list banned users
             bans = ""
             for key in self.redis.scan_iter("ban:*"):
@@ -144,7 +144,7 @@ class Users:
     def ban_user(self, username, days=0, hours=0, minutes=0, seconds=0):
         """ban user"""
         # check if user is admin
-        if self.helper.is_admin(username):
+        if self.is_admin(username):
             return False
         # ban user
         uid = self.u2id(username)
@@ -166,9 +166,9 @@ class Users:
     async def ban(self, message: Message, user, days=0):
         """ban user"""
         days = int(days)
-        if self.helper.is_admin(message.sender_name):
+        if self.is_admin(message.sender_name):
             # check if user is admin
-            if self.helper.is_admin(user):
+            if self.is_admin(user):
                 self.driver.reply_to(message, f"Can't ban admin: {user}")
                 return
             # ban user
@@ -187,7 +187,7 @@ class Users:
     @listen_to(r"^\.unban ([a-zA-Z0-9_-]+)")
     async def unban(self, message: Message, user):
         """unban user"""
-        if self.helper.is_admin(message.sender_name):
+        if self.is_admin(message.sender_name):
             # check if user exists
             if self.get_user_by_username(user) is None:
                 self.driver.reply_to(message, f"User not found: {user}")

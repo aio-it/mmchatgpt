@@ -22,7 +22,7 @@ import shlex
 import datetime
 import base64
 from typing import Tuple, List
-from .common import Helper
+from plugins.common import Helper
 
 
 # import serialized_redis

@@ -188,6 +188,8 @@ class ChatGPT(Plugin):
         self.redis = redis.Redis(
             host="localhost", port=6379, db=0, decode_responses=True
         )
+        self.openai_api_key = openai_api_key
+        self.log_channel = log_channel
     def initialize(self,
             driver: Driver,
             plugin_manager: PluginManager,
@@ -196,7 +198,7 @@ class ChatGPT(Plugin):
         self.driver = driver
         self.settings = settings
         self.plugin_manager = plugin_manager
-        self.helper = Helper(self.redis)
+        self.helper = Helper(self.driver, self.redis)
         self.users = Users(self.helper.log_channel)
         if self.redis.scard("admins") <= 0 and len(ADMINS) > 0:
             self.redis.sadd("admins", *ADMINS)
@@ -210,8 +212,7 @@ class ChatGPT(Plugin):
             self.helper.log_to_channel = False
         else:
             self.helper.log_to_channel = True
-            self.helper.log_channel = log_channel
-        self.openai_api_key = openai_api_key
+            self.helper.log_channel = self.log_channel
 
         if "giphy_api_key" in kwargs:
             self.giphy_api_key = kwargs["giphy_api_key"]

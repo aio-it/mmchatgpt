@@ -63,7 +63,7 @@ class Users:
             expire = self.redis.ttl(key)
             # replace current ban username with uid in redis
             self.redis.delete(key)
-            self.redis.set(f"ban:{self.users.get_uid(user)}", expire)
+            self.redis.set(f"ban:{self.get_uid(user)}", expire)
     def on_stop(self):
         """on stop"""
         pass
@@ -160,7 +160,7 @@ class Users:
     @listen_to(r"\.uid ([a-zA-Z0-9_-]+)")
     async def uid(self, message: Message, username: str):
         """get user id from username"""
-        if self.users.is_admin(message.sender_name):
+        if self.is_admin(message.sender_name):
             self.driver.reply_to(message, self.get_uid(username))
 
     @listen_to(r"^\.banlist")
@@ -246,7 +246,7 @@ class Users:
     @listen_to(r"^\.users remove (.+)")
     async def users_remove(self, message: Message, username: str):
         """remove user"""
-        if self.users.is_admin(message.sender_name):
+        if self.is_admin(message.sender_name):
             # convert username to uid
             uid = self.u2id(username)
             self.redis.srem("users", uid)
@@ -256,7 +256,7 @@ class Users:
     @listen_to(r"^\.users add (.+)")
     async def users_add(self, message: Message, username: str):
         """add user"""
-        if self.users.is_admin(message.sender_name):
+        if self.is_admin(message.sender_name):
             # check if user exists
             if self.get_user_by_username(username) is None:
                 self.driver.reply_to(message, f"User not found: {username}")
@@ -269,7 +269,7 @@ class Users:
     @listen_to(r"^\.users list")
     async def users_list(self, message: Message):
         """list the users"""
-        if self.users.is_admin(message.sender_name):
+        if self.is_admin(message.sender_name):
             # loop through all users and get their usernames
             users = ""
             for user in self.redis.smembers("users"):
@@ -279,7 +279,7 @@ class Users:
     @listen_to(r"^\.admins add (.*)")
     async def admins_add(self, message: Message, username: str):
         """add admin"""
-        if self.users.is_admin(message.sender_name):
+        if self.is_admin(message.sender_name):
             # check if user exists
             if self.get_user_by_username(username) is None:
                 self.driver.reply_to(message, f"User not found: {username}")
@@ -292,14 +292,14 @@ class Users:
     @listen_to(r"^\.admins remove (.*)")
     async def admins_remove(self, message: Message, username: str):
         """remove admin"""
-        if self.users.is_admin(message.sender_name):
+        if self.is_admin(message.sender_name):
             self.redis.srem("admins", self.u2id(username))
             self.driver.reply_to(message, f"Removed admin: {username}")
 
     @listen_to(r"^\.admins list")
     async def admins_list(self, message: Message):
         """list the admins"""
-        if self.users.is_admin(message.sender_name):
+        if self.is_admin(message.sender_name):
             # get a list of all admins and convert their uids to usernames
             admins = ""
             for admin in self.redis.smembers("admins"):

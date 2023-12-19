@@ -10,6 +10,7 @@ import datetime
 ADMINS = []  # put admins in here to prepopulate the redis db
 USERS = []  # put users in here to prepopulate the redis db
 class UserHelper:
+    pass
 
 class Users:
     """manage users"""

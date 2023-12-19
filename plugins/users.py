@@ -18,7 +18,7 @@ NEEDWHITELIST = False  # if true only users in the users can use the bot
 class Users(Plugin):
     """manage users"""
     def __init__(self):
-        pass
+        self.redis = object
     def initialize(
         self,
         driver: Driver,

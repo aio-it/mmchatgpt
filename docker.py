@@ -86,3 +86,10 @@ class Docker(Plugin):
     """pull a docker image"""
     await self.dockerclient.images.pull(image)
     self.driver.reply_to(message, f"pulled ```{image}```")
+  @listen_to("^\.docker image ls")
+  async def dockerimagels(self, message: Message):
+    """list docker images"""
+    images = await self.dockerclient.images.list()
+    self.driver.reply_to(message,f"images:")
+    for image in images:
+      self.driver.reply_to(message,f"```{image.id} {image.tags}```")

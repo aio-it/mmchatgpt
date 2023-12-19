@@ -7,6 +7,7 @@ from plugins.docker import Docker
 from plugins.pushups import Pushups
 from plugins.common import Users
 from plugins.tts import TTS
+from plugins.shellcmds import ShellCmds
 
 env = Env()
 log_channel = env.str("MM_BOT_LOG_CHANNEL")

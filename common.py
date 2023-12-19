@@ -11,6 +11,13 @@ class Helper:
     def __init__(self, driver, redis):
         self.driver = driver
         self.redis = redis
+
+    def is_user(self, username):
+        """check if user is user"""
+        # check if user is banned
+        if self.redis.exists(f"ban:{self.u2id(username)}"):
+            return False
+        return True if self.u2id(username) in self.redis.smembers("users") else False
     def is_admin(self, username):
         """check if user is admin"""
         # convert username to uid

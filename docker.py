@@ -34,8 +34,8 @@ class Docker(Plugin):
     self.driver = driver
     self.settings = settings
     self.plugin_manager = plugin_manager
-    self.ChatGPT = self.plugin_manager.plugins.ChatGPT
-    
+    #self.ChatGPT = self.plugin_manager.plugins.ChatGPT
+
   
   @listen_to("^\.docker ps")
   async def dockerps(self, message: Message):

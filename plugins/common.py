@@ -12,8 +12,6 @@ env = Env()
 
 ADMINS = []  # put admins in here to prepopulate the redis db
 USERS = []  # put users in here to prepopulate the redis db
-class UserHelper:
-    pass
 
 class Users:
     """manage users"""
@@ -21,7 +19,6 @@ class Users:
         self.redis = redis.Redis(
             host="localhost", port=6379, db=0, decode_responses=True
         )
-        self.userhelper = UserHelper()
     def initialize(
         self,
         driver: Driver,

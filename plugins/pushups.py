@@ -6,8 +6,7 @@ from mmpy_bot.wrappers import Message
 import redis
 from plugins.common import Helper, Users
 class Pushups(Plugin):
-  def __init__(self, log_channel):
-    self.log_channel = log_channel
+  def __init__(self):
     self.redis = redis.Redis(
       host="localhost", port=6379, db=0, decode_responses=True
     )

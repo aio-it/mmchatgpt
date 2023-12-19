@@ -254,7 +254,7 @@ class ChatGPT(Plugin):
     @listen_to(r"^\.model set ([a-zA-Z0-9_-]+)")
     async def model_set(self, message: Message, model: str):
         """set the model"""
-        if self.is_admin(message.sender_name):
+        if self.helper.is_admin(message.sender_name):
             if model in self.ALLOWED_MODELS:
                 self.redis.hset(self.SETTINGS_KEY, "model", model)
                 self.model = model
@@ -267,13 +267,13 @@ class ChatGPT(Plugin):
     @listen_to(r"^\.model get")
     async def model_get(self, message: Message):
         """get the model"""
-        if self.is_admin(message.sender_name):
+        if self.helper.is_admin(message.sender_name):
             self.driver.reply_to(message, f"Model: {self.model}")
 
     @listen_to(r"^\.banlist")
     async def banlist(self, message: Message):
         """list banned users"""
-        if self.is_admin(message.sender_name):
+        if self.helper.is_admin(message.sender_name):
             # list banned users
             bans = ""
             for key in self.redis.scan_iter("ban:*"):
@@ -293,7 +293,7 @@ class ChatGPT(Plugin):
     def ban_user(self, username, days=0, hours=0, minutes=0, seconds=0):
         """ban user"""
         # check if user is admin
-        if self.is_admin(username):
+        if self.helper.is_admin(username):
             return False
         # ban user
         uid = self.u2id(username)
@@ -315,9 +315,9 @@ class ChatGPT(Plugin):
     async def ban(self, message: Message, user, days=0):
         """ban user"""
         days = int(days)
-        if self.is_admin(message.sender_name):
+        if self.helper.is_admin(message.sender_name):
             # check if user is admin
-            if self.is_admin(user):
+            if self.helper.is_admin(user):
                 self.driver.reply_to(message, f"Can't ban admin: {user}")
                 return
             # ban user
@@ -336,7 +336,7 @@ class ChatGPT(Plugin):
     @listen_to(r"^\.unban ([a-zA-Z0-9_-]+)")
     async def unban(self, message: Message, user):
         """unban user"""
-        if self.is_admin(message.sender_name):
+        if self.helper.is_admin(message.sender_name):
             # check if user exists
             if self.get_user_by_username(user) is None:
                 self.driver.reply_to(message, f"User not found: {user}")
@@ -386,7 +386,7 @@ class ChatGPT(Plugin):
     @listen_to(r"\.uid ([a-zA-Z0-9_-]+)")
     async def uid(self, message: Message, username: str):
         """get user id from username"""
-        if self.is_admin(message.sender_name):
+        if self.helper.is_admin(message.sender_name):
             self.driver.reply_to(message, self.get_uid(username))
 
     def get_uid(self, username, force=False):
@@ -547,7 +547,7 @@ class ChatGPT(Plugin):
     @listen_to(r"^\.users remove (.+)")
     async def users_remove(self, message: Message, username: str):
         """remove user"""
-        if self.is_admin(message.sender_name):
+        if self.helper.is_admin(message.sender_name):
             # convert username to uid
             uid = self.u2id(username)
             self.redis.srem("users", uid)
@@ -557,7 +557,7 @@ class ChatGPT(Plugin):
     @listen_to(r"^\.users add (.+)")
     async def users_add(self, message: Message, username: str):
         """add user"""
-        if self.is_admin(message.sender_name):
+        if self.helper.is_admin(message.sender_name):
             # check if user exists
             if self.get_user_by_username(username) is None:
                 self.driver.reply_to(message, f"User not found: {username}")
@@ -570,7 +570,7 @@ class ChatGPT(Plugin):
     @listen_to(r"^\.users list")
     async def users_list(self, message: Message):
         """list the users"""
-        if self.is_admin(message.sender_name):
+        if self.helper.is_admin(message.sender_name):
             # loop through all users and get their usernames
             users = ""
             for user in self.redis.smembers("users"):
@@ -580,7 +580,7 @@ class ChatGPT(Plugin):
     @listen_to(r"^\.admins add (.*)")
     async def admins_add(self, message: Message, username: str):
         """add admin"""
-        if self.is_admin(message.sender_name):
+        if self.helper.is_admin(message.sender_name):
             # check if user exists
             if self.get_user_by_username(username) is None:
                 self.driver.reply_to(message, f"User not found: {username}")
@@ -593,14 +593,14 @@ class ChatGPT(Plugin):
     @listen_to(r"^\.admins remove (.*)")
     async def admins_remove(self, message: Message, username: str):
         """remove admin"""
-        if self.is_admin(message.sender_name):
+        if self.helper.is_admin(message.sender_name):
             self.redis.srem("admins", self.u2id(username))
             self.driver.reply_to(message, f"Removed admin: {username}")
 
     @listen_to(r"^\.admins list")
     async def admins_list(self, message: Message):
         """list the admins"""
-        if self.is_admin(message.sender_name):
+        if self.helper.is_admin(message.sender_name):
             # get a list of all admins and convert their uids to usernames
             admins = ""
             for admin in self.redis.smembers("admins"):
@@ -847,7 +847,7 @@ class ChatGPT(Plugin):
     @listen_to(r"^\.redis get ([\s\S]*)")
     async def redis_get(self, message: Message, key: str):
         """get redis key"""
-        if self.is_admin(message.sender_name):
+        if self.helper.is_admin(message.sender_name):
             # find the type of the key
             keytype = self.redis.type(key)
             if keytype == "string":
@@ -867,7 +867,7 @@ class ChatGPT(Plugin):
     @listen_to(r"^\.redis set ([\s\S]*) ([\s\S]*)")
     async def redis_set(self, message: Message, key: str, value: str):
         """set redis key"""
-        if self.is_admin(message.sender_name):
+        if self.helper.is_admin(message.sender_name):
             self.redis.set(key, value)
             self.driver.reply_to(message, f"Key: {key}\nValue: {value}")
 
@@ -875,7 +875,7 @@ class ChatGPT(Plugin):
     @listen_to(r"^\.redis search ([\s\S]*)")
     async def redis_search(self, message: Message, key: str):
         """search redis key"""
-        if self.is_admin(message.sender_name):
+        if self.helper.is_admin(message.sender_name):
             keys = self.redis.keys(key)
             keystxt = ""
             for key in keys:
@@ -888,7 +888,7 @@ class ChatGPT(Plugin):
     @listen_to(r"^\.redis delete ([\s\S]*)")
     async def redis_delete(self, message: Message, key: str):
         """delete redis key"""
-        if self.is_admin(message.sender_name):
+        if self.helper.is_admin(message.sender_name):
             self.redis.delete(key)
             self.driver.reply_to(message, f"Deleted: {key}")
 
@@ -967,7 +967,7 @@ class ChatGPT(Plugin):
         """set the chatgpt key"""
         settings_key = self.SETTINGS_KEY
         await self.debug(f"set_chatgpt {key} {value}")
-        if self.is_admin(message.sender_name):
+        if self.helper.is_admin(message.sender_name):
             self.redis.hset(settings_key, key, value)
             self.driver.reply_to(message, f"Set {key} to {value}")
 
@@ -975,7 +975,7 @@ class ChatGPT(Plugin):
     async def reset_chatgpt(self, message: Message, key: str):
         """reset the chatgpt key"""
         settings_key = self.SETTINGS_KEY
-        if self.is_admin(message.sender_name) and key in self.ChatGPT_DEFAULTS:
+        if self.helper.is_admin(message.sender_name) and key in self.ChatGPT_DEFAULTS:
             value = self.ChatGPT_DEFAULTS[key]
             await self.debug(f"reset_chatgpt {key} {value}")
             self.redis.hset(settings_key, key, self.ChatGPT_DEFAULTS[key])
@@ -987,7 +987,7 @@ class ChatGPT(Plugin):
         """get the chatgpt key"""
         settings_key = self.SETTINGS_KEY
         await self.debug(f"get_chatgpt {key}")
-        if self.is_admin(message.sender_name):
+        if self.helper.is_admin(message.sender_name):
             value = self.redis.hget(settings_key, key)
             self.driver.reply_to(message, f"Set {key} to {value}")
 
@@ -996,7 +996,7 @@ class ChatGPT(Plugin):
         """get all the chatgpt keys"""
         settings_key = self.SETTINGS_KEY
         await self.debug("get_chatgpt_all")
-        if self.is_admin(message.sender_name):
+        if self.helper.is_admin(message.sender_name):
             for key in self.redis.hkeys(settings_key):
                 if key in self.ChatGPT_DEFAULTS:
                     self.driver.reply_to(
@@ -1097,7 +1097,7 @@ class ChatGPT(Plugin):
     @listen_to(r"^\.pushups reset ([a-zA-Z0-9_-]+)")
     async def pushups_reset(self, message: Message, user):
         """pushups reset for user"""
-        if self.is_admin(message.sender_name):
+        if self.helper.is_admin(message.sender_name):
             # reset pushups for user
             for key in self.redis.scan_iter(f"pushupsdaily:{user}:*"):
                 self.redis.delete(key)
@@ -1876,7 +1876,7 @@ class ChatGPT(Plugin):
         self.add_reaction(message, "robot_face")
         txt = "\n".join(commands)
         self.driver.reply_to(message, f"## :robot_face: Help:\n{txt}\n\n")
-        if self.is_admin(message.sender_name):
+        if self.helper.is_admin(message.sender_name):
             settings_key = self.SETTINGS_KEY
             for key in self.redis.hkeys(settings_key):
                 commands_admin.append(f" - {key}")
@@ -1888,7 +1888,7 @@ class ChatGPT(Plugin):
     async def admin_eval_function(self, message, code):
         """eval function that allows admins to run arbitrary python code and return the result to the chat"""
         reply = ""
-        if self.is_admin(message.sender_name):
+        if self.helper.is_admin(message.sender_name):
             try:
                 resp = eval(code)  # pylint: disable=eval-used
                 reply = f"Evaluated: {code} \nResult: {resp}"
@@ -1900,7 +1900,7 @@ class ChatGPT(Plugin):
     async def admin_exec_function(self, message, code):
         """exec function that allows admins to run arbitrary python code and return the result to the chat"""
         reply = ""
-        if self.is_admin(message.sender_name):
+        if self.helper.is_admin(message.sender_name):
             try:
                 resp = exec(code)  # pylint: disable=exec-used
                 reply = f"Executed: {code} \nResult: {resp}"
@@ -1921,7 +1921,7 @@ class ChatGPT(Plugin):
         command_parts = shlex.split(command)
         c = command_parts[0]
         c_rest = command_parts[1:]
-        if self.is_admin(message.sender_name):
+        if self.helper.is_admin(message.sender_name):
             try:
                 self.driver.react_to(message, "runner")
                 proc = await asyncio.create_subprocess_exec(

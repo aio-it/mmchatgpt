@@ -4,7 +4,7 @@ from mmpy_bot.plugins.base import Plugin, PluginManager
 from mmpy_bot.settings import Settings
 from mmpy_bot.wrappers import Message
 import redis
-from common import Helper
+from ./common import Helper
 class Pushups(Plugin):
   def __init__(self, log_channel):
     self.log_channel = log_channel

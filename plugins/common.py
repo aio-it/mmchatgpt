@@ -375,3 +375,7 @@ class Helper:
     def remove_reaction(self, message: Message, reaction: str = "thought_balloon"):
         """set the thread to in progress by removing the reaction from the thread"""
         self.driver.reactions.delete_reaction(self.driver.user_id, message.id, reaction)
+    def urlencode_text(self, text: str) -> str:
+        """urlencode the text"""
+
+        return urllib.parse.quote_plus(text)

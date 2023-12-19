@@ -29,6 +29,7 @@ class Helper:
             self.log_channel = self.log_channel
     def get_redis(self):
         """get redis"""
+        self.log(f"get_redis called")
         return self.redis
 
     def redis_serialize_json(self, msg):

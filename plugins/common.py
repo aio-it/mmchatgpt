@@ -23,7 +23,7 @@ class Helper:
                 host="localhost", port=6379, db=0, decode_responses=True
             )
         else:
-            self.redis = rediss
+            self.redis = self.REDIS
         self.log_channel = log_channel
         if self.log_channel is None:
             self.log_to_channel = False

@@ -6,8 +6,8 @@ import time
 import json
 from pprint import pformat
 from environs import Env
-
 env = Env()
+
 import openai
 from openai import AsyncOpenAI
 

@@ -34,8 +34,14 @@ class Docker(Plugin):
     self.driver = driver
     self.settings = settings
     self.plugin_manager = plugin_manager
-    #self.ChatGPT = self.plugin_manager.plugins.ChatGPT
-
+    #self.ChatGPT = self.plugin_manager.plugins
+  @listen_to("^\.plugins list")
+  async def pluginslist(self, message: Message):
+    """list plugins"""
+    plugins = self.plugin_manager.plugins
+    self.driver.reply_to(message,f"plugins:")
+    for plugin in plugins:
+      self.driver.reply_to(message,f"```{plugin}```")
   
   @listen_to("^\.docker ps")
   async def dockerps(self, message: Message):

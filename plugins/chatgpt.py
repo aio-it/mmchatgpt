@@ -310,7 +310,7 @@ class ChatGPT(Plugin):
         # convert all admins usernames to user ids and save to redis
         for admin in self.redis.smembers("admins"):
             # check if it is already a uid
-            if self.check_if_username_or_id(admin) == "uid":
+            if self.users.check_if_username_or_id(admin) == "uid":
                 continue
             # replace current admin username with uid in redis
             self.redis.srem("admins", admin)
@@ -327,7 +327,7 @@ class ChatGPT(Plugin):
         for key in self.redis.scan_iter("ban:*"):
             user = key.split(":")[1]
             # check if it is already a uid
-            if self.check_if_username_or_id(user) == "uid":
+            if self.users.check_if_username_or_id(user) == "uid":
                 continue
             # get expire time
             expire = self.redis.ttl(key)

@@ -5,6 +5,7 @@ from mmpy_bot import Bot, Settings
 from plugins.chatgpt import ChatGPT
 from plugins.docker import Docker
 from plugins.pushups import Pushups
+from plugins.common import Users
 env = Env()
 log_channel = env.str("MM_BOT_LOG_CHANNEL")
 openai_api_key = env.str("OPENAI_API_KEY")
@@ -22,7 +23,8 @@ bot = Bot(
     plugins=[
       ChatGPT(openai_api_key, log_channel, giphy_api_key=giphy_api_key),
       Docker(log_channel),
-      Pushups(log_channel)
+      Pushups(log_channel),
+      Users(log_channel),
     ]
 )
 bot.run()

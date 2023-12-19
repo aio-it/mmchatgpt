@@ -9,11 +9,22 @@ import redis
 import datetime
 
 class Users:
+    """manage users"""
     def __init__(self, driver, redis=None):
         self.driver = driver
         self.redis = redis
         self.helper = Helper(self.driver, self.redis)
-    """manage users"""
+    def initialize(
+        self,
+        driver: Driver,
+        plugin_manager: PluginManager,
+        settings: Settings,
+    ):
+        """initialize"""
+        self.driver = driver
+        self.settings = settings
+        self.plugin_manager = plugin_manager
+        self.helper = Helper(self.driver, self.redis)
     def is_user(self, username):
         """check if user is user"""
         # check if user is banned

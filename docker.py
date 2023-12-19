@@ -36,7 +36,7 @@ class Docker(Plugin):
     self.plugin_manager = plugin_manager
   
   @listen_to("^\.docker ps")
-  def dockerps(self, message: Message):
+  await def dockerps(self, message: Message):
     """list docker containers"""
     containers = await self.dockerclient.containers.list()
     for container in containers:

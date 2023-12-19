@@ -38,7 +38,7 @@ class Docker(Plugin):
   @listen_to("^\.docker ps")
   def dockerps(self, message: Message):
     """list docker containers"""
-    containers = self.dockerclient.containers.list()
+    containers = await self.dockerclient.containers.list()
     for container in containers:
       self.driver.reply_to(message,f"```{container}```")
 

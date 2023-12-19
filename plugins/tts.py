@@ -5,6 +5,7 @@ from mmpy_bot.settings import Settings
 from mmpy_bot.wrappers import Message
 from plugins.common import Helper, Users
 from environs import Env
+from typing import Tuple, List
 
 class TTS(Plugin):
   def __init__(self):

@@ -630,7 +630,7 @@ class ChatGPT(Plugin):
             options_msg += "\nhd - use hd quality (default)"
             self.driver.reply_to(message, options_msg)
             return
-        if self.is_user(message.sender_name):
+        if self.helper.is_user(message.sender_name):
             # define defaults
             default_size = "1024x1024"
             default_style = "vivid"
@@ -764,7 +764,7 @@ class ChatGPT(Plugin):
         """fetch gif from giphy api"""
         if self.giphy_api_key is None:
             return
-        if self.is_user(message.sender_name):
+        if self.helper.is_user(message.sender_name):
             url = "https://api.giphy.com/v1/gifs/search"
             params = {
                 "api_key": self.giphy_api_key,
@@ -804,7 +804,7 @@ class ChatGPT(Plugin):
     @listen_to(r"^\.calc$")
     async def calc_help(self, message: Message):
         """calc help"""
-        if self.is_user(message.sender_name):
+        if self.helper.is_user(message.sender_name):
             # print help message
             messagetxt = (
                 f".calc <expression> - use mathjs api to calculate expression\n"
@@ -816,7 +816,7 @@ class ChatGPT(Plugin):
     @listen_to(r"^\.calc ?([\s\S]+)")
     async def calc(self, message: Message, text: str):
         """use math module to calc"""
-        if self.is_user(message.sender_name):
+        if self.helper.is_user(message.sender_name):
             # convert newline to ;
             text = text.replace("\n", ";")
             try:
@@ -896,7 +896,7 @@ class ChatGPT(Plugin):
     async def drtts(self, message: Message, text: str):
         """use the dr tts website to get an audio clip from text"""
 
-        if self.is_user(message.sender_name):
+        if self.helper.is_user(message.sender_name):
             try:
                 with RateLimit(
                     resource="drtts",
@@ -939,7 +939,7 @@ class ChatGPT(Plugin):
 
     @listen_to(r"^\.tts ([\s\S]*)")
     async def tts(self, message: Message, text: str):
-        if self.is_user(message.sender_name):
+        if self.helper.is_user(message.sender_name):
             try:
                 with RateLimit(
                     resource="drtts",
@@ -1030,7 +1030,7 @@ class ChatGPT(Plugin):
     @listen_to(r"^\.pushups help$")
     async def pushups_helps(self, message: Message):
         """pushups scores for all users"""
-        if self.is_user(message.sender_name):
+        if self.helper.is_user(message.sender_name):
             # print help message
             messagetxt = f".pushups <number> - add pushups for own user\n"
             messagetxt += f".pushups add <number> - add pushups for own user\n"
@@ -1048,7 +1048,7 @@ class ChatGPT(Plugin):
     async def pushups_top(self, message: Message, topcount):
         """pushups scores for all users"""
         # TODO: add streaks
-        if self.is_user(message.sender_name):
+        if self.helper.is_user(message.sender_name):
             topcount = int(topcount)
             if topcount > 100:
                 topcount = 100
@@ -1110,7 +1110,7 @@ class ChatGPT(Plugin):
     @listen_to("^\.pushups reset$")
     async def pushups_reset_self(self, message: Message):
         """pushups reset for self"""
-        if self.is_user(message.sender_name):
+        if self.helper.is_user(message.sender_name):
             # reset pushups for self
             for key in self.redis.scan_iter(f"pushupsdaily:{message.sender_name}:*"):
                 self.redis.delete(key)
@@ -1135,7 +1135,7 @@ class ChatGPT(Plugin):
     @listen_to(r"^\.pushups sub ([0-9]+)")  # pushups
     async def pushups_sub(self, message: Message, pushups_sub):
         """pushups substract"""
-        if self.is_user(message.sender_name):
+        if self.helper.is_user(message.sender_name):
             # check if we are substracting more than we have
             today = datetime.datetime.now().strftime("%Y-%m-%d")
             today_key = f"pushupsdaily:{message.sender_name}:{today}"
@@ -1166,7 +1166,7 @@ class ChatGPT(Plugin):
     @listen_to(r"^\.pushups add ([-+]?[0-9]+)")  # pushups
     async def pushups_add(self, message: Message, pushups_add):
         """pushups"""
-        if self.is_user(message.sender_name):
+        if self.helper.is_user(message.sender_name):
             # check if pushups more than 1000
             pushups_add = int(pushups_add)
             if pushups_add > 1000:
@@ -1206,7 +1206,7 @@ class ChatGPT(Plugin):
     @listen_to(r"^\.pushups scores$")
     async def pushups_scores(self, message: Message):
         """pushups scores for all users"""
-        if self.is_user(message.sender_name):
+        if self.helper.is_user(message.sender_name):
             # get pushups in redis per user
             keys = self.redis.keys("pushupstotal:*")
             messagetxt = ""
@@ -1219,7 +1219,7 @@ class ChatGPT(Plugin):
     @listen_to(r"^\.pushups score$")
     async def pushups_score(self, message: Message):
         """pushups score"""
-        if self.is_user(message.sender_name):
+        if self.helper.is_user(message.sender_name):
             # get pushups for last 7 days and print them and a sum of those 7 days and a total
             messagetxt = ""
             today = datetime.datetime.now()
@@ -1248,7 +1248,7 @@ class ChatGPT(Plugin):
     @listen_to(r"^\.vision (.+)")
     async def parseimage(self, message: Message, msg: str):
         """check if post contains an image upload in the message.body.post.file_ids and parse it"""
-        if self.is_user(message.sender_name):
+        if self.helper.is_user(message.sender_name):
             data = message.body["data"]
             post = data["post"]
             # url encode msg
@@ -1313,7 +1313,7 @@ class ChatGPT(Plugin):
     @listen_to(".+", needs_mention=True)
     async def chat(self, message: Message):
         """listen to everything and respond when mentioned"""
-        if not self.is_user(message.sender_name):
+        if not self.helper.is_user(message.sender_name):
             return
         # if message.is_direct_message and not self.is_admin(message.sender_name):
         #    return
@@ -1526,7 +1526,7 @@ class ChatGPT(Plugin):
         supported_encodings = ["base64", "b64", "url"]
         encode = True if method == "en" else False
         decode = True if method == "de" else False
-        if self.is_user(message.sender_name):
+        if self.helper.is_user(message.sender_name):
             if text == "" or encoding == "" or encoding == "help":
                 # print help message
                 messagetxt = (
@@ -1735,7 +1735,7 @@ class ChatGPT(Plugin):
     async def run_command(self,message: Message, command):
         """ runs a command after validating the command and the input"""
         # check if user is user (lol)
-        if not self.is_user(message.sender_name):
+        if not self.helper.is_user(message.sender_name):
             self.driver.reply_to(message, f"Error: {message.sender_name} is not a user")
             return
         await self.log(f"{message.sender_name} tried to run command: !{command}")

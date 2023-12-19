@@ -7,12 +7,8 @@ from mmpy_bot.wrappers import Message
 import json
 import redis
 
-class Helper:
-    """helper functions"""
-    def __init__(self, driver, redis):
-        self.driver = driver
-        self.redis = redis
-
+class Users:
+    """manage users"""
     def is_user(self, username):
         """check if user is user"""
         # check if user is banned
@@ -102,16 +98,7 @@ class Helper:
         if uid != None:
             self.redis.set(f"uid:{username}", uid, ex=60 * 60)
         return uid
-    def redis_serialize_json(self, msg):
-        """serialize a message to json"""
-        return json.dumps(msg)
-
-    def redis_deserialize_json(self, msg):
-        """deserialize a message from json"""
-        if isinstance(msg, list):
-            return [json.loads(m) for m in msg]
-        return json.loads(msg)
-
+    
     @listen_to(r"^\.banlist")
     async def banlist(self, message: Message):
         """list banned users"""
@@ -192,3 +179,20 @@ class Helper:
             self.driver.reply_to(message, f"Unbanned {user}")
             self.redis.delete(f"ban:{uid}")
             await self.log(f"{message.sender_name} unbanned {user}")
+
+
+class Helper:
+    """helper functions"""
+    def __init__(self, driver, redis):
+        self.driver = driver
+        self.redis = redis
+
+    def redis_serialize_json(self, msg):
+        """serialize a message to json"""
+        return json.dumps(msg)
+
+    def redis_deserialize_json(self, msg):
+        """deserialize a message from json"""
+        if isinstance(msg, list):
+            return [json.loads(m) for m in msg]
+        return json.loads(msg)

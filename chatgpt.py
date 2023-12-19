@@ -25,8 +25,11 @@ from typing import Tuple, List
 
 
 # import serialized_redis
-from mmpy_bot import Plugin, listen_to
-from mmpy_bot import Message
+from mmpy_bot.driver import Driver
+from mmpy_bot.function import listen_to
+from mmpy_bot.plugins.base import Plugin, PluginManager
+from mmpy_bot.settings import Settings
+from mmpy_bot.wrappers import Message
 from redis_rate_limit import RateLimit, TooManyRequests
 
 MODEL = "gpt-3.5-turbo-0301"
@@ -215,7 +218,15 @@ class ChatGPT(Plugin):
         print(f"Allowed users: {self.redis.smembers('users')}")
         print(f"Allowed admins: {self.redis.smembers('admins')}")
         print(f"Allowed models: {self.ALLOWED_MODELS}")
-
+    def initialize(self,
+            driver: Driver,
+            plugin_manager: PluginManager,
+            settings: Settings
+            ):
+        self.driver = driver
+        self.settings = settings
+        self.plugin_manager = plugin_manager
+        self.helper = Helper(self.driver, self.redis)
     def return_last_x_messages(self, messages, max_length_in_tokens):
         """return last x messages from list of messages limited by max_length_in_tokens"""
         limited_messages = []

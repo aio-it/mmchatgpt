@@ -342,11 +342,6 @@ class ChatGPT(Plugin):
         ):
             os.remove(filename)
 
-    def urlencode_text(self, text: str) -> str:
-        """urlencode the text"""
-
-        return urllib.parse.quote_plus(text)
-
     @listen_to(r"^\.gif ([\s\S]*)")
     async def gif(self, message: Message, text: str):
         """fetch gif from giphy api"""

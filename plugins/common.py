@@ -8,6 +8,7 @@ import json
 import redis
 
 class Helper:
+    """helper functions"""
     def __init__(self, driver, redis):
         self.driver = driver
         self.redis = redis

@@ -24,7 +24,7 @@ bot = Bot(
       ChatGPT(openai_api_key, giphy_api_key=giphy_api_key),
       Docker(),
       Pushups(),
-      Users(log_channel),
+      Users(),
     ]
 )
 bot.run()

@@ -41,6 +41,7 @@ class Docker(Plugin):
   async def dockerps(self, message: Message):
     """list docker containers"""
     containers = await self.dockerclient.containers.list()
+    self.driver.reply_to(message,f"```{containers}```")
     for container in containers:
       self.driver.reply_to(message,f"```{container}```")
 

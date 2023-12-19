@@ -124,7 +124,7 @@ class Users:
     @listen_to(r"^\.banlist")
     async def banlist(self, message: Message):
         """list banned users"""
-        if self.is_admin(message.sender_name):
+        if self.helper.is_admin(message.sender_name):
             # list banned users
             bans = ""
             for key in self.redis.scan_iter("ban:*"):

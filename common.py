@@ -77,3 +77,20 @@ class Helper:
             return user
         except:
             return None
+    def get_uid(self, username, force=False):
+        """get uid from username"""
+        # check if uid is cached in redis
+        if not force and self.redis.exists(f"uid:{username}"):
+            return self.redis.get(f"uid:{username}")
+        try:
+            uid = self.get_user_by_username(username)["id"]
+        except:
+            # uid not found
+            uid = None
+            # throw exception if user is not found
+            raise Exception(f"User not found: {username}")
+        # cache the uid in redis for 1 hour
+        if uid != None:
+            self.redis.set(f"uid:{username}", uid, ex=60 * 60)
+        return uid
+

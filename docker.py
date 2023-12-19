@@ -46,8 +46,8 @@ class Docker(Plugin):
       container = await self.dockerclient.containers.get(c.id)
       info = await container.show()
       # load json into dict
-      import json
-      info = json.loads(info)
+#      import json
+#      info = json.loads(info)
 
       self.driver.reply_to(message,f"```{info['Id']} {info['State']['Status']}```")
 

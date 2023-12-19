@@ -188,9 +188,9 @@ class ChatGPT(Plugin):
         self.redis = redis.Redis(
             host="localhost", port=6379, db=0, decode_responses=True
         )
-        self.openai_api_key = openai_api_key
         if openai_api_key is None:
             raise MissingApiKey("No OPENAI API key provided")
+        self.openai_api_key = openai_api_key
         self.log_channel = log_channel
     def initialize(self,
             driver: Driver,

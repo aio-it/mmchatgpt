@@ -707,7 +707,6 @@ class ChatGPT(Plugin):
             value = self.ChatGPT_DEFAULTS[key]
         return value
 
-
     @listen_to(r"^\.vision (.+)")
     async def parseimage(self, message: Message, msg: str):
         """check if post contains an image upload in the message.body.post.file_ids and parse it"""

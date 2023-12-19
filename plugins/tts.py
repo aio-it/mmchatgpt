@@ -17,7 +17,7 @@ class TTS(Plugin):
     self.driver = driver
     self.settings = settings
     self.plugin_manager = plugin_manager
-    self.helper = Helper(self.driver, self.redis)
+    self.helper = Helper(self.driver)
     self.users = Users()
 
     @listen_to(r"^\.drtts ([\s\S]*)")

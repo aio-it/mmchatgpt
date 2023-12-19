@@ -343,18 +343,6 @@ class ChatGPT(Plugin):
         """print to console"""
         print(f"{message.sender_name}: {message.text}")
 
-    def is_user(self, username):
-        """check if user is user"""
-        # check if user is banned
-        if self.redis.exists(f"ban:{self.u2id(username)}"):
-            return False
-        return True if self.u2id(username) in self.redis.smembers("users") else False
-
-    def is_admin(self, username):
-        """check if user is admin"""
-        # convert username to uid
-        return True if self.u2id(username) in self.redis.smembers("admins") else False
-
     async def wall(self, message):
         """send message to all admins"""
         for admin_uid in self.redis.smembers("admins"):

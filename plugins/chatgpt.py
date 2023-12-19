@@ -413,7 +413,7 @@ class ChatGPT(Plugin):
                     # replace newlines with spaces
                     text = text.replace("\n", " ")
                     # urlencode the text
-                    urlencoded_text = self.urlencode_text(text)
+                    urlencoded_text = self.helper.urlencode_text(text)
                     # get the result from mathjs api https://api.mathjs.org/v4/?expr=<text>
                     response = requests.get(
                         f"https://api.mathjs.org/v4/?expr={urlencoded_text}"
@@ -534,7 +534,7 @@ class ChatGPT(Plugin):
             data = message.body["data"]
             post = data["post"]
             # url encode msg
-            msg = self.urlencode_text(msg)
+            msg = self.helper.urlencode_text(msg)
             # check if message contains an image
             if data["image"] == "true":
                 file_ids = post["file_ids"]

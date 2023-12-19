@@ -304,6 +304,11 @@ class Helper:
         self.driver = driver
         self.redis = redis
         self.log_channel = log_channel
+        if self.log_channel is None:
+            self.helper.log_to_channel = False
+        else:
+            self.helper.log_to_channel = True
+            self.helper.log_channel = self.log_channel
 
 
     def redis_serialize_json(self, msg):

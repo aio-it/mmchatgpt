@@ -58,9 +58,12 @@ class Docker(Plugin):
 
       self.driver.reply_to(message,f"```{info['Id']} {info['State']['Status']}```")
 
-  #@listen_to("^\.docker run (.*)")
+  @listen_to("^\.docker run (.*)")
   async def dockerrun(self, message: Message, command: str):
     """run a docker container"""
+    if self.helper.is_admin(message.sender_name) == False:
+      self.driver.reply_to(message, f"you are not an admin")
+      return
     config = CONTAINER_CONFIG
     config["Cmd"] = command.split(" ")
     # pull image 

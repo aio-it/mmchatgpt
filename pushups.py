@@ -11,8 +11,6 @@ class Pushups(Plugin):
     self.redis = redis.Redis(
       host="localhost", port=6379, db=0, decode_responses=True
     )
-    #self.dockerclient = docker.from_env()
-    self.dockerclient = aiodocker.Docker()
   def initialize(        self,
         driver: Driver,
         plugin_manager: PluginManager,

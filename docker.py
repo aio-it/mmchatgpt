@@ -10,8 +10,8 @@ CONTAINER_CONFIG = {
      "Cmd": ["/bin/ls"],
      "Image": "ubuntu:latest",
      "AttachStdin": False,
-     "AttachStdout": False,
-     "AttachStderr": False,
+     "AttachStdout": True,
+     "AttachStderr": True,
      "Tty": False,
      "OpenStdin": False,
 }

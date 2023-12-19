@@ -147,7 +147,7 @@ class MissingApiKey(Exception):
 
 class ChatGPT(Plugin):
     """mmypy chatgpt plugin"""
-
+    
     # MODEL = "gpt-3.5-turbo-0301"
     DEFAULT_MODEL = "gpt-4"
     ALLOWED_MODELS = [

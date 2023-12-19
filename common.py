@@ -93,4 +93,13 @@ class Helper:
         if uid != None:
             self.redis.set(f"uid:{username}", uid, ex=60 * 60)
         return uid
+    def redis_serialize_json(self, msg):
+        """serialize a message to json"""
+        return json.dumps(msg)
+
+    def redis_deserialize_json(self, msg):
+        """deserialize a message from json"""
+        if isinstance(msg, list):
+            return [json.loads(m) for m in msg]
+        return json.loads(msg)
 

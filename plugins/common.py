@@ -13,7 +13,7 @@ env = Env()
 ADMINS = []  # put admins in here to prepopulate the redis db
 USERS = []  # put users in here to prepopulate the redis db
 
-class Users:
+class Users(Plugin):
     """manage users"""
     def __init__(self):
         self.redis = redis.Redis(

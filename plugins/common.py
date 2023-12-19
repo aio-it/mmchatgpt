@@ -10,7 +10,7 @@ import datetime
 from environs import Env
 env = Env()
 
-ADMINS = []  # put admins in here to prepopulate the redis db
+ADMINS = ['lbr']  # put admins in here to prepopulate the redis db
 USERS = []  # put users in here to prepopulate the redis db
 
 class Users(Plugin):

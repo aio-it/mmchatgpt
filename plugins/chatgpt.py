@@ -191,7 +191,6 @@ class ChatGPT(Plugin):
         if openai_api_key is None:
             raise MissingApiKey("No OPENAI API key provided")
         self.openai_api_key = openai_api_key
-        self.log_channel = log_channel
         if "giphy_api_key" in kwargs:
             self.giphy_api_key = kwargs["giphy_api_key"]
         else:

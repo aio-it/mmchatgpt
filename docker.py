@@ -39,7 +39,9 @@ class Docker(Plugin):
   def dockerps(self, message: Message):
     """list docker containers"""
     containers = self.dockerclient.containers.list()
-    self.driver.reply_to(message,f"```{containers}```")
+    for container in containers:
+      self.driver.reply_to(message,f"```{container}```")
+
   @listen_to("^\.docker run (.*)")
   async def dockerrun(self, message: Message, command: str):
     """run a docker container"""

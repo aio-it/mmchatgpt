@@ -214,7 +214,7 @@ class ChatGPT(Plugin):
         self.settings = settings
         self.plugin_manager = plugin_manager
         self.helper = Helper(self.driver, self.redis)
-        self.users = Users(self.helper.log_channel)
+        self.users = Users()
 
             
     def return_last_x_messages(self, messages, max_length_in_tokens):

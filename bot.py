@@ -2,9 +2,9 @@
 """chatgpt mattermost bot"""
 from environs import Env
 from mmpy_bot import Bot, Settings
-from chatgpt import ChatGPT
+from plugins.chatgpt import ChatGPT
 from plugins.docker import Docker
-from pushups import Pushups
+from plugins.pushups import Pushups
 env = Env()
 log_channel = env.str("MM_BOT_LOG_CHANNEL")
 openai_api_key = env.str("OPENAI_API_KEY")

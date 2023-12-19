@@ -10,6 +10,7 @@ import datetime
 import urllib
 import requests
 import uuid
+import os
 from environs import Env
 env = Env()
 

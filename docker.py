@@ -59,3 +59,25 @@ class Docker(Plugin):
     self.driver.reply_to(message, f"started ```{container.id}```")
     logs = await container.log(stdout=True)
     self.driver.reply_to(message,''.join(logs))
+
+  @listen_to("^\.docker stop (.*)")
+  async def dockerstop(self, message: Message, container_id: str):
+    """stop a docker container"""
+    container = await self.dockerclient.containers.get(container_id)
+    self.driver.reply_to(message, f"stopping ```{container.id}```")
+    await container.stop()
+    self.driver.reply_to(message, f"stopped ```{container.id}```")
+
+  @listen_to("^\.docker rm (.*)")
+  async def dockerrm(self, message: Message, container_id: str):
+    """remove a docker container"""
+    container = await self.dockerclient.containers.get(container_id)
+    self.driver.reply_to(message, f"removing ```{container.id}```")
+    await container.delete()
+    self.driver.reply_to(message, f"removed ```{container.id}```")
+  @listen_to("^\.docker logs (.*)")
+  async def dockerlogs(self, message: Message, container_id: str):
+    """logs from a docker container"""
+    container = await self.dockerclient.containers.get(container_id)
+    logs = await container.log(stdout=True)
+    self.driver.reply_to(message,''.join(logs))

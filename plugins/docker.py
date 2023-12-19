@@ -6,10 +6,11 @@ from mmpy_bot.wrappers import Message
 from plugins.common import Helper
 from plugins.users import Users
 from environs import Env
+env = Env()
 
 import redis
 import aiodocker
-env = Env()
+
 CONTAINER_CONFIG = {
      "Cmd": ["/bin/ls"],
      "Image": "ubuntu:latest",
@@ -35,9 +36,8 @@ class Docker(Plugin):
     self.settings = settings
     self.plugin_manager = plugin_manager
     self.helper = Helper(self.driver, self.redis)
-    self.users = Users()
-    #self.users.initialize(self.driver, self.plugin_manager, self.settings)
-    #self.ChatGPT = self.plugin_manager.plugins
+    self.users = Users(self.driver, self.plugin_manager, self.settings)
+
   @listen_to("^\.plugins list")
   async def pluginslist(self, message: Message):
     """list plugins"""

@@ -54,6 +54,6 @@ class Docker(Plugin):
     image = config["Image"]
     await self.dockerclient.images.pull(image)
     container = await self.dockerclient.containers.create(config=config)
-    self.driver.reply_to(message, f"```{container}```")
+    self.driver.reply_to(message, f"```{container.id}```")
     logs = await container.log(stdout=True)
     self.driver.reply_to(message,''.join(logs))

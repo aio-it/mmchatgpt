@@ -4,7 +4,7 @@ from environs import Env
 from mmpy_bot import Bot, Settings
 from chatgpt import ChatGPT
 from docker import Docker
-
+from pushups import Pushups
 env = Env()
 log_channel = env.str("MM_BOT_LOG_CHANNEL")
 openai_api_key = env.str("OPENAI_API_KEY")
@@ -19,6 +19,10 @@ bot = Bot(
         SSL_VERIFY=env.bool("MM_SSL_VERIFY", True),
     ),  # Either specify your settings here or as environment variables.
     # Add your own plugins here.
-    plugins=[ChatGPT(openai_api_key, log_channel, giphy_api_key=giphy_api_key), Docker(log_channel)],
+    plugins=[
+      ChatGPT(openai_api_key, log_channel, giphy_api_key=giphy_api_key),
+      Docker(log_channel),
+      Pushups(log_channel)
+    ]
 )
 bot.run()

@@ -308,7 +308,7 @@ class Users:
 
 class Helper:
     """helper functions"""
-    def __init__(self, driver, redis, **kwargs):
+    def __init__(self, driver, redis, log_channel=None):
         self.driver = driver
         self.redis = redis
         self.log_channel = log_channel

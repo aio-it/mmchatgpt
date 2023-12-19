@@ -6,6 +6,7 @@ from mmpy_bot.settings import Settings
 from mmpy_bot.wrappers import Message
 import json
 import redis
+import datetime
 
 class Users:
     def __init__(self, driver, redis):

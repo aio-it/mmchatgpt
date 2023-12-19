@@ -32,7 +32,7 @@ class Docker(Plugin):
     self.driver = driver
     self.settings = settings
     self.plugin_manager = plugin_manager
-    self.helper = Helper(self.driver)
+    self.helper = Helper(self.driver, self.redis)
     #self.ChatGPT = self.plugin_manager.plugins
   @listen_to("^\.plugins list")
   async def pluginslist(self, message: Message):

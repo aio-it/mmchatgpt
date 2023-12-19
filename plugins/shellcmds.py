@@ -10,6 +10,8 @@ import re
 import dns.resolver
 import ipaddress
 import urllib.parse
+import subprocess
+import shlex
 SHELL_COMMANDS = {
             "ping": {
                 "validators": ["ipv4", "domain"],
@@ -343,8 +345,6 @@ class ShellCmds(Plugin):
                     # run command
             self.helper.add_reaction(message, "hourglass")
             await self.helper.log(f"{message.sender_name} is running command: {command} {args} {input}")
-            import subprocess
-            import shlex
             cmd = shlex.split(f"{command} {args} {input}")
             process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             timeout = False

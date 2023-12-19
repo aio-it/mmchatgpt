@@ -10,7 +10,7 @@ import datetime
 
 class Users:
     """manage users"""
-    def __init__(self, driver, redis=None):
+    def __init__(self, log_channel):
         self.driver = driver
         self.redis = redis
         self.helper = Helper(self.driver, self.redis)

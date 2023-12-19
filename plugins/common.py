@@ -25,6 +25,12 @@ class Users:
         self.settings = settings
         self.plugin_manager = plugin_manager
         self.helper = Helper(self.driver, self.redis)
+    def on_start(self):
+        """on start"""
+        pass
+    def on_stop(self):
+        """on stop"""
+        pass
     def is_user(self, username):
         """check if user is user"""
         # check if user is banned

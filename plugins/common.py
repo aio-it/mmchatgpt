@@ -7,6 +7,9 @@ from mmpy_bot.wrappers import Message
 import json
 import redis
 import datetime
+from environs import Env
+env = Env()
+
 ADMINS = []  # put admins in here to prepopulate the redis db
 USERS = []  # put users in here to prepopulate the redis db
 class UserHelper:

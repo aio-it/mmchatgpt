@@ -27,9 +27,9 @@ class Helper:
         else:
             self.log_to_channel = True
             self.log_channel = self.log_channel
-    async def get_redis(self):
+    def get_redis(self):
         """get redis"""
-        await self.log(f"get_redis called")
+        self.slog(f"get_redis called")
         return self.redis
 
     def redis_serialize_json(self, msg):

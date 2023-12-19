@@ -6,6 +6,8 @@ from mmpy_bot.wrappers import Message
 from plugins.common import Helper, Users
 from environs import Env
 from typing import Tuple, List
+from redis_rate_limit import RateLimit, TooManyRequests
+
 
 class TTS(Plugin):
     def __init__(self):

@@ -5,6 +5,10 @@ from mmpy_bot.settings import Settings
 from mmpy_bot.wrappers import Message
 from plugins.common import Helper, Users
 from environs import Env
+import validators
+import re
+import dns.resolver
+import ipaddress
 SHELL_COMMANDS = {
             "ping": {
                 "validators": ["ipv4", "domain"],
@@ -128,8 +132,6 @@ class ShellCmds(Plugin):
             return { "error": f"invalid command. supported commands: {' '.join(list(SHELL_COMMANDS.keys()))}" }
     def validateinput(self,input,types=["domain","ip"], allowed_args=[]):
         """function that takes a string and validates that it matches against one or more of the types given in the list"""
-        import re
-        import validators
         bad_chars = [" ", "\n", "\t", "\r",";","#","!"]
         valid_types = [
             "domain",
@@ -157,7 +159,6 @@ class ShellCmds(Plugin):
         if "domain" in types:
             if validators.domain(input):
                 # verify that the ip returned from a dns lookup is not a private ip
-                import dns.resolver
                 try:
                     answers = dns.resolver.resolve(input, "A")
                 except (dns.resolver.NoAnswer):
@@ -181,7 +182,6 @@ class ShellCmds(Plugin):
                 # loop over answers6 and answers and check if any of them are private ips
                 for a in [answersc,answers6,answers]:
                     for rdata in a:
-                        import ipaddress
                         ip = ipaddress.ip_address(rdata.address)
                         if ip.is_private:
                             return { "error": "private ip (resolved from dns)" }

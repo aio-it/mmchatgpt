@@ -189,6 +189,8 @@ class ChatGPT(Plugin):
             host="localhost", port=6379, db=0, decode_responses=True
         )
         self.openai_api_key = openai_api_key
+        if openai_api_key is None:
+            raise MissingApiKey("No OPENAI API key provided")
         self.log_channel = log_channel
     def initialize(self,
             driver: Driver,
@@ -206,8 +208,6 @@ class ChatGPT(Plugin):
             self.redis.sadd("users", *USERS)
         if self.redis.scard("admins") > 0 and len(ADMINS) > 0:
             self.redis.sadd("users", *ADMINS)
-        if openai_api_key is None:
-            raise MissingApiKey("No OPENAI API key provided")
         if log_channel is None:
             self.helper.log_to_channel = False
         else:

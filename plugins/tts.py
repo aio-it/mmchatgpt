@@ -23,7 +23,7 @@ class TTS(Plugin):
       self.plugin_manager = plugin_manager
       self.helper = Helper(self.driver)
       self.users = Users()
-      self.users.initialize(self.driver, self.plugin_manager, self.settings)
+      #self.users.initialize(self.driver, self.plugin_manager, self.settings)
 
     @listen_to(r"^\.drtts ([\s\S]*)")
     async def drtts(self, message: Message, text: str):

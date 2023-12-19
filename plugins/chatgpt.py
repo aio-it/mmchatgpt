@@ -202,8 +202,6 @@ class ChatGPT(Plugin):
         for key, value in self.ChatGPT_DEFAULTS.items():
             if self.redis.hget(self.SETTINGS_KEY, key) is None:
                 self.redis.hset(self.SETTINGS_KEY, key, value)
-        print(f"Allowed users: {self.redis.smembers('users')}")
-        print(f"Allowed admins: {self.redis.smembers('admins')}")
         print(f"Allowed models: {self.ALLOWED_MODELS}")
     def initialize(self,
             driver: Driver,
@@ -220,7 +218,6 @@ class ChatGPT(Plugin):
             self.settings,
             self.plugin_manager,
         )
-
             
     def return_last_x_messages(self, messages, max_length_in_tokens):
         """return last x messages from list of messages limited by max_length_in_tokens"""

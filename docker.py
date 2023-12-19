@@ -45,6 +45,10 @@ class Docker(Plugin):
     for c in containers:
       container = await self.dockerclient.containers.get(c.id)
       info = await container.show()
+      # load json into dict
+      import json
+      info = json.loads(info)
+
       self.driver.reply_to(message,f"```{info['id']} {info['state']['status']}```")
 
   @listen_to("^\.docker run (.*)")

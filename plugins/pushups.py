@@ -5,6 +5,7 @@ from mmpy_bot.settings import Settings
 from mmpy_bot.wrappers import Message
 import redis
 from plugins.common import Helper, Users
+env = Env()
 class Pushups(Plugin):
   def __init__(self):
     self.redis = redis.Redis(

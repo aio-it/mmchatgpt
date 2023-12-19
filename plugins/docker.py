@@ -7,6 +7,7 @@ from plugins.common import Helper, Users
 
 import redis
 import aiodocker
+env = Env()
 CONTAINER_CONFIG = {
      "Cmd": ["/bin/ls"],
      "Image": "ubuntu:latest",

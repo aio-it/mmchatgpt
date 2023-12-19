@@ -1,5 +1,12 @@
 """shared functions and variables for the project"""
+import redis
+from mmpy_bot import Plugin, listen_to
+from mmpy_bot import Message
+
 class Helper:
+    def __init__(self, driver, redis):
+        self.driver = driver
+        self.redis = redis
     def is_admin(self, username):
         """check if user is admin"""
         # convert username to uid

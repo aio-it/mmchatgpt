@@ -121,7 +121,7 @@ class Users:
             self.redis.set(f"uid:{username}", uid, ex=60 * 60)
         return uid
     
-        @listen_to(r"\.uid ([a-zA-Z0-9_-]+)")
+    @listen_to(r"\.uid ([a-zA-Z0-9_-]+)")
     async def uid(self, message: Message, username: str):
         """get user id from username"""
         if self.users.is_admin(message.sender_name):

@@ -8,6 +8,10 @@ import json
 import redis
 
 class Users:
+    def __init__(self, driver, redis):
+        self.driver = driver
+        self.redis = redis
+        self.helper = Helper(self.driver, self.redis)
     """manage users"""
     def is_user(self, username):
         """check if user is user"""

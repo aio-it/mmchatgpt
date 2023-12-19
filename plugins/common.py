@@ -11,8 +11,9 @@ import datetime
 class Users:
     """manage users"""
     def __init__(self, log_channel):
-        self.driver = driver
-        self.redis = redis
+        self.redis = redis.Redis(
+            host="localhost", port=6379, db=0, decode_responses=True
+        )
         self.helper = Helper(self.driver, self.redis)
     def initialize(
         self,

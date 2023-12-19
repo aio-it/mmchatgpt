@@ -30,7 +30,7 @@ class Users(Plugin):
         self.settings = settings
         self.plugin_manager = plugin_manager
         self.helper = Helper(self.driver)
-        self.redis = self.helper.redis
+        self.redis = self.helper.get_redis()
         if self.redis.scard("admins") <= 0 and len(ADMINS) > 0:
             self.redis.sadd("admins", *ADMINS)
         if self.redis.scard("users") <= 0 and len(USERS) > 0:

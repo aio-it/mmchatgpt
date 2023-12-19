@@ -313,4 +313,28 @@ class Helper:
         if isinstance(msg, list):
             return [json.loads(m) for m in msg]
         return json.loads(msg)
+    def print_to_console(self, message: Message):
+        """print to console"""
+        print(f"{message.sender_name}: {message.text}")
+
+    async def wall(self, message):
+        """send message to all admins"""
+        for admin_uid in self.redis.smembers("admins"):
+            self.driver.direct_message(receiver_id=admin_uid, message=message)
+
+    async def log(self, message: str):
+        """send message to log channel"""
+        if self.log_to_channel:
+            self.driver.create_post(self.log_channel, message)
+    def slog(self,message: str):
+        """sync log"""
+        if self.log_to_channel:
+            self.driver.create_post(self.log_channel, message)
     
+    async def debug(self, message: str, private: bool = False):
+        """send debug message to log channel. if private is true send to all admins"""
+        print(f"DEBUG: {message}")
+        if self.log_to_channel and not private:
+            await self.log(f"DEBUG: {message}")
+        elif private:
+            await self.wall(f"DEBUG: {message}")

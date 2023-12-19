@@ -375,7 +375,7 @@ class ChatGPT(Plugin):
                     max_requests=1,
                     expire=5,
                 ):
-                    self.add_reaction(message, "frame_with_picture")
+                    self.helper.add_reaction(message, "frame_with_picture")
                     text = text.replace("\n", " ")
                     response = await client.images.generate(
                         prompt=text,
@@ -395,7 +395,7 @@ class ChatGPT(Plugin):
                     # image_url_txt = f"![img]({image_url})"
                     # await self.helper.debug(response)
                     # self.driver.reply_to(message, image_url_txt, file_paths=[filename])
-                    self.remove_reaction(message, "frame_with_picture")
+                    self.helper.remove_reaction(message, "frame_with_picture")
                     self.driver.reply_to(
                         message,
                         f"prompt: {text}\nrevised: {revised_prompt}",
@@ -406,12 +406,12 @@ class ChatGPT(Plugin):
                         f"{message.sender_name} used .img with {quality} {style} {size}"
                     )
             except TooManyRequests:
-                self.remove_reaction(message, "frame_with_picture")
-                self.add_reaction(message, "x")
+                self.helper.remove_reaction(message, "frame_with_picture")
+                self.helper.add_reaction(message, "x")
                 self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
             except openai.BadRequestError as error:
-                self.remove_reaction(message, "frame_with_picture")
-                self.add_reaction(message, "pig")
+                self.helper.remove_reaction(message, "frame_with_picture")
+                self.helper.add_reaction(message, "pig")
                 self.driver.reply_to(message, f"Error: {error.message}")
                 # self.driver.reply_to(message, f"Error: {pformat(error.message)}")
                 # self.driver.reply_to(message, f"Error: {pformat(error)}")
@@ -474,7 +474,7 @@ class ChatGPT(Plugin):
                     max_requests=1,
                     expire=5,
                 ):
-                    self.add_reaction(message, "frame_with_picture")
+                    self.helper.add_reaction(message, "frame_with_picture")
                     # get the gif from giphy api
                     response = requests.get(url, params=params)
                     # get the url from the response
@@ -484,7 +484,7 @@ class ChatGPT(Plugin):
                     # format the gif_url as mattermost markdown
                     # gif_url_txt = f"![gif]({gif_url})"
                     gif_url_txt = ""
-                    self.remove_reaction(message, "frame_with_picture")
+                    self.helper.remove_reaction(message, "frame_with_picture")
                     self.driver.reply_to(message, gif_url_txt, file_paths=[filename])
                     # delete the gif file
                     self.delete_downloaded_file(filename)
@@ -519,7 +519,7 @@ class ChatGPT(Plugin):
                     max_requests=1,
                     expire=5,
                 ):
-                    self.add_reaction(message, "abacus")
+                    self.helper.add_reaction(message, "abacus")
                     # replace newlines with spaces
                     text = text.replace("\n", " ")
                     # urlencode the text
@@ -531,7 +531,7 @@ class ChatGPT(Plugin):
                     # format the result in mattermost markdown
                     msg_txt = f"query: {text}\n"
                     msg_txt += f"result: {response.text}"
-                    self.remove_reaction(message, "abacus")
+                    self.helper.remove_reaction(message, "abacus")
                     self.driver.reply_to(message, msg_txt)
                     await self.helper.log(f"{message.sender_name} used .calc with {text}")
             except TooManyRequests:
@@ -598,7 +598,7 @@ class ChatGPT(Plugin):
                     expire=5,
                 ):
                     # get the audio from dr tts website https://www.dr.dk/tjenester/tts?text=<text> using the requests module urlencode the text
-                    self.add_reaction(message, "speaking_head_in_silhouette")
+                    self.helper.add_reaction(message, "speaking_head_in_silhouette")
                     # replace newlines with spaces
                     text = text.replace("\n", " ")
                     urlencoded_text = self.urlencode_text(text)
@@ -609,7 +609,7 @@ class ChatGPT(Plugin):
                     filename = self.download_file_to_tmp(audio_url, "mp3")
                     # format the link in mattermost markdown
                     msg_txt = f"link: [drtts]({audio_url})"
-                    self.remove_reaction(message, "speaking_head_in_silhouette")
+                    self.helper.remove_reaction(message, "speaking_head_in_silhouette")
                     self.driver.reply_to(message, msg_txt, file_paths=[filename])
                     # delete the audio file
                     self.delete_downloaded_file(filename)
@@ -640,7 +640,7 @@ class ChatGPT(Plugin):
                     max_requests=1,
                     expire=5,
                 ):
-                    self.add_reaction(message, "speaking_head_in_silhouette")
+                    self.helper.add_reaction(message, "speaking_head_in_silhouette")
                     text = text.replace("\n", " ")
                     filename = self.create_tmp_filename("mp3")
                     voices, rate, volume = await self.create_tts_audio(text, filename)
@@ -650,7 +650,7 @@ class ChatGPT(Plugin):
                     await self.helper.debug(f"volume: {volume}")
 
                     self.driver.reply_to(message, f"tts: {text}", file_paths=[filename])
-                    self.remove_reaction(message, "speaking_head_in_silhouette")
+                    self.helper.remove_reaction(message, "speaking_head_in_silhouette")
                     await self.helper.log(f"{message.sender_name} used .tts")
             except TooManyRequests:
                 self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
@@ -756,7 +756,7 @@ class ChatGPT(Plugin):
                     ],
                     "max_tokens": 300,
                 }
-                self.add_reaction(message, "thought_balloon")
+                self.helper.add_reaction(message, "thought_balloon")
                 response = requests.post(
                     "https://api.openai.com/v1/chat/completions",
                     headers=headers,
@@ -768,7 +768,7 @@ class ChatGPT(Plugin):
                     # log the response:
                     gpt_response = response["choices"][0]["message"]["content"]
                     self.driver.reply_to(message, gpt_response)
-                    self.remove_reaction(message, "thought_balloon")
+                    self.helper.remove_reaction(message, "thought_balloon")
 
                     await self.helper.log(f"{message.sender_name} used .vision")
 
@@ -1255,7 +1255,7 @@ class ChatGPT(Plugin):
                         await self.helper.log(f"Error: {word} is not a valid input to {command}")
                         return False
                     # run command
-            self.add_reaction(message, "hourglass")
+            self.helper.add_reaction(message, "hourglass")
             await self.helper.log(f"{message.sender_name} is running command: {command} {args} {input}")
             import subprocess
             import shlex
@@ -1274,7 +1274,7 @@ class ChatGPT(Plugin):
                 if error:
                     error = error.decode("utf-8")
                 timeout=True
-            self.remove_reaction(message, "hourglass")
+            self.helper.remove_reaction(message, "hourglass")
             self.driver.reply_to(message, f"{command} {args} {input}\nResult:\n```\n{output}\n```")
             if error:
                 self.driver.reply_to(message, f"Error:\n```\n{error}\n```")
@@ -1336,7 +1336,7 @@ class ChatGPT(Plugin):
             "#### Settings:",
         ]
 
-        self.add_reaction(message, "robot_face")
+        self.helper.add_reaction(message, "robot_face")
         txt = "\n".join(commands)
         self.driver.reply_to(message, f"## :robot_face: Help:\n{txt}\n\n")
         if self.users.is_admin(message.sender_name):

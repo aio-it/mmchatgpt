@@ -203,6 +203,9 @@ class Users:
             seconds += days * 24 * 60 * 60
             self.redis.set(f"ban:{uid}", seconds, ex=seconds)
             return True
+    def nohl(self, user):
+        """prevent highlighting the user by adding a zero width space to the username after the first letter"""
+        return user[0] + "\u200B" + user[1:]
 
     @listen_to(r"^\.ban ([a-zA-Z0-9_-]+) ?([0-9]?)")
     async def ban(self, message: Message, user, days=0):

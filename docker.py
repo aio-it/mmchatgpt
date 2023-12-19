@@ -41,7 +41,8 @@ class Docker(Plugin):
     plugins = self.plugin_manager.plugins
     self.driver.reply_to(message,f"plugins:")
     for plugin in plugins:
-      self.driver.reply_to(message,f"```{plugin}```")
+      info = dir(plugin)
+      self.driver.reply_to(message,f"```{info}```")
   
   @listen_to("^\.docker ps")
   async def dockerps(self, message: Message):

@@ -17,12 +17,11 @@ CONTAINER_CONFIG = {
      "OpenStdin": False,
 }
 class Docker(Plugin):
-  def __init__(self, log_channel, driver, plugin_manager, settings):
+  def __init__(self, log_channel):
     self.log_channel = log_channel
     self.redis = redis.Redis(
       host="localhost", port=6379, db=0, decode_responses=True
     )
-    self.helper = Helper()
     #self.dockerclient = docker.from_env()
     self.dockerclient = aiodocker.Docker()
   def initialize(        self,
@@ -33,6 +32,7 @@ class Docker(Plugin):
     self.driver = driver
     self.settings = settings
     self.plugin_manager = plugin_manager
+    self.helper = Helper(self.driver)
     #self.ChatGPT = self.plugin_manager.plugins
   @listen_to("^\.plugins list")
   async def pluginslist(self, message: Message):

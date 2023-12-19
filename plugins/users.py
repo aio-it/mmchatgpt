@@ -21,6 +21,7 @@ class Users(Plugin):
         self.driver = driver
         if (driver is not None):
             self.helper = Helper(self.driver)
+            self.redis = self.helper.redis
     def initialize(
         self,
         driver: Driver,

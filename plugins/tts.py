@@ -24,7 +24,6 @@ class TTS(Plugin):
     @listen_to(r"^\.drtts ([\s\S]*)")
     async def drtts(self, message: Message, text: str):
         """use the dr tts website to get an audio clip from text"""
-
         if self.users.is_user(message.sender_name):
             try:
                 with RateLimit(

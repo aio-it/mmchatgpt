@@ -49,7 +49,7 @@ class Docker(Plugin):
       import json
       info = json.loads(info)
 
-      self.driver.reply_to(message,f"```{info['id']} {info['state']['status']}```")
+      self.driver.reply_to(message,f"```{info['Id']} {info['State']['Status']}```")
 
   @listen_to("^\.docker run (.*)")
   async def dockerrun(self, message: Message, command: str):

@@ -3,7 +3,7 @@
 from environs import Env
 from mmpy_bot import Bot, Settings
 from chatgpt import ChatGPT
-from docker import Docker
+from plugins.docker import Docker
 from pushups import Pushups
 env = Env()
 log_channel = env.str("MM_BOT_LOG_CHANNEL")

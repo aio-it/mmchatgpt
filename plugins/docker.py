@@ -103,4 +103,4 @@ class Docker(PluginLoader):
     images = await self.dockerclient.images.list()
     self.driver.reply_to(message,f"images:")
     for image in images:
-      self.driver.reply_to(message,f"```{image} {image.tag}```")
+      self.driver.reply_to(message,f"```{image}```")

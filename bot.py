@@ -9,7 +9,7 @@ from plugins.users import Users
 from plugins.tts import TTS
 from plugins.shellcmds import ShellCmds
 import logging
-logging.basicConfig(level=logging.DEBUG)
+#logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 log.info("starting bot")
 env = Env()
@@ -24,7 +24,7 @@ bot = Bot(
         BOT_TOKEN=env.str("MM_BOT_TOKEN"),
         BOT_TEAM=env.str("MM_BOT_TEAM"),
         SSL_VERIFY=env.bool("MM_SSL_VERIFY", True),
-        DEBUG=True,
+        DEBUG=False,
     ),  # Either specify your settings here or as environment variables.
     # Add your own plugins here.
     plugins=[

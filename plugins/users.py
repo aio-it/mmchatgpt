@@ -40,7 +40,7 @@ class Users(Plugin):
         self.helper.plugins = {}
         for plugin in self.plugin_manager.plugins:
             pname = type(plugin).__name__
-            self.helper.plugins[pname.tolower()] = plugin
+            self.helper.plugins[pname.lower()] = plugin
         self.helper.slog(f"Plugins loaded: {self.helper.plugins.keys()}")
             
 

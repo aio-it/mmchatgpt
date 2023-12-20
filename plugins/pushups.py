@@ -23,8 +23,7 @@ class Pushups(Plugin):
     self.settings = settings
     self.plugin_manager = plugin_manager
     self.helper = Helper(self.driver, self.redis)
-    self.users = Users()
-    #self.users.initialize(self.driver, self.plugin_manager, self.settings)
+    self.users = Users(self.driver, self.plugin_manager, self.settings)
 
     @listen_to(r"^\.pushups reset ([a-zA-Z0-9_-]+)")
     async def pushups_reset(self, message: Message, user):

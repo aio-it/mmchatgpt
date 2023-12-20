@@ -9,6 +9,7 @@ from plugins.users import Users
 from plugins.tts import TTS
 from plugins.shellcmds import ShellCmds
 import logging
+logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger("bot")
 log.info("starting bot")
 env = Env()

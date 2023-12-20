@@ -42,7 +42,7 @@ class Helper:
         else:
             self.log_to_channel = True
             self.log_channel = self.log_channel
-        print(f"log_to_channel: {self.log_to_channel}")
+        log.info(f"log_to_channel: {self.log_to_channel}")
         log.info(f"log_to_channel: {env.str('MM_BOT_LOG_CHANNEL')}")
 
     def redis_serialize_json(self, msg):

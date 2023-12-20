@@ -28,6 +28,8 @@ class Docker(PluginLoader):
   @listen_to("^\.docker ps")
   async def dockerps(self, message: Message):
     """list docker containers"""
+    if not self.users.is_admin(message.sender_name):
+      return
     containers = await self.dockerclient.containers.list()
     self.driver.reply_to(message,f"containers:")
     for c in containers:
@@ -42,8 +44,7 @@ class Docker(PluginLoader):
   @listen_to("^\.docker run (.*)")
   async def dockerrun(self, message: Message, command: str):
     """run a docker container"""
-    if self.helper.is_admin(message.sender_name) == True:
-      self.driver.reply_to(message, f"you are not an admin")
+    if not self.users.is_admin(message.sender_name):
       return
     config = CONTAINER_CONFIG
     config["Cmd"] = command.split(" ")
@@ -60,6 +61,8 @@ class Docker(PluginLoader):
   @listen_to("^\.docker stop (.*)")
   async def dockerstop(self, message: Message, container_id: str):
     """stop a docker container"""
+    if not self.users.is_admin(message.sender_name):
+      return
     container = await self.dockerclient.containers.get(container_id)
     self.driver.reply_to(message, f"stopping ```{container.id}```")
     await container.stop()
@@ -68,6 +71,8 @@ class Docker(PluginLoader):
   @listen_to("^\.docker rm (.*)")
   async def dockerrm(self, message: Message, container_id: str):
     """remove a docker container"""
+    if not self.users.is_admin(message.sender_name):
+      return
     container = await self.dockerclient.containers.get(container_id)
     self.driver.reply_to(message, f"removing ```{container.id}```")
     await container.delete()
@@ -76,12 +81,16 @@ class Docker(PluginLoader):
   @listen_to("^\.docker logs (.*)")
   async def dockerlogs(self, message: Message, container_id: str):
     """logs from a docker container"""
+    if not self.users.is_admin(message.sender_name):
+      return
     container = await self.dockerclient.containers.get(container_id)
     logs = await container.log(stdout=True)
     self.driver.reply_to(message,''.join(logs))
 
   @listen_to("^\.docker image pull (.*)")
   async def dockerimagepull(self, message: Message, image: str):
+    if not self.users.is_admin(message.sender_name):
+      return
     """pull a docker image"""
     await self.dockerclient.images.pull(image)
     self.driver.reply_to(message, f"pulled ```{image}```")

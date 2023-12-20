@@ -11,22 +11,6 @@ from environs import Env
 env = Env()
 
 class Pushups(PluginLoader):
-    def __init__(self):
-        self.redis = redis.Redis(
-        host="localhost", port=6379, db=0, decode_responses=True
-        )
-    def initialize(        self,
-            driver: Driver,
-            plugin_manager: PluginManager,
-            settings: Settings
-            ):
-        self.driver = driver
-        self.settings = settings
-        self.plugin_manager = plugin_manager
-        self.helper = Helper(self.driver, self.redis)
-        self.users = Users(self.driver, self.plugin_manager, self.settings)
-        self.helper.slog(f"Plugin initialized {self.__class__.__name__}")
-
 
     @listen_to(r"^\.pushups reset ([a-zA-Z0-9_-]+)")
     async def pushups_reset(self, message: Message, user):

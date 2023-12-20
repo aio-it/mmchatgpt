@@ -32,7 +32,7 @@ bot = Bot(
         Pushups(),
         TTS(),
         ShellCmds(),
-
+        RedisTool(),
     ],
     enable_logging=True
 )

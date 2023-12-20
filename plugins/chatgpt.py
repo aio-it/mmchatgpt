@@ -18,7 +18,6 @@ import shlex
 import base64
 from plugins.base import PluginLoader
 
-# import serialized_redis
 from mmpy_bot.driver import Driver
 from mmpy_bot.function import listen_to
 from mmpy_bot.plugins.base import Plugin, PluginManager

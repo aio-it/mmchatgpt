@@ -63,7 +63,8 @@ class Helper:
     async def log(self, message: str):
         """send message to log channel"""
         callerclass, callerfunc = self.get_caller_info()
-        log.info(f"LOG: {callerclass}.{callerfunc} {message}")
+        msg = f"[{callerclass}.{callerfunc} {message}]"
+        log.info(f"LOG: {callerclass}.{callerfunc} {msg}")
         if self.log_to_channel:
             self.driver.create_post(self.log_channel, message)
     def slog(self,message: str):

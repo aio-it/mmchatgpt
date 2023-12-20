@@ -97,7 +97,7 @@ class ChatGPT(Plugin):
             if self.redis.hget(self.SETTINGS_KEY, key) is None:
                 self.redis.hset(self.SETTINGS_KEY, key, value)
         print(f"Allowed models: {self.ALLOWED_MODELS}")
-        self.slog(f"Plugin __init__ {self.__class__.__name__} completed")
+        self.helper.slog(f"Plugin __init__ {self.__class__.__name__} completed")
     def initialize(self,
             driver: Driver,
             plugin_manager: PluginManager,
@@ -110,7 +110,7 @@ class ChatGPT(Plugin):
         self.redis = self.helper.redis
         self.users = Users(self.driver, self.settings, self.plugin_manager)
         self.users.initialize(self.driver, self.settings, self.plugin_manager)
-        self.slog(f"Plugin initialized {self.__class__.__name__}")
+        self.helper.slog(f"Plugin initialized {self.__class__.__name__}")
 
     def return_last_x_messages(self, messages, max_length_in_tokens):
         """return last x messages from list of messages limited by max_length_in_tokens"""

@@ -20,7 +20,6 @@ class PluginLoader(Plugin):
         self.settings = settings
         self.plugin_manager = plugin_manager
         self.helper = Helper(self.driver)
-        self.users = Users(self.driver, self.plugin_manager, self.settings)
         #self.helper.slog(f"Plugin initialized {self.__class__.__name__}")
         self.redis = self.helper.redis
         # load plugins into helper should be moved to a better place
@@ -28,4 +27,5 @@ class PluginLoader(Plugin):
         for plugin in self.plugin_manager.plugins:
             pname = type(plugin).__name__
             self.helper.plugins[pname.lower()] = plugin
+        self.users = self.helper.plugins['users']
         #self.helper.slog(f"Plugins loaded: {self.helper.plugins.keys()}")

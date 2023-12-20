@@ -100,7 +100,7 @@ class ChatGPT(PluginLoader):
                 self.redis.hset(self.SETTINGS_KEY, key, value)
         print(f"Allowed models: {self.ALLOWED_MODELS}")
         for p in self.plugin_manager.plugins:
-            print(f"Plugin: {type(p).__name__}")
+            self.slog(f"Plugin: {type(p).__name__}")
     def return_last_x_messages(self, messages, max_length_in_tokens):
         """return last x messages from list of messages limited by max_length_in_tokens"""
         limited_messages = []

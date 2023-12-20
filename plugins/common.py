@@ -17,9 +17,6 @@ env = Env()
 import logging
 #logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
-redisc = redis.Redis(
-    host="localhost", port=6379, db=0, decode_responses=True
-)
 class Helper:
     """helper functions"""
     REDIS = redis.Redis(

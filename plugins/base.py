@@ -21,5 +21,5 @@ class PluginLoader(Plugin):
         self.plugin_manager = plugin_manager
         self.helper = Helper(self.driver)
         self.users = Users(self.driver, self.plugin_manager, self.settings)
-        self.helper.slog(f"Plugin initialized {self.__class__.__name__}")
+        #self.helper.slog(f"Plugin initialized {self.__class__.__name__}")
         self.redis = self.helper.redis

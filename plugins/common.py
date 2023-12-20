@@ -22,10 +22,13 @@ redisc = redis.Redis(
 )
 class Helper:
     """helper functions"""
+    REDIS = redis.Redis(
+        host="localhost", port=6379, db=0, decode_responses=True
+    )
     def __init__(self, driver, rediss=None, log_channel=None):
         global redisc
         self.driver = driver
-        self.redis = redisc
+        self.redis = self.REDIS
         self.log_channel = log_channel
         env_log_channel = env.str("MM_BOT_LOG_CHANNEL",None)
         if self.log_channel is None and env_log_channel is None:

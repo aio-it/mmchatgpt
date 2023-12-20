@@ -20,7 +20,6 @@ import base64
 from plugins.common import Helper
 from plugins.users import Users
 
-
 # import serialized_redis
 from mmpy_bot.driver import Driver
 from mmpy_bot.function import listen_to

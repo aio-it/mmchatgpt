@@ -25,7 +25,6 @@ class Docker(PluginLoader):
     super().__init__()
     self.dockerclient = aiodocker.Docker()
 
-
   @listen_to("^\.plugins list")
   async def pluginslist(self, message: Message):
     """list plugins"""

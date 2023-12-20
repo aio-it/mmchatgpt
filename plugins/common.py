@@ -70,7 +70,7 @@ class Helper:
     def slog(self,message: str):
         """sync log"""
         callerclass, callerfunc = self.get_caller_info()
-        msg = f"{callerclass}.{callerfunc} {message}"
+        msg = f"[{callerclass}.{callerfunc} {message}]"
         log.info(f"LOG: {msg}")
         if self.log_to_channel:
             self.driver.create_post(self.log_channel, msg)

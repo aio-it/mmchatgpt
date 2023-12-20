@@ -36,9 +36,6 @@ class Helper:
             self.log_to_channel = True
             self.log_channel = self.log_channel
         #self.slog(f"Helper Loaded")
-    def load_plugins(self, plugin_manager: PluginManager):
-        """load plugins"""
-        self.plugin_manager = plugin_manager
 
     def redis_serialize_json(self, msg):
         """serialize a message to json"""

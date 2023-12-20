@@ -17,6 +17,7 @@ import aiohttp.client_exceptions as aiohttp_client_exceptions
 import tiktoken
 import shlex
 import base64
+from plugins.base import PluginLoader
 from plugins.common import Helper
 from plugins.users import Users
 
@@ -77,9 +78,6 @@ class ChatGPT(Plugin):
     def __init__(self, openai_api_key=None, log_channel=None, **kwargs):
         super().__init__()
         self.name = "ChatGPT"
-        self.redis = redis.Redis(
-            host="localhost", port=6379, db=0, decode_responses=True
-        )
         if openai_api_key is None:
             raise MissingApiKey("No OPENAI API key provided")
         self.openai_api_key = openai_api_key
@@ -97,19 +95,6 @@ class ChatGPT(Plugin):
             if self.redis.hget(self.SETTINGS_KEY, key) is None:
                 self.redis.hset(self.SETTINGS_KEY, key, value)
         print(f"Allowed models: {self.ALLOWED_MODELS}")
-    def initialize(self,
-            driver: Driver,
-            plugin_manager: PluginManager,
-            settings: Settings
-            ):
-        self.driver = driver
-        self.settings = settings
-        self.plugin_manager = plugin_manager
-        self.helper = Helper(self.driver)
-        self.redis = self.helper.redis
-        self.users = Users(self.driver, self.settings, self.plugin_manager)
-        self.users.initialize(self.driver, self.settings, self.plugin_manager)
-        self.helper.slog(f"Plugin initialized {self.__class__.__name__}")
 
     def return_last_x_messages(self, messages, max_length_in_tokens):
         """return last x messages from list of messages limited by max_length_in_tokens"""

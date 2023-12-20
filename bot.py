@@ -9,15 +9,6 @@ from plugins.users import Users
 from plugins.tts import TTS
 from plugins.shellcmds import ShellCmds
 import logging
-logging.basicConfig(
-    **{
-        "format": self.settings.LOG_FORMAT,
-        "datefmt": self.settings.LOG_DATE_FORMAT,
-        "level": logging.DEBUG if self.settings.DEBUG else logging.INFO,
-        "filename": self.settings.LOG_FILE,
-        "filemode": "w",
-    }
-)
 log = logging.getLogger("bot")
 log.info("starting bot")
 env = Env()

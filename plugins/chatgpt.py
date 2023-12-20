@@ -91,7 +91,6 @@ class ChatGPT(PluginLoader):
         driver: Driver,
         plugin_manager: PluginManager,
         settings: Settings,
-        **kwargs,
     ):
         super().initialize(driver, plugin_manager, settings)
         # Apply default model to redis if not set and set self.model

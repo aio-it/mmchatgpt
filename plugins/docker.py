@@ -24,17 +24,6 @@ class Docker(Plugin):
     # initialize parent class
     super().__init__()
     self.dockerclient = aiodocker.Docker()
-  def initialize(        self,
-        driver: Driver,
-        plugin_manager: PluginManager,
-        settings: Settings
-        ):
-    self.driver = driver
-    self.settings = settings
-    self.plugin_manager = plugin_manager
-    self.helper = Helper(self.driver)
-    self.users = Users(self.driver, self.plugin_manager, self.settings)
-    self.helper.slog(f"Plugin initialized {self.__class__.__name__}")
 
 
   @listen_to("^\.plugins list")

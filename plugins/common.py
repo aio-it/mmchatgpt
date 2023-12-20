@@ -14,7 +14,9 @@ import uuid
 import os
 from environs import Env
 env = Env()
-log = logging.getLogger("plugins.common")
+import logging
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger(__name__)
 
 class Helper:
     """helper functions"""

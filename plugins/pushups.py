@@ -4,12 +4,13 @@ from mmpy_bot.plugins.base import Plugin, PluginManager
 from mmpy_bot.settings import Settings
 from mmpy_bot.wrappers import Message
 import redis
+from plugins.base import PluginLoader
 from plugins.common import Helper
 from plugins.users import Users
 from environs import Env
 env = Env()
 
-class Pushups(Plugin):
+class Pushups(PluginLoader):
     def __init__(self):
         self.redis = redis.Redis(
         host="localhost", port=6379, db=0, decode_responses=True
@@ -24,6 +25,8 @@ class Pushups(Plugin):
         self.plugin_manager = plugin_manager
         self.helper = Helper(self.driver, self.redis)
         self.users = Users(self.driver, self.plugin_manager, self.settings)
+        self.helper.slog(f"Plugin initialized {self.__class__.__name__}")
+
 
     @listen_to(r"^\.pushups reset ([a-zA-Z0-9_-]+)")
     async def pushups_reset(self, message: Message, user):

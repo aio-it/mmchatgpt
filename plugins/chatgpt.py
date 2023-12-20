@@ -77,6 +77,9 @@ class ChatGPT(PluginLoader):
 
     def __init__(self, openai_api_key=None, log_channel=None, **kwargs):
         super().__init__()
+        self.redis = redis.Redis(
+            host="localhost", port=6379, db=0, decode_responses=True
+        )
         self.name = "ChatGPT"
         if openai_api_key is None:
             raise MissingApiKey("No OPENAI API key provided")

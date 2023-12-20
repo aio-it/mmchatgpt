@@ -29,7 +29,6 @@ class Users(Plugin):
         self.plugin_manager = plugin_manager
         self.helper = Helper(self.driver)
         self.redis = self.helper.redis
-        self.helper.slog("Users initialized")
         if self.redis.scard("admins") <= 0 and len(ADMINS) > 0:
             self.redis.sadd("admins", *ADMINS)
         if self.redis.scard("users") <= 0 and len(USERS) > 0:
@@ -41,7 +40,6 @@ class Users(Plugin):
         # self.log("ChatGPT Bot started")
         # self.log("model: " + self.model)
         # convert all admins usernames to user ids and save to redis
-        self.helper.slog("on_start called")
         for admin in self.redis.smembers("admins"):
             # check if it is already a uid
             if self.check_if_username_or_id(admin) == "uid":

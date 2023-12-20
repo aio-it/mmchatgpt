@@ -14,7 +14,7 @@ import uuid
 import os
 from environs import Env
 env = Env()
-log = logging.getLogger("mmpy.threadpool")
+log = logging.getLogger("plugins.helper")
 
 class Helper:
     """helper functions"""

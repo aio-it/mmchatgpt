@@ -115,20 +115,7 @@ SHELL_COMMANDS = {
             },
         }
 
-class ShellCmds(Plugin):
-    def __init__(self):
-        pass
-    def initialize(self,
-          driver: Driver,
-          plugin_manager: PluginManager,
-          settings: Settings
-          ):
-        self.driver = driver
-        self.settings = settings
-        self.plugin_manager = plugin_manager
-        self.helper = Helper(self.driver)
-        self.users = Users(self.driver, self.plugin_manager, self.settings)
-        self.helper.slog(f"Plugin initialized {self.__class__.__name__}")
+class ShellCmds(PluginLoader):
 
     def validatecommand(self, command):
         """check if commands is in a list of commands allowed"""

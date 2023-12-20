@@ -28,8 +28,12 @@ class Helper:
         else:
             self.redis = self.REDIS
         self.log_channel = log_channel
+        env_log_channel = env.str("MM_BOT_LOG_CHANNEL")
         if self.log_channel is None:
             self.log_to_channel = False
+        elif env_log_channel is not None:
+            self.log_to_channel = True
+            self.log_channel = env_log_channel
         else:
             self.log_to_channel = True
             self.log_channel = self.log_channel

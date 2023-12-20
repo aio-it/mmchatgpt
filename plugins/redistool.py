@@ -1,12 +1,7 @@
 
-from mmpy_bot.driver import Driver
 from mmpy_bot.function import listen_to
-from mmpy_bot.plugins.base import Plugin, PluginManager
-from mmpy_bot.settings import Settings
 from mmpy_bot.wrappers import Message
 from plugins.base import PluginLoader
-from environs import Env
-from redis_rate_limit import RateLimit, TooManyRequests
 
 class RedisTool(PluginLoader):
     @listen_to(r"^\.redis get ([\s\S]*)")

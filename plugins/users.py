@@ -36,12 +36,7 @@ class Users(Plugin):
         if self.redis.scard("admins") > 0 and len(ADMINS) > 0:
             self.redis.sadd("users", *ADMINS)
         self.helper.slog(f"Plugin initialized {self.__class__.__name__}")
-        # load plugins into helper should be moved to a better place
-        self.helper.plugins = {}
-        for plugin in self.plugin_manager.plugins:
-            pname = type(plugin).__name__
-            self.helper.plugins[pname.lower()] = plugin
-        self.helper.slog(f"Plugins loaded: {self.helper.plugins.keys()}")
+
             
 
     def on_start(self):

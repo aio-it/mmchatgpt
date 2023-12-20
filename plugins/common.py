@@ -118,4 +118,5 @@ class Helper:
             os.remove(filename)
     def get_caller_name(self):
         """get the name of the caller function"""
+        log.info(f"DEBUG: {inspect.stack()[1][3]}")
         return inspect.stack()[1][3]

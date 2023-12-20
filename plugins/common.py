@@ -56,12 +56,12 @@ class Helper:
 
     async def log(self, message: str):
         """send message to log channel"""
-        log.info(f"LOG: {message}")
+        log.info(f"INFO: {message}")
         if self.log_to_channel:
             self.driver.create_post(self.log_channel, f"[INFO] {message}")
     def slog(self,message: str):
         """sync log"""
-        log.info(f"LOG: {message}")
+        log.info(f"INFO: {message}")
         if self.log_to_channel:
             self.driver.create_post(self.log_channel, f"[INFO] {message}")
     

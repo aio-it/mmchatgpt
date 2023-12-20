@@ -8,7 +8,6 @@ from plugins.pushups import Pushups
 from plugins.users import Users
 from plugins.tts import TTS
 from plugins.shellcmds import ShellCmds
-from plugins.base import PluginLoader
 from plugins.redistool import RedisTool
 env = Env()
 log_channel = env.str("MM_BOT_LOG_CHANNEL")

@@ -19,7 +19,7 @@ CONTAINER_CONFIG = {
      "Tty": False,
      "OpenStdin": False,
 }
-class Docker(Plugin):
+class Docker(PluginLoader):
   def __init__(self):
     # initialize parent class
     super().__init__()

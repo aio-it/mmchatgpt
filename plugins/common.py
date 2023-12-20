@@ -26,12 +26,6 @@ class Helper:
         global redisc
         self.driver = driver
         self.redis = redisc
-        self.redis = redis.Redis(  
-            host=env.str("MM_BOT_REDIS_HOST","localhost"), 
-            port=env.int("MM_BOT_REDIS_PORT",6379), 
-            db=env.int("MM_BOT_REDIS_DB",0), 
-            decode_responses=True
-        )
         self.log_channel = log_channel
         env_log_channel = env.str("MM_BOT_LOG_CHANNEL",None)
         if self.log_channel is None and env_log_channel is None:

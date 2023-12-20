@@ -22,18 +22,10 @@ redisc = redis.Redis(
 )
 class Helper:
     """helper functions"""
-    REDIS = redis.Redis(
-        host="localhost", port=6379, db=0, decode_responses=True
-    )
-    log.info(f"REDIS: {REDIS}")
     def __init__(self, driver, rediss=None, log_channel=None):
+        global redisc
         self.driver = driver
-        if rediss is None:
-            self.redis = redis.Redis(
-                host="localhost", port=6379, db=0, decode_responses=True
-            )
-        else:
-            self.redis = self.REDIS
+        self.redis = redisc
         self.log_channel = log_channel
         env_log_channel = env.str("MM_BOT_LOG_CHANNEL",None)
         if self.log_channel is None and env_log_channel is None:
@@ -45,7 +37,6 @@ class Helper:
             self.log_to_channel = True
             self.log_channel = self.log_channel
         #self.slog(f"Helper Loaded")
-
 
     def redis_serialize_json(self, msg):
         """serialize a message to json"""

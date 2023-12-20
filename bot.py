@@ -32,6 +32,7 @@ bot = Bot(
         BOT_TOKEN=env.str("MM_BOT_TOKEN"),
         BOT_TEAM=env.str("MM_BOT_TEAM"),
         SSL_VERIFY=env.bool("MM_SSL_VERIFY", True),
+        DEBUG=True,
     ),  # Either specify your settings here or as environment variables.
     # Add your own plugins here.
     plugins=[

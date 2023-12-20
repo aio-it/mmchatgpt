@@ -56,7 +56,7 @@ class Helper:
         return json.loads(msg)
     def print_to_console(self, message: Message):
         """print to console"""
-        print(f"{message.sender_name}: {message.text}")
+        log.info(f"message: {message}")
 
     async def wall(self, message):
         """send message to all admins"""

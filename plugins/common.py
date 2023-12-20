@@ -42,7 +42,7 @@ class Helper:
         else:
             self.log_to_channel = True
             self.log_channel = self.log_channel
-    self.helper.slog(f"Plugin initialized Helper")
+        self.helper.slog(f"Helper Loaded")
 
 
     def redis_serialize_json(self, msg):

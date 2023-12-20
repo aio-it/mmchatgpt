@@ -29,4 +29,8 @@ class PluginLoader(Plugin):
             self.helper.plugins[pname.lower()] = plugin
         if 'users' in self.helper.plugins.keys():
           self.users = self.helper.plugins['users']
+        else:
+          self.users = Users()
+          self.users.initialize(self.driver, self.plugin_manager, self.settings)
+          self.helper.plugins['users'] = self.users
         #self.helper.slog(f"Plugins loaded: {self.helper.plugins.keys()}")

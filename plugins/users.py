@@ -5,7 +5,7 @@ from mmpy_bot.settings import Settings
 from mmpy_bot.wrappers import Message
 import datetime
 from environs import Env
-from plugins.common import Helper
+from plugins.helper import Helper
 env = Env()
 
 ADMINS = []  # put admins in here to prepopulate the redis db

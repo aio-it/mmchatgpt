@@ -1,5 +1,4 @@
 """ChatGPT plugin for mmpy_bot"""
-import os
 import asyncio
 import requests
 import time

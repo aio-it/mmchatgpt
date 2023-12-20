@@ -68,6 +68,7 @@ class Helper:
     async def debug(self, message: str, private: bool = False):
         """send debug message to log channel. if private is true send to all admins"""
         print(f"DEBUG: {message}")
+        log.debug(f"DEBUG: {message}")
         if self.log_to_channel and not private:
             await self.log(f"DEBUG: {message}")
         elif private:

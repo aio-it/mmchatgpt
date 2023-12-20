@@ -22,7 +22,7 @@ class Helper:
     REDIS = redis.Redis(
         host="localhost", port=6379, db=0, decode_responses=True
     )
-    def __init__(self, driver, plugin_manager, rediss=None, log_channel=None):
+    def __init__(self, driver, rediss=None, log_channel=None):
         self.driver = driver
         self.redis = self.REDIS
         self.log_channel = log_channel

@@ -114,3 +114,6 @@ class Helper:
             and filename.startswith("/tmp")
         ):
             os.remove(filename)
+    def get_caller_name(self):
+        """get the name of the caller function"""
+        return inspect.stack()[1][3]

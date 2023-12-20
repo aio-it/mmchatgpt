@@ -4,7 +4,6 @@ from plugins.base import PluginLoader
 from environs import Env
 env = Env()
 
-import redis
 import aiodocker
 
 CONTAINER_CONFIG = {

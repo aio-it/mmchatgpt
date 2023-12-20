@@ -89,9 +89,8 @@ class Docker(PluginLoader):
   @listen_to("^\.docker image ls")
   async def dockerimagels(self, message: Message):
     """list docker images"""
-    if not self.helper.is_admin(message.sender_name):
+    if not self.users.is_admin(message.sender_name):
       return
-    self.users.is_admin(message.sender_name)
     images = await self.dockerclient.images.list()
     self.driver.reply_to(message,f"images:")
     for image in images:

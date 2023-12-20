@@ -1,4 +1,3 @@
-from mmpy_bot.driver import Driver
 from mmpy_bot.function import listen_to
 from mmpy_bot.wrappers import Message
 from plugins.base import PluginLoader

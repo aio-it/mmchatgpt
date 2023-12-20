@@ -9,10 +9,12 @@ import redis
 import datetime
 import urllib
 import requests
+import logging
 import uuid
 import os
 from environs import Env
 env = Env()
+log = logging.getLogger("mmpy.threadpool")
 
 class Helper:
     """helper functions"""

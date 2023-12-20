@@ -66,6 +66,7 @@ class Helper:
     def slog(self,message: str):
         """sync log"""
         stack = inspect.stack()
+        log.info(f"LOG: {stack}")
         callerclass = stack[1][0].f_locals["self"].__class__.__name__
         callerfunc = stack[1][0].f_code.co_name
         log.info(f"LOG: {callerclass}.{callerfunc} {message}")
@@ -120,7 +121,3 @@ class Helper:
             and filename.startswith("/tmp")
         ):
             os.remove(filename)
-    def get_caller_name(self):
-        """get the name of the caller function"""
-        log.info(f"DEBUG: {inspect.stack()[1][3]}")
-        return inspect.stack()[1][3]

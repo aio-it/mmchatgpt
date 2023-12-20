@@ -7,6 +7,7 @@ from mmpy_bot.wrappers import Message
 from plugins.common import Helper
 from plugins.users import Users
 from environs import Env
+import redis
 class PluginLoader(Plugin):
     def __init__(self):
         pass

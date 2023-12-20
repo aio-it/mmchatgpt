@@ -97,7 +97,6 @@ class ChatGPT(Plugin):
             if self.redis.hget(self.SETTINGS_KEY, key) is None:
                 self.redis.hset(self.SETTINGS_KEY, key, value)
         print(f"Allowed models: {self.ALLOWED_MODELS}")
-        Helper().slog(f"Plugin initialized {self.__class__.__name__}")
     def initialize(self,
             driver: Driver,
             plugin_manager: PluginManager,

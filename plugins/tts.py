@@ -1,10 +1,6 @@
-from mmpy_bot.driver import Driver
 from mmpy_bot.function import listen_to
-from mmpy_bot.plugins.base import Plugin, PluginManager
-from mmpy_bot.settings import Settings
 from mmpy_bot.wrappers import Message
 from plugins.base import PluginLoader
-from environs import Env
 from typing import Tuple, List
 import pyttsx3
 import asyncio

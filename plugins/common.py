@@ -15,7 +15,7 @@ import os
 from environs import Env
 env = Env()
 import logging
-logging.basicConfig(level=logging.DEBUG)
+#logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 class Helper:

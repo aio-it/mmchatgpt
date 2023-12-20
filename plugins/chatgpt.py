@@ -173,14 +173,6 @@ class ChatGPT(PluginLoader):
         dec = tiktoken.encoding_for_model(model)
         return dec.decode(tokens)
 
-    def on_start(self):
-        """run on startup"""
-        pass
-
-    def on_stop(self):
-        """send startup message to all admins"""
-        self.helper.log("ChatGPT Bot stopped")
-
     @listen_to(r"^\.(?:mk)?i[mn]g$")
     async def img_help(self, message: Message):
         await self.img(message, "help")

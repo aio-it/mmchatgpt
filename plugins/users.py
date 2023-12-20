@@ -8,7 +8,7 @@ from environs import Env
 from plugins.common import Helper
 env = Env()
 
-ADMINS = ['lbr']  # put admins in here to prepopulate the redis db
+ADMINS = []  # put admins in here to prepopulate the redis db
 USERS = []  # put users in here to prepopulate the redis db
 NEEDWHITELIST = False  # if true only users in the users can use the bot
 

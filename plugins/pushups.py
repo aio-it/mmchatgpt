@@ -4,8 +4,6 @@ from mmpy_bot.plugins.base import Plugin, PluginManager
 from mmpy_bot.settings import Settings
 from mmpy_bot.wrappers import Message
 from plugins.base import PluginLoader
-from plugins.common import Helper
-from plugins.users import Users
 from environs import Env
 env = Env()
 

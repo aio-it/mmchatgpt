@@ -28,7 +28,7 @@ class Docker(PluginLoader):
   @listen_to("^\.docker ps")
   async def dockerps(self, message: Message):
     """list docker containers"""
-    if not self.users.is_admin(message.sender_name):
+    if self.users.is_admin(message.sender_name):
       return
     containers = await self.dockerclient.containers.list()
     self.driver.reply_to(message,f"containers:")

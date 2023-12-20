@@ -4,7 +4,6 @@ import asyncio
 import requests
 import time
 import json
-from pprint import pformat
 from environs import Env
 env = Env()
 
@@ -18,8 +17,6 @@ import tiktoken
 import shlex
 import base64
 from plugins.base import PluginLoader
-from plugins.common import Helper
-from plugins.users import Users
 
 # import serialized_redis
 from mmpy_bot.driver import Driver

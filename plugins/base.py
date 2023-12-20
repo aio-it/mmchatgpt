@@ -12,10 +12,10 @@ class PluginLoader(Plugin):
     def __init__(self):
         pass
     def initialize(self,
-          driver: Driver,
-          plugin_manager: PluginManager,
-          settings: Settings
-          ):
+        driver: Driver,
+        plugin_manager: PluginManager,
+        settings: Settings
+        ):
         self.driver = driver
         self.settings = settings
         self.plugin_manager = plugin_manager

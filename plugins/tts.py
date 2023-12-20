@@ -69,7 +69,7 @@ class TTS(PluginLoader):
                 ):
                     self.helper.add_reaction(message, "speaking_head_in_silhouette")
                     text = text.replace("\n", " ")
-                    filename = self.create_tmp_filename("mp3")
+                    filename = self.helper.create_tmp_filename("mp3")
                     voices, rate, volume = await self.create_tts_audio(text, filename)
 
                     await self.helper.debug(f"voices: {voices}")

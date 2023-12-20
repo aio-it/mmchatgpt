@@ -75,14 +75,8 @@ class ChatGPT(PluginLoader):
 
     SETTINGS_KEY = "chatgpt_settings"
 
-    def initialize(
-        self,
-        driver: Driver,
-        plugin_manager: PluginManager,
-        settings: Settings,
-        **kwargs,
-    ):
-        super().initialize(driver, plugin_manager, settings)
+    def __init__(self, openai_api_key=None, log_channel=None, **kwargs):
+        super().__init__()
         self.name = "ChatGPT"
         if openai_api_key is None:
             raise MissingApiKey("No OPENAI API key provided")
@@ -91,6 +85,15 @@ class ChatGPT(PluginLoader):
             self.giphy_api_key = kwargs["giphy_api_key"]
         else:
             self.giphy_api_key = None
+
+    def initialize(
+        self,
+        driver: Driver,
+        plugin_manager: PluginManager,
+        settings: Settings,
+        **kwargs,
+    ):
+        super().initialize(driver, plugin_manager, settings)
         # Apply default model to redis if not set and set self.model
         self.model = self.redis.hget(self.SETTINGS_KEY, "model")
         if self.model is None:

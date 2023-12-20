@@ -24,16 +24,6 @@ class Docker(PluginLoader):
     # initialize parent class
     super().__init__()
     self.dockerclient = aiodocker.Docker()
-
-  @listen_to("^\.plugins list")
-  async def pluginslist(self, message: Message):
-    """list plugins"""
-    plugins = self.plugin_manager.plugins
-    self.driver.reply_to(message,f"plugins:")
-    for plugin in plugins:
-      info = dir(plugin)
-      classname = plugin.__class__
-      self.driver.reply_to(message,f"```{info}```")
   
   @listen_to("^\.docker ps")
   async def dockerps(self, message: Message):

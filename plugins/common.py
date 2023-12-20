@@ -37,6 +37,7 @@ class Helper:
         else:
             self.log_to_channel = True
             self.log_channel = self.log_channel
+        print(f"log_to_channel: {self.log_to_channel}")
 
     def redis_serialize_json(self, msg):
         """serialize a message to json"""

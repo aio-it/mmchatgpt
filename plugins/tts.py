@@ -14,20 +14,6 @@ from redis_rate_limit import RateLimit, TooManyRequests
 
 
 class TTS(PluginLoader):
-    def __init__(self):
-        pass
-    def initialize(self,
-          driver: Driver,
-          plugin_manager: PluginManager,
-          settings: Settings
-          ):
-      self.driver = driver
-      self.settings = settings
-      self.plugin_manager = plugin_manager
-      self.helper = Helper(self.driver)
-      self.users = Users(self.driver, self.plugin_manager, self.settings)
-      self.helper.slog(f"Plugin initialized {self.__class__.__name__}")
-
 
     @listen_to(r"^\.drtts ([\s\S]*)")
     async def drtts(self, message: Message, text: str):

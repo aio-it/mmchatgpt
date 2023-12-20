@@ -15,7 +15,6 @@ aclient = AsyncOpenAI(api_key=env.str("OPENAI_API_KEY"))
 import redis
 import aiohttp.client_exceptions as aiohttp_client_exceptions
 import tiktoken
-import uuid
 import shlex
 import base64
 from plugins.common import Helper

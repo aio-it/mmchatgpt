@@ -127,7 +127,7 @@ class ShellCmds(Plugin):
         self.settings = settings
         self.plugin_manager = plugin_manager
         self.helper = Helper(self.driver)
-        self.users = Users()
+        self.users = Users(self.driver, self.plugin_manager, self.settings)
     def validatecommand(self, command):
         """check if commands is in a list of commands allowed"""
         if command in SHELL_COMMANDS:

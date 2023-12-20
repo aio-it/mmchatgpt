@@ -35,6 +35,7 @@ class Users(Plugin):
             self.redis.sadd("users", *USERS)
         if self.redis.scard("admins") > 0 and len(ADMINS) > 0:
             self.redis.sadd("users", *ADMINS)
+        self.helper.slog(f"Plugin initialized {self.__class__.__name__}")
 
     def on_start(self):
         """on start"""

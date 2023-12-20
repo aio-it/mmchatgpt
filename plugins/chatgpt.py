@@ -41,7 +41,7 @@ class MissingApiKey(Exception):
     """Missing API key exception"""
 
 
-class ChatGPT(Plugin):
+class ChatGPT(PluginLoader):
     """mmypy chatgpt plugin"""
 
     # MODEL = "gpt-3.5-turbo-0301"

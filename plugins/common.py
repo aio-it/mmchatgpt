@@ -56,19 +56,19 @@ class Helper:
 
     async def log(self, message: str):
         """send message to log channel"""
-        log.info(f"INFO: {message}")
+        log.info(f"LOG: {message}")
         if self.log_to_channel:
-            self.driver.create_post(self.log_channel, f"[INFO] {message}")
+            self.driver.create_post(self.log_channel, message)
     def slog(self,message: str):
         """sync log"""
-        log.info(f"INFO: {message}")
+        log.info(f"LOG: {message}")
         if self.log_to_channel:
-            self.driver.create_post(self.log_channel, f"[INFO] {message}")
+            self.driver.create_post(self.log_channel, message)
     
     async def debug(self, message: str, private: bool = False):
         """send debug message to log channel. if private is true send to all admins"""
         print(f"DEBUG: {message}")
-        log.debug(f"{message}")
+        log.debug(f"DEBUG: {message}")
         if self.log_to_channel and not private:
             await self.log(f"DEBUG: {message}")
         elif private:

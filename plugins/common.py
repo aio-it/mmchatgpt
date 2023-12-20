@@ -21,6 +21,7 @@ class Helper:
     REDIS = redis.Redis(
         host="localhost", port=6379, db=0, decode_responses=True
     )
+    log.info(f"REDIS: {REDIS}")
     def __init__(self, driver, rediss=None, log_channel=None):
         self.driver = driver
         if rediss is None:

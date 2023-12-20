@@ -39,6 +39,7 @@ class Helper:
     def load_plugins(self, plugin_manager: PluginManager):
         """load plugins"""
         self.plugin_manager = plugin_manager
+        self.plugins = {}
         for plugin in self.plugin_manager.plugins:
             pname = type(plugin).__name__
             self.plugins[pname] = plugin

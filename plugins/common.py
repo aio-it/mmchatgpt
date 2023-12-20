@@ -54,24 +54,24 @@ class Helper:
         """send message to all admins"""
         for admin_uid in self.redis.smembers("admins"):
             self.driver.direct_message(receiver_id=admin_uid, message=message)
-
+    def get_caller_info(self):
+        """get the caller info"""
+        stack = inspect.stack()
+        callerclass = stack[2][0].f_locals["self"].__class__.__name__
+        callerfunc = stack[2][0].f_code.co_name
+        return callerclass, callerfunc
     async def log(self, message: str):
         """send message to log channel"""
-        stack = inspect.stack()
-        callerclass = stack[1][0].f_locals["self"].__class__.__name__
-        callerfunc = stack[1][0].f_code.co_name
+        callerclass, callerfunc = self.get_caller_info()
         log.info(f"LOG: {callerclass}.{callerfunc} {message}")
         if self.log_to_channel:
             self.driver.create_post(self.log_channel, message)
     def slog(self,message: str):
         """sync log"""
-        stack = inspect.stack()
-        log.info(f"LOG: {stack}")
-        callerclass = stack[1][0].f_locals["self"].__class__.__name__
-        callerfunc = stack[1][0].f_code.co_name
-        log.info(f"LOG: {callerclass}.{callerfunc} {message}")
+        callerclass, callerfunc = self.get_caller_info()
+        msg = f"{callerclass}.{callerfunc} {message}"
         if self.log_to_channel:
-            self.driver.create_post(self.log_channel, message)
+            self.driver.create_post(self.log_channel, msg)
     
     async def debug(self, message: str, private: bool = False):
         """send debug message to log channel. if private is true send to all admins"""

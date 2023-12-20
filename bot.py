@@ -10,7 +10,7 @@ from plugins.tts import TTS
 from plugins.shellcmds import ShellCmds
 import logging
 logging.basicConfig(level=logging.DEBUG)
-log = logging.getLogger("bot")
+log = logging.getLogger(__name__)
 log.info("starting bot")
 env = Env()
 log_channel = env.str("MM_BOT_LOG_CHANNEL")

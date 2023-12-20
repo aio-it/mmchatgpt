@@ -32,5 +32,5 @@ class PluginLoader(Plugin):
             self.users = Users()
             self.users.initialize(self.driver, self.plugin_manager, self.settings)
             self.helper.plugins['users'] = self.users
-        #self.helper.slog(f"Plugins loaded: {self.helper.plugins.keys()}")
+        self.helper.slog(f"Plugins loaded: {''.join(self.helper.plugins.keys())}")
         self.helper.slog(f"Plugin initialized {self.__class__.__name__}")

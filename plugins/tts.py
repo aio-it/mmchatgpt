@@ -56,8 +56,8 @@ class TTS(PluginLoader):
         rate = engine.getProperty("rate")
         volume = engine.getProperty("volume")
         return voices, rate, volume
-
-    @listen_to(r"^\.tts ([\s\S]*)")
+    #Broken fix maybe?
+    #@listen_to(r"^\.tts ([\s\S]*)")
     async def tts(self, message: Message, text: str):
         if self.users.is_user(message.sender_name):
             try:

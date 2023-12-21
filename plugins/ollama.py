@@ -162,7 +162,7 @@ class Ollama(PluginLoader):
         if message.text[0] == "!":
             return
         # set stream using ternary
-        stream = True if self.stream == 1 else False
+        stream = True if self.stream == "1" else False
         msg = message.text
         # log the message if user is admin
         # if self.is_admin(message.sender_name):
@@ -212,7 +212,6 @@ class Ollama(PluginLoader):
         self.driver.react_to(message, "thought_balloon")
         if not stream:
             try:
-                # send async request to openai
                 data = {
                     "model": self.model,
                     "messages": messages,

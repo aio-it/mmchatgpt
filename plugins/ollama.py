@@ -8,6 +8,7 @@ import requests
 import time
 import json
 import aiohttp.client_exceptions as aiohttp_client_exceptions
+REDIS_PREPEND = "ollama_"
 class Ollama(PluginLoader):
     REDIS_PREFIX = "ollama_"
     DEFAULT_MODEL = "mistral"

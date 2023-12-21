@@ -289,10 +289,10 @@ class Ollama(PluginLoader):
             self.driver.posts.patch_post(
                 reply_msg_id, {"message": f"{post_prefix}{full_message}"}
             )
-        # add response to chatlog
-        self.append_chatlog(
-            thread_id, {"role": "assistant", "content": full_message}
-        )
+            # add response to chatlog
+            self.append_chatlog(
+                thread_id, {"role": "assistant", "content": full_message}
+            )
 
         # remove thought balloon after successful response
         self.driver.reactions.delete_reaction(

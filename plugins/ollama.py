@@ -205,6 +205,7 @@ class Ollama(PluginLoader):
                         self.helper.log(f"response: {response}")
                         async for chunk in response.content.iter_any():
                             for obj in chunk.decode("utf-8").split("\n"):
+                                self.helper.log(f"obj: {obj}")
                                 if obj == "":
                                     continue
                                 obj = json.loads(obj)

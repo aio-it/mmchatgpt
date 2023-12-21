@@ -80,6 +80,8 @@ class Ollama(PluginLoader):
                                 except json.JSONDecodeError:
                                     self.driver.reply_to(message, f"Error: Invalid JSON: {line}")
                                     break
+                            if 'Error: Invalid JSON:' in message.text:
+                                break
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 self.helper.add_reaction(message, "x")

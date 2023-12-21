@@ -16,6 +16,7 @@ class Ollama(PluginLoader):
     URL= "http://localhost:11434/api"
     CHAT_ENDPOINT = "/chat"
     DEFAULT_STREAM = True
+    DEFAULT_SYSTEM_MESSAGE = ""
     def __init__(self):
         super().__init__()
     def initialize(self, driver: Driver, plugin_manager: PluginManager, settings: Settings):
@@ -26,6 +27,8 @@ class Ollama(PluginLoader):
         if self.redis.get(self.REDIS_PREFIX + "stream") is None:
             self.redis.set(self.REDIS_PREFIX + "stream", self.DEFAULT_STREAM)
         self.stream = self.redis.get(self.REDIS_PREFIX + "stream")
+        if self.redis.get(self.REDIS_PREFIX + "system_message") is None:
+            self.redis.set(self.REDIS_PREFIX + "system_message", self.DEFAULT_SYSTEM_MESSAGE)
   
     @listen_to(r"^\.ollama model set ([\s\S]*)")
     async def ollama_model_set(self, message: Message, model: str):

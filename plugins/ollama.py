@@ -353,3 +353,18 @@ class Ollama(PluginLoader):
                     break
 
         return list(reversed(limited_messages))
+    def require_admin(self, message: Message):
+        """decorator function to check if a user is admin before executing a command silently return if not"""
+        if not self.users.is_admin(message.sender_name):
+            return
+    @listen_to(r"TESTADMIN")
+    #@require_any
+    @require_admin
+    #@require_user
+    async def testadmin(self, message: Message):
+        if self.users.is_admin(message.sender_name):
+            self.driver.reply_to(message, f"admin")
+        else:
+            self.driver.reply_to(message, f"not admin")
+
+    

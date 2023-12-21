@@ -67,16 +67,11 @@ class Ollama(PluginLoader):
             delay = self.redis.get(self.REDIS_PREFIX + "stream_delay")
             self.driver.reply_to(message, f"streaming enabled. delay: {delay}ms")
     @listen_to(r"^\.ollama stream delay set ([\s\S]*)")
-    @listen_to(r"^\.ollama system_message set ([\s\S]*)")
-    async def ollama_system_message_set(self, message: Message, system_message: str):
+    async def ollama_stream_delay_set(self, message: Message, delay: str):
         if self.users.is_admin(message.sender_name):
-            self.redis.set(self.REDIS_PREFIX + "system_message", system_message)
-            self.system_message = system_message
-            self.driver.reply_to(message, f"system_message set to: {system_message}")
-    @listen_to(r"^\.ollama system_message get")
-    async def ollama_system_message_get(self, message: Message):
-        if self.users.is_admin(message.sender_name):
-            self.driver.reply_to(message, f"system_message: {self.redis.get(self.REDIS_PREFIX + 'system_message')}")
+            self.redis.set(self.REDIS_PREFIX + "stream_delay", delay)
+            self.stream_delay = delay
+            self.driver.reply_to(message, f"stream delay set to: {delay}ms")
     @listen_to(r"^\.ollama model show ([\s\S]*)")
     async def ollama_model_show(self, message: Message, model: str):
         if self.users.is_admin(message.sender_name):
@@ -148,6 +143,33 @@ class Ollama(PluginLoader):
     async def ollama_model_get(self, message: Message):
         if self.users.is_admin(message.sender_name):
             self.driver.reply_to(message, f"model: {self.redis.get(self.REDIS_PREFIX + 'model')}")
+    def get_system_message(self,model):
+        """get system message for model"""
+        # if : is in model, get system message for model
+        if ":" in model:
+            model = model.split(":")[0]
+        return self.redis.get(f"{self.REDIS_PREFIX}_{model}_system_message")
+    def set_system_message(self,model,system_message):
+        """set system message for model"""
+        # if : is in model, set system message for model
+        if ":" in model:
+            model = model.split(":")[0]
+        self.redis.set(f"{self.REDIS_PREFIX}_{model}_system_message", system_message)
+    @listen_to(r"^\.ollama system_message set ([\s\S]*) ([\s\S]*)")
+    async def ollama_system_message_set(self, message: Message, model: str, system_message: str):
+        # if : is in model, set system message for model
+        if ":" in model:
+            model = model.split(":")[0]
+        if self.users.is_admin(message.sender_name):
+            self.set_system_message(model,system_message)
+            self.driver.reply_to(message, f"system_message for {model} set to: {system_message}")
+    @listen_to(r"^\.ollama system_message get ([\s\S]*)")
+    async def ollama_system_message_get(self, message: Message, model: str):
+        # if : is in model, get system message for model
+        if ":" in model:
+            model = model.split(":")[0]
+        if self.users.is_admin(message.sender_name):
+            self.driver.reply_to(message, f"system_message for {model}: {self.get_system_message(model)}")
     @listen_to("^ollama")
     async def ollama_chat(self, message: Message):
         """listen to everything and respond when mentioned"""

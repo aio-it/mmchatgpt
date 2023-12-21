@@ -75,7 +75,7 @@ class Ollama(PluginLoader):
                 async with aiohttp.ClientSession() as session:
                     async with session.post(self.URL + self.SHOW_ENDPOINT, json=data) as response:
                         obj = await response.json(content_type=None)
-                        modeltxt = "model info:\n{pformat(obj)}"
+                        modeltxt = f"model info:\n{pformat(obj)}"
                         self.driver.reply_to(message, modeltxt)
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")

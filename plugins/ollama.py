@@ -214,7 +214,7 @@ class Ollama(PluginLoader):
                                 chunk = chunk.strip()
                                 try:
                                     chunk = json.loads(chunk)
-                                except Exception as error:
+                                except json.JSONDecodeError as error:
                                     self.driver.reply_to(message, f"Error: {error}")
                                     self.driver.reactions.delete_reaction(
                                         self.driver.user_id, message.id, "thought_balloon"

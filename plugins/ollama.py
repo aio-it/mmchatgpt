@@ -359,9 +359,9 @@ class Ollama(PluginLoader):
             #return the function
 
             
-    @listen_to(r"TESTADMIN")
+    #@listen_to(r"TESTADMIN")
     #@require_any
-    @require_admin
+    #@require_admin
     #@require_user
     async def testadmin(self, message: Message):
         if self.users.is_admin(message.sender_name):

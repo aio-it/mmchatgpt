@@ -798,7 +798,6 @@ class ChatGPT(PluginLoader):
             "**.admins list/add/remove [<username>]** - list/add/remove admins",
             "**.eval <code>** - run arbitrary python code and return the result to the chat",
             "**.exec <code>** - run arbitrary python code and return the result to the chat",
-            "**.getchatlog**- get the chatlog for the current thread",
             "**.s2t <text>**: convert text to token - convert a string to a tokens (for debugging)",
             "**.shell <command>**: run a shell command and return the result to the chat",
             "**.redis search <key>**: search redis for a key",

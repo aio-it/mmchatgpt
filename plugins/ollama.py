@@ -217,7 +217,7 @@ class Ollama(PluginLoader):
 
                 self.driver.reply_to(
                     message,
-                    f"({self.model}) @{message.sender_name}: {response["message"]["content"]}",
+                    f"({self.model}) @{message.sender_name}: {response['message']['content']}",
                 )
                 # add response to chatlog
                 self.append_chatlog(thread_id, response.choices[0].message)

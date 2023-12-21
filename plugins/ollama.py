@@ -73,7 +73,7 @@ class Ollama(PluginLoader):
                                 buffer += char
                                 if '}' in buffer:
                                     try:
-                                        self.slog(f"buffer: {buffer}")
+                                        self.log(f"buffer: {buffer}")
                                         obj, idx = json.JSONDecoder().raw_decode(buffer)
                                         buffer = buffer[idx:].lstrip()
                                         if "status" in obj:

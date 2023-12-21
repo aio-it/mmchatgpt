@@ -364,8 +364,8 @@ class Ollama(PluginLoader):
         return wrapper
 
             
-    @require_admin
     @listen_to(r"testing")
+    @require_admin
     #@require_any
     #@require_user
     async def testadmin(self, message: Message):

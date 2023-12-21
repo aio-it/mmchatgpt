@@ -213,6 +213,9 @@ class Ollama(PluginLoader):
                                 chunk = chunk.strip()
                                 try:
                                     chunk = json.loads(chunk)
+                                    if "message" not in chunk:
+                                        self.driver.reply_to(message, f"missing message from object: {chunk}")
+                                        continue
                                 except json.JSONDecodeError as error:
                                     self.driver.reply_to(message, f"Error: {error}")
                                     self.driver.reactions.delete_reaction(

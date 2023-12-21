@@ -94,9 +94,7 @@ class Ollama(PluginLoader):
                 # send async request to openai
                 response = await aclient.chat.completions.create(
                     model=self.model,
-                    messages=self.return_last_x_messages(
-                        messages, self.MAX_TOKENS_PER_MODEL[self.model]
-                    )
+                    messages=messages,
                 )
                 # check for error in the responses and send error message
                 if "error" in response:
@@ -251,3 +249,25 @@ class Ollama(PluginLoader):
         if isinstance(msg, list):
             return [json.loads(m) for m in msg]
         return json.loads(msg)
+    def return_last_x_messages(self, messages, max_length_in_tokens):
+        """return last x messages from list of messages limited by max_length_in_tokens"""
+        limited_messages = []
+        current_length_in_tokens = 0
+
+        for message_obj in reversed(messages):
+            if "content" in message_obj:
+                content = message_obj["content"]
+                message_length_in_tokens = len(
+                    self.string_to_tokens(content, model=self.model)
+                )
+
+                if (
+                    current_length_in_tokens + message_length_in_tokens
+                    <= max_length_in_tokens
+                ):
+                    current_length_in_tokens += message_length_in_tokens
+                    limited_messages.append(message_obj)
+                else:
+                    break
+
+        return list(reversed(limited_messages))

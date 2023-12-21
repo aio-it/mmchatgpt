@@ -72,8 +72,6 @@ class Ollama(PluginLoader):
             except json.decoder.JSONDecodeError as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 self.helper.add_reaction(message, "x")
-            except:
-                pass
     
     @listen_to(r"^\.ollama model set ([\s\S]*)")
     async def ollama_model_set(self, message: Message, model: str):

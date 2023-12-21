@@ -62,7 +62,9 @@ class Ollama(PluginLoader):
             async with aiohttp.ClientSession() as session:
                 async with session.post(self.URL + self.PULL_ENDPOINT, json=data) as response:
                     response = await response.json()
-                    self.driver.reply_to(message, f"pulled {response}")
+                    if "error" in response:
+                        self.driver.reply_to(message, f"Error: {response['error']}")
+                    self.driver.reply_to(message, f"status: {response['status']}")
     
     @listen_to(r"^\.ollama model set ([\s\S]*)")
     async def ollama_model_set(self, message: Message, model: str):

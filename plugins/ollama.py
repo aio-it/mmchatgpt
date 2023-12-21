@@ -51,32 +51,32 @@ class Ollama(PluginLoader):
     async def ollama_system_message_get(self, message: Message):
         if self.users.is_admin(message.sender_name):
             self.driver.reply_to(message, f"system_message: {self.redis.get(self.REDIS_PREFIX + 'system_message')}")
-    @listen_to(r"^\.ollama pull ([\s\S]*)")
-    async def ollama_pull(self, message: Message, model: str):
-        if self.users.is_admin(message.sender_name):
-            self.driver.reply_to(message, f"pulling {model}")
-            data = {
-              "name": model
-            }
-            try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(self.URL + self.PULL_ENDPOINT, json=data) as response:
-                        buffer = ""
-                        async for chunk in response.content.iter_any():
-                            buffer += byte.decode('utf-8')
+@listen_to(r"^\.ollama pull ([\s\S]*)")
+async def ollama_pull(self, message: Message, model: str):
+    if self.users.is_admin(message.sender_name):
+        self.driver.reply_to(message, f"pulling {model}")
+        data = {
+          "name": model
+        }
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(self.URL + self.PULL_ENDPOINT, json=data) as response:
+                    buffer = ""
+                    async for chunk in response.content.iter_any():
+                        for char in chunk.decode('utf-8'):
+                            buffer += char
                             try:
                                 obj, idx = json.JSONDecoder().raw_decode(buffer)
                                 buffer = buffer[idx:].lstrip()
-                                if "error" in obj:
-                                    self.driver.reply_to(message, f"Error: {obj['error']}")
                                 if "status" in obj:
                                     self.driver.reply_to(message, f"status: {obj['status']}")
                             except ValueError:
                                 # Not enough data to decode, fetch more
                                 pass
-            except json.decoder.JSONDecodeError as error:
-                self.driver.reply_to(message, f"Error: {error}")
-                self.helper.add_reaction(message, "x")
+        except Exception as error:
+            self.driver.reply_to(message, f"Error: {error}")
+            self.helper.add_reaction(message, "x")
+
     
     @listen_to(r"^\.ollama model set ([\s\S]*)")
     async def ollama_model_set(self, message: Message, model: str):

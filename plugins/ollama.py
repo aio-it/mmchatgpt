@@ -63,7 +63,7 @@ class Ollama(PluginLoader):
             self.driver.reply_to(message, f"pulling {model}")
             data = {
             "name": model,
-            "stream": True
+            "stream": False
             }
             try:
                 async with aiohttp.ClientSession() as session:

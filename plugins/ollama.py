@@ -355,12 +355,12 @@ class Ollama(PluginLoader):
         return list(reversed(limited_messages))
 
     def require_admin(func):
-        def wrapper(self, message, *args, **kwargs):
+        async def wrapper(self, message, *args, **kwargs):
             if not self.users.is_admin(message.sender_name):
-                self.helper.slog(f"{message.sender_name} is not admin")
+                await self.helper.log(f"{message.sender_name} is not admin")
                 return # exit silently
-            self.helper.slog(f"{message.sender_name} is an admin")           
-            return func(self, message, *args, **kwargs)
+            await self.helper.log(f"{message.sender_name} is an admin")           
+            return await func(self, message, *args, **kwargs)
         return wrapper
 
             

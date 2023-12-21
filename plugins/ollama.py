@@ -69,7 +69,6 @@ class Ollama(PluginLoader):
     async def ollama_model_show(self, message: Message):
         if self.users.is_admin(message.sender_name):
             self.driver.reply_to(message, f"model: {self.model}")
-            DeprecationWarnin
     @listen_to(r"^\.ollama model pull ([\s\S]*)")
     async def ollama_model_pull(self, message: Message, model: str):
         if self.users.is_admin(message.sender_name):

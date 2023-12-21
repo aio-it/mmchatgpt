@@ -11,16 +11,16 @@ class Ollama(PluginLoader):
     DEFAULT_MODEL = "mistral"
     URL= "http://localhost:11434/api"
     CHAT_ENDPOINT = "/chat"
-    STREAM = True
+    DEFAULT_STREAM = True
     def __init__(self):
         super().__init__()
     def initialize(self, driver: Driver, plugin_manager: PluginManager, settings: Settings):
         super().initialize(driver, plugin_manager, settings)
         if self.redis.get(self.REDIS_PREFIX + "model") is None:
-            self.redis.set(self.REDIS_PREFIX + "model", "mistral")
+            self.redis.set(self.REDIS_PREFIX + "model", self.DEFAULT_MODEL)
         self.model = self.redis.get(self.REDIS_PREFIX + "model")
         if self.redis.get(self.REDIS_PREFIX + "stream") is None:
-            self.redis.set(self.REDIS_PREFIX + "stream", "true")
+            self.redis.set(self.REDIS_PREFIX + "stream", self.DEFAULT_STREAM)
         self.stream = self.redis.get(self.REDIS_PREFIX + "stream")
         
 

@@ -38,7 +38,10 @@ class Ollama(PluginLoader):
         if self.redis.get(self.REDIS_PREFIX + "stream_delay") is None:
             self.redis.set(self.REDIS_PREFIX + "stream_delay", self.DEFAULT_STREAM_DELAY)
         self.stream_delay = self.redis.get(self.REDIS_PREFIX + "stream_delay")
-        self.helper.log(f"model: {self.model}")
+        self.helper.slog(f"model: {self.model}")
+        self.helper.slog(f"stream: {self.stream}")
+        self.helper.slog(f"system_message: {self.system_message}")
+        self.helper.slog(f"stream_delay: {self.stream_delay}")
     @listen_to(r"^\.ollama help")
     async def ollama_help(self, message: Message):
         if self.users.is_admin(message.sender_name):

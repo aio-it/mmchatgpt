@@ -72,7 +72,7 @@ class Ollama(PluginLoader):
                             chunk = chunk.decode("utf-8")
                             chunk = json.loads(chunk)
                             if "status" in chunk:
-                                self.driver.reply_to(message, f"status: {chunk['status']}")
+                                self.driver.reply_to(message, f"status: {pformat(chunk)}")
                         self.driver.reply_to(message, f"pulled {model}")
 
             except Exception as error:

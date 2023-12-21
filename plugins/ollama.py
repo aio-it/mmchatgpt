@@ -97,7 +97,7 @@ class Ollama(PluginLoader):
     async def ollama_model_get(self, message: Message):
         if self.users.is_admin(message.sender_name):
             self.driver.reply_to(message, f"model: {self.redis.get(self.REDIS_PREFIX + 'model')}")
-    @listen_to("ollama")
+    @listen_to("^ollama")
     async def ollama_chat(self, message: Message):
         """listen to everything and respond when mentioned"""
         #self.driver.reply_to(message, "Hej")
@@ -202,8 +202,15 @@ class Ollama(PluginLoader):
                 }
                 async with aiohttp.ClientSession() as session:
                     async with session.post(self.URL + self.CHAT_ENDPOINT, json=data) as response:
-                        response = await response.json()
-                        self.driver.reply_to(message, f"@{message.sender_name}: {pformat(response)}")
+                        async for chunk in response.content.iter_any():
+                            for obj in chunk.decode("utf-8").split("\n"):
+                                if obj == "":
+                                    continue
+                                obj = json.loads(obj)
+                                if "messages" in obj:
+                                    reply = obj["messages"]['content']
+                                    self.helper.log(f"reply: {reply}")
+                                    self.driver.reply_to(message, f"@{message.sender_name}: {reply}")
             except error:
                 # update the message
                 self.driver.posts.patch_post(

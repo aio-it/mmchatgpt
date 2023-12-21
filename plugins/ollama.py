@@ -6,6 +6,7 @@ from mmpy_bot.settings import Settings
 from plugins.base import PluginLoader
 import requests
 import time
+import json
 import aiohttp.client_exceptions as aiohttp_client_exceptions
 class Ollama(PluginLoader):
     REDIS_PREFIX = "ollama_"
@@ -244,3 +245,23 @@ class Ollama(PluginLoader):
             )
         else:
             await self.helper.log(f"User: {message.sender_name} used {self.model}")
+
+
+    def append_chatlog(self, thread_id, msg):
+        """append a message to a chatlog"""
+        expiry = 60 * 60 * 24 * 7
+        thread_key = REDIS_PREPEND + thread_id
+        self.redis.rpush(thread_key, self.helper.redis_serialize_json(msg))
+        self.redis.expire(thread_key, expiry)
+        messages = self.helper.redis_deserialize_json(self.redis.lrange(thread_key, 0, -1))
+        return messages
+
+    def redis_serialize_json(self, msg):
+        """serialize a message to json"""
+        return json.dumps(msg)
+
+    def redis_deserialize_json(self, msg):
+        """deserialize a message from json"""
+        if isinstance(msg, list):
+            return [json.loads(m) for m in msg]
+        return json.loads(msg)

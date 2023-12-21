@@ -59,15 +59,21 @@ class Ollama(PluginLoader):
               "name": model
             }
             try:
-              async with aiohttp.ClientSession() as session:
-                  async with session.post(self.URL + self.PULL_ENDPOINT, json=data) as response:
-                      response = await response.json()
-                      self.driver.reply_to(message, pformat(response))
-#                      response = json.loads(response)
-                      if "error" in response:
-                          self.driver.reply_to(message, f"Error: {response['error']}")
-                      if "status" in response:
-                          self.driver.reply_to(message, f"status: {response['status']}")
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(self.URL + self.PULL_ENDPOINT, json=data) as response:
+                        buffer = ""
+                        async for byte in response.content.iter_any(1):
+                            buffer += byte.decode('utf-8')
+                            try:
+                                obj, idx = json.JSONDecoder().raw_decode(buffer)
+                                buffer = buffer[idx:].lstrip()
+                                if "error" in obj:
+                                    self.driver.reply_to(message, f"Error: {obj['error']}")
+                                if "status" in obj:
+                                    self.driver.reply_to(message, f"status: {obj['status']}")
+                            except ValueError:
+                                # Not enough data to decode, fetch more
+                                pass
             except json.decoder.JSONDecodeError as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 self.helper.add_reaction(message, "x")

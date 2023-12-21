@@ -226,7 +226,7 @@ class Ollama(PluginLoader):
                     messages.append(msg)
 
         # add system message
-        if self.system_message != "":
+        if self.get_system_message(self.model) != "":
             messages.insert(
                 0, {"role": "system", "content": self.get_system_message(self.model)}
             )

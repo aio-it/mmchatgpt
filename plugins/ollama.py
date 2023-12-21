@@ -173,6 +173,9 @@ class Ollama(PluginLoader):
                 thread_post["message"] = thread_post["message"].replace(
                     "@" + self.driver.client.username + " ", ""
                 )
+                thread_post["message"] = thread_post["message"].replace(
+                    self.name + " ", ""
+                )
                 # if post is from self, set role to assistant
                 if self.driver.client.userid == thread_post["user_id"]:
                     role = "assistant"

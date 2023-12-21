@@ -301,9 +301,7 @@ class Ollama(PluginLoader):
 
         if not stream:
             # log usage for user
-            await self.helper.log(
-                f"User: {message.sender_name} used {response['usage']['total_tokens']} tokens"
-            )
+            await self.helper.log(f"User: {message.sender_name} used {self.model}")
         else:
             await self.helper.log(f"User: {message.sender_name} used {self.model}")
 

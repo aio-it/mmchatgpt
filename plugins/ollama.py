@@ -148,7 +148,8 @@ class Ollama(PluginLoader):
         # if : is in model, get system message for model
         if ":" in model:
             model = model.split(":")[0]
-        return self.redis.get(f"{self.REDIS_PREFIX}_{model}_system_message")
+        message = self.redis.get(f"{self.REDIS_PREFIX}_{model}_system_message")
+        return "" if message is None else message
     def set_system_message(self,model,system_message):
         """set system message for model"""
         # if : is in model, set system message for model

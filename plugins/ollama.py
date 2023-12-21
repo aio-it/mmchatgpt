@@ -43,7 +43,7 @@ class Ollama(PluginLoader):
         self.helper.slog(f"system_message: {self.system_message}")
         self.helper.slog(f"stream_delay: {self.stream_delay}ms")
     @listen_to(r"^\.ollama stop")
-    def stop(self):
+    def stop(self, message: Message):
         """stop the bot"""
         if self.users.is_admin(message.sender_name):
             import sys

@@ -70,9 +70,10 @@ class Ollama(PluginLoader):
                     async with session.post(self.URL + self.PULL_ENDPOINT, json=data) as response:
                         async for chunk in response.content.iter_any():
                             chunk = chunk.decode("utf-8")
+                            chunk_length = len(chunk)
                             chunk = json.loads(chunk)
                             if "status" in chunk:
-                                self.driver.reply_to(message, f"status: {pformat(chunk)}")
+                                self.driver.reply_to(message, f"status ({chunk_length}): {pformat(chunk)}")
                         self.driver.reply_to(message, f"pulled {model}")
 
             except Exception as error:

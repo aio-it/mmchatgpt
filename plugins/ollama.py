@@ -65,10 +65,21 @@ class Ollama(PluginLoader):
     async def ollama_system_message_get(self, message: Message):
         if self.users.is_admin(message.sender_name):
             self.driver.reply_to(message, f"system_message: {self.redis.get(self.REDIS_PREFIX + 'system_message')}")
-    @listen_to(r"^\.ollama model show")
-    async def ollama_model_show(self, message: Message):
+    @listen_to(r"^\.ollama model show ([\s\S]*)")
+    async def ollama_model_show(self, message: Message, model: str):
         if self.users.is_admin(message.sender_name):
-            self.driver.reply_to(message, f"model: {self.model}")
+            try:
+                data = {
+                    "name": model,
+                }
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(self.URL + self.SHOW_ENDPOINT, json=data) as response:
+                        obj = await response.json(content_type=None)
+                        modeltxt = "model info:\n{pformat(obj)}"
+                        self.driver.reply_to(message, modeltxt)
+            except Exception as error:
+                self.driver.reply_to(message, f"Error: {error}")
+                self.helper.add_reaction(message, "x")
     @listen_to (r"^\.ollama model list")
     async def ollama_model_list(self, message: Message):
         if self.users.is_admin(message.sender_name):

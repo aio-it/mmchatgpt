@@ -228,7 +228,7 @@ class Ollama(PluginLoader):
         # add system message
         if self.system_message != "":
             messages.insert(
-                0, {"role": "system", "content": self.system_message}
+                0, {"role": "system", "content": self.get_system_message(self.model)}
             )
         # add thought balloon to show assistant is thinking
         self.driver.react_to(message, "thought_balloon")

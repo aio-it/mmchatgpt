@@ -62,7 +62,7 @@ class Ollama(PluginLoader):
                 async with aiohttp.ClientSession() as session:
                     async with session.post(self.URL + self.PULL_ENDPOINT, json=data) as response:
                         buffer = ""
-                        async for byte in response.content.iter_any(1):
+                        async for chunk in response.content.iter_any():
                             buffer += byte.decode('utf-8')
                             try:
                                 obj, idx = json.JSONDecoder().raw_decode(buffer)

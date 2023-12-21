@@ -203,14 +203,12 @@ class Ollama(PluginLoader):
                 async with aiohttp.ClientSession() as session:
                     async with session.post(self.URL + self.CHAT_ENDPOINT, json=data) as response:
                         await self.helper.log(f"response: {response}")
-                        async for chunk in response.content.iter_any():
-                            for obj in chunk:
-                                await self.helper.log(f"obj: {obj}")
-                            chunk = chunk.decode("utf-8")
+                        async for chunks in response.content.iter_any():
+                            chunks = chunks.decode("utf-8")
                             # chunk contains one or more json objects, separated by newlines
                             # loop through them
-                            chunk = chunk.split("\n")
-                            for obj in chunk:
+                            chunks = chunks.split("\n")
+                            for chunk in chunks:
                                 if chunk == "":
                                     continue
                                 if "error" in chunk:
@@ -231,11 +229,11 @@ class Ollama(PluginLoader):
                                 # extract the message
                                 from pprint import pformat
                                 self.driver.reply_to(message, pformat(chunk))
-                                chunk_message = chunk.message.content
+                                chunk_message = chunk['message']
                                 # self.driver.reply_to(message, chunk_message.content)
                                 # if the message has content, add it to the full message
-                                if chunk_message.content:
-                                    full_message += chunk_message.content
+                                if "content" in chunk_message['content']:
+                                    full_message += chunk_message['content']
                                     # await self.helper.debug((time.time() - last_update_time) * 1000)
                                     if (
                                         time.time() - last_update_time

@@ -8,6 +8,8 @@ from plugins.base import PluginLoader
 class Ollama(PluginLoader):
     REDIS_PREFIX = "ollama_"
     DEFAULT_MODEL = "mistral"
+    URL= "http://localhost:11434/api"
+    CHAT_ENDPOINT = "/chat"
     def __init__(self):
         super().__init__()
     def initialize(self, driver: Driver, plugin_manager: PluginManager, settings: Settings):

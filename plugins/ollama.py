@@ -369,9 +369,6 @@ class Ollama(PluginLoader):
     #@require_any
     #@require_user
     async def testadmin(self, message: Message):
-        if self.users.is_admin(message.sender_name):
-            self.driver.reply_to(message, f"admin")
-        else:
-            self.driver.reply_to(message, f"not admin")
+        self.driver.reply_to(message, f"admin")
 
     

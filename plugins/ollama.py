@@ -90,7 +90,7 @@ class Ollama(PluginLoader):
                                 if obj == "":
                                     continue
                                 chunk_length = len(obj)
-                                self.driver.reply_to(message, f"chunk ({chunk_length}): {obj}")
+                                #self.driver.reply_to(message, f"chunk ({chunk_length}): {obj}")
                                 obj = json.loads(obj)
                                 if "status" in obj:
                                     self.driver.reply_to(message, f"{pformat(obj['status'])}")

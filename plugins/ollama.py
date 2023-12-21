@@ -366,8 +366,6 @@ class Ollama(PluginLoader):
             
     @listen_to(r"testing")
     @require_admin
-    #@require_any
-    #@require_user
     async def testadmin(self, message: Message):
         self.driver.reply_to(message, f"admin")
 

@@ -22,12 +22,12 @@ class Ollama(PluginLoader):
         if self.redis.get(self.REDIS_PREFIX + "stream") is None:
             self.redis.set(self.REDIS_PREFIX + "stream", self.DEFAULT_STREAM)
         self.stream = self.redis.get(self.REDIS_PREFIX + "stream")
-        
-
   
     @listen_to(r"^\.ollama model set ([\s\S]*)")
     async def ollama_model_set(self, message: Message, model: str):
         if self.users.is_admin(message.sender_name):
+            self.redis.set(self.REDIS_PREFIX + "model", model)
+            self.model = model
             self.driver.reply_to(message, f"model set to: {model}")
     @listen_to(r"^\.ollama model get")
     async def ollama_model_get(self, message: Message):

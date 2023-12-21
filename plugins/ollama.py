@@ -10,6 +10,7 @@ import json
 import aiohttp
 import asyncio
 import aiohttp.client_exceptions as aiohttp_client_exceptions
+from pprint import pformat
 REDIS_PREPEND = "ollama_"
 class Ollama(PluginLoader):
     REDIS_PREFIX = "ollama_"

@@ -285,10 +285,10 @@ class Ollama(PluginLoader):
                 )
                 self.driver.react_to(message, "x")
                 return
-        # update the message a final time to make sure we have the full message
-        self.driver.posts.patch_post(
-            reply_msg_id, {"message": f"{post_prefix}{full_message}"}
-        )
+            # update the message a final time to make sure we have the full message
+            self.driver.posts.patch_post(
+                reply_msg_id, {"message": f"{post_prefix}{full_message}"}
+            )
         # add response to chatlog
         self.append_chatlog(
             thread_id, {"role": "assistant", "content": full_message}

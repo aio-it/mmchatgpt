@@ -237,7 +237,10 @@ class Ollama(PluginLoader):
                     f"({self.model}) @{message.sender_name}: {response['message']['content']}",
                 )
                 # add response to chatlog
-                self.append_chatlog(thread_id, response['message']['content'])
+                if cache_thread:
+                    self.append_chatlog(thread_id, response['message']['content'])
+                else:
+                    messages.append(response['message'])
         else:
             # we are streaming baby
             full_message = ""

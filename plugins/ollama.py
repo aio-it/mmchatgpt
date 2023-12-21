@@ -69,7 +69,25 @@ class Ollama(PluginLoader):
     async def ollama_model_show(self, message: Message):
         if self.users.is_admin(message.sender_name):
             self.driver.reply_to(message, f"model: {self.model}")
-        
+    @listen_to (r"^\.ollama model list")
+    async def ollama_model_list(self, message: Message):
+        if self.users.is_admin(message.sender_name):
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(self.URL + self.TAGS_ENDPOINT) as response:
+                        obj = await response.json(content_type=None)
+                        if "models" in obj:
+                            for model in obj["models"]:
+                                name = model["name"]
+                                size = model["size"]
+                                modified_at = model["modified_at"]
+                                self.driver.reply_to(message, f"model: {model} size: {size} modified_at: {modified_at}")
+
+                            models = obj["models"]
+                            self.driver.reply_to(message, f"models: {models}")
+            except Exception as error:
+                self.driver.reply_to(message, f"Error: {error}")
+                self.helper.add_reaction(message, "x")
     @listen_to(r"^\.ollama model pull ([\s\S]*)")
     async def ollama_model_pull(self, message: Message, model: str):
         if self.users.is_admin(message.sender_name):

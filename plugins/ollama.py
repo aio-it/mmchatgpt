@@ -68,7 +68,7 @@ class Ollama(PluginLoader):
                           self.driver.reply_to(message, f"Error: {response['error']}")
                       if "status" in response:
                           self.driver.reply_to(message, f"status: {response['status']}")
-            except error:
+            except json.decoder.JSONDecodeError as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 self.helper.add_reaction(message, "x")
     

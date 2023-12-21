@@ -194,7 +194,6 @@ class Ollama(PluginLoader):
             # send async request to openai
             last_update_time = time.time()
             stream_update_delay_ms = float(100)
-            from pprint import pformat
             try:
                 data = {
                   "model": self.model,
@@ -239,25 +238,18 @@ class Ollama(PluginLoader):
                                         )
                                         # update last_update_time
                                         last_update_time = time.time()
-                # update the message a final time to make sure we have the full message
-                self.driver.posts.patch_post(
-                    reply_msg_id, {"message": f"{post_prefix}{full_message}"}
-                )
-            except Exception as error:
-                # update the message
-                self.driver.posts.patch_post(
-                    reply_msg_id, {"message": f"Error: {error}"}
-                )
-                self.driver.reactions.delete_reaction(
-                    self.driver.user_id, message.id, "thought_balloon"
-                )
-                self.driver.react_to(message, "x")
-                return
+
             # update the message a final time to make sure we have the full message
             self.driver.posts.patch_post(
                 reply_msg_id, {"message": f"{post_prefix}{full_message}"}
             )
-
+        except aiohttp_client_exceptions.ClientConnectorError as error:
+            self.driver.reply_to(message, f"Error: {error}")
+            self.driver.reactions.delete_reaction(
+                self.driver.user_id, message.id, "thought_balloon"
+            )
+            self.driver.react_to(message, "x")
+            return
         # add response to chatlog
         self.append_chatlog(
             thread_id, {"role": "assistant", "content": full_message}

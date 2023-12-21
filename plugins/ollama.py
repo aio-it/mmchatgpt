@@ -353,7 +353,7 @@ class Ollama(PluginLoader):
                     break
 
         return list(reversed(limited_messages))
-    def require_admin(self):
+    def require_admin(message: Message):
         """decorator function to check if a user is admin before executing a command silently return if not"""
         if self.users.is_admin(message.sender_name):
             #return the function

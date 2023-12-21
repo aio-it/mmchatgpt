@@ -64,7 +64,7 @@ class Ollama(PluginLoader):
                     response = await response.json()
                     if "error" in response:
                         self.driver.reply_to(message, f"Error: {response['error']}")
-                    if status in response:
+                    if "status" in response:
                         self.driver.reply_to(message, f"status: {response['status']}")
     
     @listen_to(r"^\.ollama model set ([\s\S]*)")

@@ -362,7 +362,6 @@ class Ollama(PluginLoader):
         return wrapper
 
             
-    @require_admin()
     @listen_to(r"TESTADMIN")
     #@require_any
     @require_admin

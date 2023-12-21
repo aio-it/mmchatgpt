@@ -115,14 +115,7 @@ class Ollama(PluginLoader):
                     # add x reaction to the message that failed to show error
                     self.driver.react_to(message, "x")
                     return
-            except openai.InvalidRequestError as error:
-                self.driver.reply_to(message, f"Error: {error}")
-                self.driver.reactions.delete_reaction(
-                    self.driver.user_id, message.id, "thought_balloon"
-                )
-                self.driver.react_to(message, "x")
-                return
-            except openai.error.RateLimitError as error:
+            except error:
                 self.driver.reply_to(message, f"Error: {error}")
                 self.driver.reactions.delete_reaction(
                     self.driver.user_id, message.id, "thought_balloon"

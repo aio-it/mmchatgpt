@@ -360,7 +360,7 @@ class Ollama(PluginLoader):
         pass
 
             
-    #@listen_to(r"TESTADMIN")
+    @listen_to(r"TESTADMIN")
     #@require_any
     #@require_admin
     #@require_user

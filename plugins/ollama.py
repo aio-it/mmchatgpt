@@ -70,23 +70,19 @@ class Ollama(PluginLoader):
                     async with session.post(self.URL + self.PULL_ENDPOINT, json=data) as response:
                         buffer = ""
                         async for chunk in response.content.iter_any():
-                            #await self.helper.log(f"chunk: {chunk}")
-                            for char in chunk.decode('utf-8'):
-                                #await self.helper.log(f"char: {char}")
-                                buffer += char
-                                if '}' in buffer:
-                                    try:
-                                        await self.helper.log(f"buffer: {buffer}")
-                                        obj, idx = json.JSONDecoder().raw_decode(buffer)
-                                        buffer = '\n'.join(buffer.split('\n')[1:])
-                                        if "status" in obj:
-                                            self.driver.reply_to(message, f"status: {obj['status']}")
-                                    except ValueError:
-                                        # Not enough data to decode, fetch more
-                                        pass
-            except Exception as error:
-                self.driver.reply_to(message, f"Error: {error}")
-                self.helper.add_reaction(message, "x")
+                            buffer += chunk.decode('utf-8')
+                            while '\n' in buffer:
+                                line, buffer = buffer.split('\n', 1)
+                                try:
+                                    obj = json.loads(line)
+                                    if "status" in obj:
+                                        self.driver.reply_to(message, f"status: {obj['status']}")
+                                except json.JSONDecodeError:
+                                    buffer = line + buffer
+                                    break
+                                    except Exception as error:
+                                        self.driver.reply_to(message, f"Error: {error}")
+                                        self.helper.add_reaction(message, "x")
     
     @listen_to(r"^\.ollama model set ([\s\S]*)")
     async def ollama_model_set(self, message: Message, model: str):

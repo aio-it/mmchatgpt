@@ -357,7 +357,7 @@ class Ollama(PluginLoader):
     def require_admin(func):
         def wrapper(self, message, *args, **kwargs):
             if not self.users.is_admin(message.sender_name):
-                self.helper.slog(print(f"{message.sender_name} is not admin")
+                self.helper.slog(f"{message.sender_name} is not admin")
                 return # exit silently
             self.helper.slog(print(f"{message.sender_name} is an admin")           
             return func(self, message, *args, **kwargs)

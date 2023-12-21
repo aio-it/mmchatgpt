@@ -171,7 +171,8 @@ class Ollama(PluginLoader):
         thread_key = REDIS_PREPEND + thread_id
         # check if thread exists in redis
         messages = []
-        if self.redis.exists(thread_key):
+        cache_thread = False
+        if self.redis.exists(thread_key) and cache_thread:
             messages = self.append_chatlog(thread_id, {"role": "user", "content": msg})
         else:
             # thread does not exist, fetch all posts in thread
@@ -194,9 +195,14 @@ class Ollama(PluginLoader):
 
                 # self.redis.rpush(thread_key, self.helper.redis_serialize_json(
                 #    {"role": role, "content": thread_post['message']}))
-                messages = self.append_chatlog(
-                    thread_id, {"role": role, "content": thread_post["message"]}
-                )
+                    msg = {"role": role, "content": thread_post["message"]}
+                if cache_thread:
+                    messages = self.append_chatlog(
+                        thread_id, msg
+                    )
+                else:
+                    messages.append(msg)
+
         # add system message
         if self.system_message != "":
             messages.insert(

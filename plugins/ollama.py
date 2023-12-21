@@ -314,8 +314,6 @@ class Ollama(PluginLoader):
                 self.append_chatlog(
                     thread_id, {"role": "assistant", "content": full_message}
                 )
-            else:
-                messages.append({"role": "assistant", "content": full_message})
 
         # remove thought balloon after successful response
         self.driver.reactions.delete_reaction(

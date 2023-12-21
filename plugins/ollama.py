@@ -240,7 +240,7 @@ class Ollama(PluginLoader):
                 if cache_thread:
                     self.append_chatlog(thread_id, response['message']['content'])
                 else:
-                    messages.append(response['message'])
+                    messages.append(response['message']['content'])
         else:
             # we are streaming baby
             full_message = ""

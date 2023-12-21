@@ -69,7 +69,7 @@ class Ollama(PluginLoader):
                 async with aiohttp.ClientSession() as session:
                     async with session.post(self.URL + self.PULL_ENDPOINT, json=data) as response:
                         buffer = ""
-                        async for chunk in response.content.iter_any(1024):
+                        async for chunk in response.content.iter_any():
                             buffer += chunk.decode('utf-8')
                             while '\n' in buffer:
                                 line, buffer = buffer.split('\n', 1)

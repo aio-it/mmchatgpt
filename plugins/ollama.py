@@ -68,18 +68,14 @@ class Ollama(PluginLoader):
             try:
                 async with aiohttp.ClientSession() as session:
                     async with session.post(self.URL + self.PULL_ENDPOINT, json=data) as response:
-                        buffer = ""
-                        async for chunk in response.content.iter_any():
-                            buffer += chunk.decode('utf-8')
-                            while '\n' in buffer:
-                                line, buffer = buffer.split('\n', 1)
-                                try:
-                                    obj = json.loads(line)
-                                    if "status" in obj:
-                                        self.driver.reply_to(message, f"{obj['status']}")
-                                except json.JSONDecodeError:
-                                    buffer = line + buffer
-                                    break
+                        async for line in response.content.iter_any("\n"):
+                            try:
+                                obj = json.loads(line.decode('utf-8'))
+                                if "status" in obj:
+                                    self.driver.reply_to(message, f"{obj['status']}")
+                            except json.JSONDecodeError:
+                                self.driver.reply_to(message, f"Error: Invalid JSON: {line}")
+                                break
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 self.helper.add_reaction(message, "x")

@@ -13,7 +13,7 @@ REDIS_PREPEND = "ollama_"
 class Ollama(PluginLoader):
     REDIS_PREFIX = "ollama_"
     DEFAULT_MODEL = "mistral"
-    URL= "http://localhost:11434/api"
+    URL= "http://***REMOVED***:11434/api"
     CHAT_ENDPOINT = "/chat"
     PULL_ENDPOINT = "/pull"
     SHOW_ENDPOINT = "/show"

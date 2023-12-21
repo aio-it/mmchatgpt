@@ -29,6 +29,7 @@ class Ollama(PluginLoader):
         self.stream = self.redis.get(self.REDIS_PREFIX + "stream")
         if self.redis.get(self.REDIS_PREFIX + "system_message") is None:
             self.redis.set(self.REDIS_PREFIX + "system_message", self.DEFAULT_SYSTEM_MESSAGE)
+        self.system_message = self.redis.get(self.REDIS_PREFIX + "system_message")
   
     @listen_to(r"^\.ollama model set ([\s\S]*)")
     async def ollama_model_set(self, message: Message, model: str):

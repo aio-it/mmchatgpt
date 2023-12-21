@@ -42,7 +42,7 @@ class Ollama(PluginLoader):
         self.helper.slog(f"stream: {self.stream}")
         self.helper.slog(f"system_message: {self.system_message}")
         self.helper.slog(f"stream_delay: {self.stream_delay}ms")
-        
+
     @listen_to(r"^\.ollama help")
     async def ollama_help(self, message: Message):
         if self.users.is_admin(message.sender_name):
@@ -51,13 +51,13 @@ class Ollama(PluginLoader):
     async def ollama_stream_disable(self, message: Message):
         if self.users.is_admin(message.sender_name):
             self.redis.set(self.REDIS_PREFIX + "stream", 0)
-            self.stream = False
+            self.stream = 0
             self.driver.reply_to(message, f"streaming disabled")
     @listen_to(r"^\.ollama stream enable")
     async def ollama_stream_enable(self, message: Message):
         if self.users.is_admin(message.sender_name):
             self.redis.set(self.REDIS_PREFIX + "stream", 1)
-            self.stream = True
+            self.stream = 1
             delay = self.redis.get(self.REDIS_PREFIX + "stream_delay")
             self.driver.reply_to(message, f"streaming enabled. delay: {delay}ms")
     @listen_to(r"^\.ollama stream delay set ([\s\S]*)")

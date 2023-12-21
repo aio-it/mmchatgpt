@@ -4,11 +4,9 @@ from mmpy_bot.driver import Driver
 from mmpy_bot.plugins.base import PluginManager
 from mmpy_bot.settings import Settings
 from plugins.base import PluginLoader
-import requests
 import time
 import json
 import aiohttp
-import asyncio
 import aiohttp.client_exceptions as aiohttp_client_exceptions
 from pprint import pformat
 REDIS_PREPEND = "ollama_"

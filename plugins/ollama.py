@@ -75,8 +75,8 @@ class Ollama(PluginLoader):
                             chunk_length = len(chunk)
                             self.driver.reply_to(message, f"chunk ({chunk_length}): {chunk}")
                             chunk = json.loads(chunk)
-                            if "status" in chunk:
-                                self.driver.reply_to(message, f"status ({chunk_length}): {pformat(chunk)}")
+                            #if "status" in chunk:
+                            #    self.driver.reply_to(message, f"status ({chunk_length}): {pformat(chunk)}")
                         self.driver.reply_to(message, f"pulled {model}")
 
             except Exception as error:

@@ -502,6 +502,9 @@ class ChatGPT(PluginLoader):
             return
         # if message.is_direct_message and not self.is_admin(message.sender_name):
         #    return
+        # if we begin with "ollama" skip
+        if message.text.lower().startswith("ollama"):
+            return
         if message.text[0] == ".":  # ignore commands
             return
         # if message start with ! ignore

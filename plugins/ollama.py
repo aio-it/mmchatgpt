@@ -237,7 +237,7 @@ class Ollama(PluginLoader):
             full_message = ""
             post_prefix = f"({self.model}) @{message.sender_name}: "
             # post initial message as a reply and save the message id
-            reply_msg_id = self.driver.reply_to(message, full_message)["id"]
+            reply_msg_id = self.driver.reply_to(message, "Working...")["id"]
             # send async request to openai
             last_update_time = time.time()
             stream_update_delay_ms = float(100)

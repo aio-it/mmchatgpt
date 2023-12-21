@@ -16,6 +16,8 @@ class Ollama(PluginLoader):
     URL= "http://localhost:11434/api"
     CHAT_ENDPOINT = "/chat"
     PULL_ENDPOINT = "/pull"
+    SHOW_ENDPOINT = "/show"
+    TAGS_ENDPOINT = "/tags"
     DEFAULT_STREAM = True
     DEFAULT_SYSTEM_MESSAGE = ""
     def __init__(self):
@@ -51,8 +53,12 @@ class Ollama(PluginLoader):
     async def ollama_system_message_get(self, message: Message):
         if self.users.is_admin(message.sender_name):
             self.driver.reply_to(message, f"system_message: {self.redis.get(self.REDIS_PREFIX + 'system_message')}")
-    @listen_to(r"^\.ollama pull ([\s\S]*)")
-    async def ollama_pull(self, message: Message, model: str):
+    @listen_to(r"^\.ollama model show")
+    async def ollama_model_show(self, message: Message):
+        if self.users.is_admin(message.sender_name):
+            self.driver.reply_to(message, f"model: {self.model}")
+    @listen_to(r"^\.ollama model pull ([\s\S]*)")
+    async def ollama_model_pull(self, message: Message, model: str):
         if self.users.is_admin(message.sender_name):
             self.driver.reply_to(message, f"pulling {model}")
             data = {
@@ -67,6 +73,7 @@ class Ollama(PluginLoader):
                                 buffer += char
                                 if '}' in buffer:
                                     try:
+                                        self.slog.info(f"buffer: {buffer}")
                                         obj, idx = json.JSONDecoder().raw_decode(buffer)
                                         buffer = buffer[idx:].lstrip()
                                         if "status" in obj:

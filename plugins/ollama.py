@@ -76,7 +76,7 @@ class Ollama(PluginLoader):
                                 try:
                                     obj = json.loads(line)
                                     if "status" in obj:
-                                        self.driver.reply_to(message, f"status: {obj['status']}")
+                                        self.driver.reply_to(message, f"{obj['status']}")
                                 except json.JSONDecodeError:
                                     buffer = line + buffer
                                     break

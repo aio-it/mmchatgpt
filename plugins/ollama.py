@@ -212,27 +212,16 @@ class Ollama(PluginLoader):
                                 if chunk == "":
                                     continue
                                 chunk = chunk.strip()
-                                chunk = json.loads(chunk)
-                                if chunk == "":
-                                    continue
-                                if "error" in chunk:
-                                    if "message" in chunk:
-                                        self.driver.reply_to(
-                                            message, f"Error: {response['message']}"
-                                        )
-                                    else:
-                                        self.driver.reply_to(message, "Error")
-                                    # remove thought balloon
+                                try:
+                                    chunk = json.loads(chunk)
+                                except Exception as error:
+                                    self.driver.reply_to(message, f"Error: {error}")
                                     self.driver.reactions.delete_reaction(
                                         self.driver.user_id, message.id, "thought_balloon"
                                     )
-                                    # add x reaction to the message that failed to show error
                                     self.driver.react_to(message, "x")
                                     return
-
                                 # extract the message
-                                from pprint import pformat
-                                #self.driver.reply_to(message, pformat(chunk))
                                 chunk_message = chunk['message']
                                 # self.driver.reply_to(message, chunk_message.content)
                                 # if the message has content, add it to the full message

@@ -209,6 +209,8 @@ class Ollama(PluginLoader):
                             # loop through them
                             chunks = chunks.split("\n")
                             for chunk in chunks:
+                                if chunk == "":
+                                    continue
                                 chunk = chunk.strip()
                                 chunk = json.loads(chunk)
                                 if chunk == "":

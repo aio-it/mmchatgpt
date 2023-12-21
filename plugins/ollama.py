@@ -232,7 +232,7 @@ class Ollama(PluginLoader):
                                 chunk_message = chunk['message']
                                 # self.driver.reply_to(message, chunk_message.content)
                                 # if the message has content, add it to the full message
-                                if "content" in chunk_message['content']:
+                                if "content" in chunk_message:
                                     full_message += chunk_message['content']
                                     # await self.helper.debug((time.time() - last_update_time) * 1000)
                                     if (

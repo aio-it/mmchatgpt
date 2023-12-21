@@ -62,8 +62,8 @@ class Ollama(PluginLoader):
         if self.users.is_admin(message.sender_name):
             self.driver.reply_to(message, f"pulling {model}")
             data = {
-            "name": model
-            "stream": True,
+            "name": model,
+            "stream": True
             }
             try:
                 async with aiohttp.ClientSession() as session:

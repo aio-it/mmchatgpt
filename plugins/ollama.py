@@ -299,11 +299,7 @@ class Ollama(PluginLoader):
             self.driver.user_id, message.id, "thought_balloon"
         )
 
-        if not stream:
-            # log usage for user
-            await self.helper.log(f"User: {message.sender_name} used {self.model}")
-        else:
-            await self.helper.log(f"User: {message.sender_name} used {self.model}")
+        await self.helper.log(f"User: {message.sender_name} used {self.model}")
 
 
     def append_chatlog(self, thread_id, msg):

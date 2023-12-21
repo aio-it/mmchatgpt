@@ -353,16 +353,19 @@ class Ollama(PluginLoader):
                     break
 
         return list(reversed(limited_messages))
-    def require_admin(self, *args, **kwargs):
-        """decorator function to check if a user is admin before executing a command silently return if not"""
-        #if self.users.is_admin(message.sender_name):
-            #return the function
-        pass
+
+    def require_admin(func):
+        def wrapper(self, message, *args, **kwargs):
+            if not self.users.is_admin(message.sender_name):
+                return  # exit silently
+            return func(self, message, *args, **kwargs)
+        return wrapper
 
             
+    @require_admin()
     @listen_to(r"TESTADMIN")
     #@require_any
-    #@require_admin
+    @require_admin
     #@require_user
     async def testadmin(self, message: Message):
         if self.users.is_admin(message.sender_name):

@@ -8,6 +8,7 @@ import requests
 import time
 import json
 import aiohttp
+import asyncio
 import aiohttp.client_exceptions as aiohttp_client_exceptions
 REDIS_PREPEND = "ollama_"
 class Ollama(PluginLoader):

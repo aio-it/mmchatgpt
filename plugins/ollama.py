@@ -25,6 +25,7 @@ class Ollama(PluginLoader):
         super().__init__()
     def initialize(self, driver: Driver, plugin_manager: PluginManager, settings: Settings):
         super().initialize(driver, plugin_manager, settings)
+        self.name = "ollama"
         if self.redis.get(self.REDIS_PREFIX + "model") is None:
             self.redis.set(self.REDIS_PREFIX + "model", self.DEFAULT_MODEL)
         self.model = self.redis.get(self.REDIS_PREFIX + "model")

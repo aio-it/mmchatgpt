@@ -70,9 +70,9 @@ class Ollama(PluginLoader):
                     async with session.post(self.URL + self.PULL_ENDPOINT, json=data) as response:
                         buffer = ""
                         async for chunk in response.content.iter_any():
-                            await self.helper.log(f"chunk: {chunk}")
+                            #await self.helper.log(f"chunk: {chunk}")
                             for char in chunk.decode('utf-8'):
-                                await self.helper.log(f"char: {char}")
+                                #await self.helper.log(f"char: {char}")
                                 buffer += char
                                 if '}' in buffer:
                                     try:

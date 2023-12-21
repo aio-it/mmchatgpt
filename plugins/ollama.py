@@ -76,12 +76,14 @@ class Ollama(PluginLoader):
                 async with aiohttp.ClientSession() as session:
                     async with session.get(self.URL + self.TAGS_ENDPOINT) as response:
                         obj = await response.json(content_type=None)
+                        modeltxt = ""
                         if "models" in obj:
                             for model in obj["models"]:
                                 name = model["name"]
                                 size = model["size"]
                                 modified_at = model["modified_at"]
-                                self.driver.reply_to(message, f"model: {model} size: {size} modified_at: {modified_at}")
+                                modeltxt += f"model: {name} size: {size} modified_at: {modified_at}\n"
+                            self.driver.reply_to(message, f"model: {model} size: {size} modified_at: {modified_at}")
 
                             models = obj["models"]
                             self.driver.reply_to(message, f"models: {models}")

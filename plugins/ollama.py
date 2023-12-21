@@ -71,7 +71,8 @@ class Ollama(PluginLoader):
                         async for chunk in response.content.iter_any():
                             chunk = chunk.decode("utf-8")
                             chunk = json.loads(chunk)
-                            self.driver.reply_to(message, f"{chunk}")
+                            if "status" in chunk:
+                                self.driver.reply_to(message, f"status: {chunk['status']}")
                         self.driver.reply_to(message, f"pulled {model}")
 
             except Exception as error:

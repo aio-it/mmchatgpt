@@ -84,7 +84,7 @@ class Ollama(PluginLoader):
                     thread_id, {"role": role, "content": thread_post["message"]}
                 )
         # add system message
-        if self.get_chatgpt_setting("system") != "":
+        if self.system_message != "":
             messages.insert(
                 0, {"role": "system", "content": self.system_message}
             )

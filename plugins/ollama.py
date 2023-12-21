@@ -139,6 +139,7 @@ class Ollama(PluginLoader):
             # send async request to openai
             last_update_time = time.time()
             stream_update_delay_ms = float(100)
+            from pprint import pformat
             try:
                 data = {
                   "model": self.model,

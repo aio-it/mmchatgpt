@@ -221,7 +221,7 @@ class Ollama(PluginLoader):
 
                             # extract the message
                             from pprint import pformat
-                            self.helper.reply_to(message, pformat(chunk))
+                            self.driver.reply_to(message, pformat(chunk))
                             chunk_message = chunk.message.content
                             # self.driver.reply_to(message, chunk_message.content)
                             # if the message has content, add it to the full message

@@ -147,7 +147,7 @@ class Ollama(PluginLoader):
                 async with aiohttp.ClientSession() as session:
                     async with session.post(self.URL + self.CHAT_ENDPOINT, json=data) as response:
                         response = await response.json()
-                        self.driver.reply_to(message, f"@{message.sender_name}: {response.choices[0].message.content}")
+                        self.driver.reply_to(message, f"@{message.sender_name}: {pformat(response)}")
             except error:
                 # update the message
                 self.driver.posts.patch_post(

@@ -20,6 +20,7 @@ class Ollama(PluginLoader):
     TAGS_ENDPOINT = "/tags"
     DEFAULT_STREAM = True
     DEFAULT_SYSTEM_MESSAGE = ""
+    DEFAULT_STREAM_DELAY = 100
     def __init__(self):
         super().__init__()
     def initialize(self, driver: Driver, plugin_manager: PluginManager, settings: Settings):
@@ -33,6 +34,9 @@ class Ollama(PluginLoader):
         if self.redis.get(self.REDIS_PREFIX + "system_message") is None:
             self.redis.set(self.REDIS_PREFIX + "system_message", self.DEFAULT_SYSTEM_MESSAGE)
         self.system_message = self.redis.get(self.REDIS_PREFIX + "system_message")
+        if self.redis.get(self.REDIS_PREFIX + "stream_delay") is None:
+            self.redis.set(self.REDIS_PREFIX + "stream_delay", self.DEFAULT_STREAM_DELAY)
+        self.stream_delay = self.redis.get(self.REDIS_PREFIX + "stream_delay")
     @listen_to(r"^\.ollama help")
     async def ollama_help(self, message: Message):
         if self.users.is_admin(message.sender_name):

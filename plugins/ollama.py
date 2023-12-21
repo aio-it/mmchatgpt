@@ -320,7 +320,7 @@ class Ollama(PluginLoader):
                                         last_update_time = time.time()
 
             
-            except (aiohttp_client_exceptions.ClientConnectorError, aiohttp.client_exceptions.ClientOSError) as error:
+            except (aiohttp_client_exceptions.ClientConnectorError, aiohttp_client_exceptions.ClientOSError) as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 self.driver.reactions.delete_reaction(
                     self.driver.user_id, message.id, "thought_balloon"

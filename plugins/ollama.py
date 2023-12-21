@@ -70,6 +70,8 @@ class Ollama(PluginLoader):
                     async with session.post(self.URL + self.PULL_ENDPOINT, json=data) as response:
                         async for chunk in response.content.iter_any():
                             chunk = chunk.decode("utf-8")
+                            # trim any trailing newlines
+                            chunk = chunk.rstrip()
                             chunk_length = len(chunk)
                             chunk = json.loads(chunk)
                             if "status" in chunk:

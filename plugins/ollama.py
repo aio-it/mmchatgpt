@@ -16,6 +16,7 @@ class Ollama(PluginLoader):
     DEFAULT_MODEL = "mistral"
     URL= "http://localhost:11434/api"
     CHAT_ENDPOINT = "/chat"
+    PULL_ENDPOINT = "/pull"
     DEFAULT_STREAM = True
     DEFAULT_SYSTEM_MESSAGE = ""
     def __init__(self):
@@ -31,7 +32,39 @@ class Ollama(PluginLoader):
         if self.redis.get(self.REDIS_PREFIX + "system_message") is None:
             self.redis.set(self.REDIS_PREFIX + "system_message", self.DEFAULT_SYSTEM_MESSAGE)
         self.system_message = self.redis.get(self.REDIS_PREFIX + "system_message")
-  
+    @listen_to(r"^\.ollama stream set ([\s\S]*)")
+    async def ollama_stream_set(self, message: Message, stream: str):
+        if self.users.is_admin(message.sender_name):
+            self.redis.set(self.REDIS_PREFIX + "stream", stream)
+            self.stream = stream
+            self.driver.reply_to(message, f"stream set to: {stream}")
+    @listen_to(r"^\.ollama stream get")
+    async def ollama_stream_get(self, message: Message):
+        if self.users.is_admin(message.sender_name):
+            self.driver.reply_to(message, f"stream: {self.redis.get(self.REDIS_PREFIX + 'stream')}")
+    @listen_to(r"^\.ollama system_message set ([\s\S]*)")
+    async def ollama_system_message_set(self, message: Message, system_message: str):
+        if self.users.is_admin(message.sender_name):
+            self.redis.set(self.REDIS_PREFIX + "system_message", system_message)
+            self.system_message = system_message
+            self.driver.reply_to(message, f"system_message set to: {system_message}")
+    @listen_to(r"^\.ollama system_message get")
+    async def ollama_system_message_get(self, message: Message):
+        if self.users.is_admin(message.sender_name):
+            self.driver.reply_to(message, f"system_message: {self.redis.get(self.REDIS_PREFIX + 'system_message')}")
+    @listen_to(r"^\.ollama pull ([\s\S]*)")
+    async def ollama_pull(self, message: Message, model: str):
+        if self.users.is_admin(message.sender_name):
+            self.driver.reply_to(message, f"pulling {model}")
+            data = {
+              "model": model
+            }
+            async with aiohttp.ClientSession() as session:
+                async with session.post(self.URL + self.PULL_ENDPOINT, json=data) as response:
+                    response = await response.json()
+                    self.driver.reply_to(message, f"pulled {response.status}")
+                    self.driver.reply_to(message, f"pulled {model}")
+    
     @listen_to(r"^\.ollama model set ([\s\S]*)")
     async def ollama_model_set(self, message: Message, model: str):
         if self.users.is_admin(message.sender_name):

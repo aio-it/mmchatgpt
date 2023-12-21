@@ -145,7 +145,7 @@ class Ollama(PluginLoader):
                   "messages": messages
                 }
                 async with aiohttp.ClientSession() as session:
-                    async with session.post(self.URL + self.CHAT_ENDPOINT, json=messages) as response:
+                    async with session.post(self.URL + self.CHAT_ENDPOINT, json=data) as response:
                         response = await response
             except error:
                 # update the message
@@ -159,12 +159,6 @@ class Ollama(PluginLoader):
                 return
             try:
                 async for chunk in response:
-                    # await self.helper.debug(
-                    #    f"time since last chunk: {(time.time() - last_chunk_time) * 1000}")
-                    # last_chunk_time = time.time()
-                    # self.helper.debug(f"chunk: {chunk}")
-                    # check for error in the responses and send error message
-                    # TODO: might need fixing
                     if "error" in chunk:
                         if "message" in chunk:
                             self.driver.reply_to(

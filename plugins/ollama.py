@@ -33,6 +33,10 @@ class Ollama(PluginLoader):
         if self.redis.get(self.REDIS_PREFIX + "system_message") is None:
             self.redis.set(self.REDIS_PREFIX + "system_message", self.DEFAULT_SYSTEM_MESSAGE)
         self.system_message = self.redis.get(self.REDIS_PREFIX + "system_message")
+    @listen_to(r"^\.ollama help")
+    async def ollama_help(self, message: Message):
+        if self.users.is_admin(message.sender_name):
+            self.driver.reply_to(message, f"commands: set, get, pull, stream, system_message")
     @listen_to(r"^\.ollama stream set ([\s\S]*)")
     async def ollama_stream_set(self, message: Message, stream: str):
         if self.users.is_admin(message.sender_name):
@@ -57,6 +61,7 @@ class Ollama(PluginLoader):
     async def ollama_model_show(self, message: Message):
         if self.users.is_admin(message.sender_name):
             self.driver.reply_to(message, f"model: {self.model}")
+            DeprecationWarnin
     @listen_to(r"^\.ollama model pull ([\s\S]*)")
     async def ollama_model_pull(self, message: Message, model: str):
         if self.users.is_admin(message.sender_name):

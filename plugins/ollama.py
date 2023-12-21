@@ -62,7 +62,7 @@ class Ollama(PluginLoader):
             try:
               async with aiohttp.ClientSession() as session:
                   async with session.post(self.URL + self.PULL_ENDPOINT, json=data) as response:
-                      response = await response.read()
+                      response = await response.json()
                       self.reply_to(message, response)
                       response = json.loads(response)
                       if "error" in response:

@@ -210,6 +210,7 @@ class Ollama(PluginLoader):
                                 if "messages" in obj:
                                     reply = obj["messages"]['content']
                                     self.helper.log(f"reply: {reply}")
+                                    self.helper.log(f"obj: {pformat(obj)}")
                                     self.driver.reply_to(message, f"@{message.sender_name}: {reply}")
             except error:
                 # update the message

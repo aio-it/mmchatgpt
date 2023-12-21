@@ -7,6 +7,7 @@ from plugins.base import PluginLoader
 import requests
 import time
 import json
+import aiohttp
 import aiohttp.client_exceptions as aiohttp_client_exceptions
 REDIS_PREPEND = "ollama_"
 class Ollama(PluginLoader):
@@ -132,13 +133,12 @@ class Ollama(PluginLoader):
             reply_msg_id = self.driver.reply_to(message, full_message)["id"]
             # send async request to openai
             try:
-                response = await aclient.chat.completions.create(
-                    model=self.model,
-                    messages=self.return_last_x_messages(
-                        messages, 7000
-                    ),
-                )
-            except (openai.error.RateLimitError, openai.error.APIError) as error:
+                data = {
+                  "model": self.model,
+                  "messages": messages
+                }
+                response = await aiohttp.request('POST', self.URL + self.CHAT_ENDPOINT, json=messages)
+            except error:
                 # update the message
                 self.driver.posts.patch_post(
                     reply_msg_id, {"message": f"Error: {error}"}
@@ -154,9 +154,10 @@ class Ollama(PluginLoader):
             # get current time and set that as last_update_time
             last_update_time = time.time()
             # get the setting for how often to update the message
-            stream_update_delay_ms = float(
-                self.get_chatgpt_setting("stream_update_delay_ms")
-            )
+#            stream_update_delay_ms = float(
+#                self.get_chatgpt_setting("stream_update_delay_ms")
+#            )
+            stream_update_delay_ms = float(50)
             try:
                 async for chunk in response:
                     # await self.helper.debug(
@@ -181,8 +182,8 @@ class Ollama(PluginLoader):
                         return
 
                     # extract the message
-                    from pprint import pprint
-
+                    from pprint import pformat
+                    self.reply_to(message, pformat(chunk))
                     chunk_message = chunk.choices[0].delta
                     # self.driver.reply_to(message, chunk_message.content)
                     # if the message has content, add it to the full message

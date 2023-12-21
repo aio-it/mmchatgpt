@@ -55,7 +55,7 @@ class Ollama(PluginLoader):
         if message.text[0] == "!":
             return
         # set stream using ternary
-        stream = True if self.stream
+        stream = self.stream
         msg = message.text
         # log the message if user is admin
         # if self.is_admin(message.sender_name):

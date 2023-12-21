@@ -78,7 +78,7 @@ class Ollama(PluginLoader):
                                     try:
                                         await self.helper.log(f"buffer: {buffer}")
                                         obj, idx = json.JSONDecoder().raw_decode(buffer)
-                                        buffer = buffer[idx+1:].lstrip()
+                                        buffer = '\n'.join(buffer.split('\n')[1:])
                                         if "status" in obj:
                                             self.driver.reply_to(message, f"status: {obj['status']}")
                                     except ValueError:

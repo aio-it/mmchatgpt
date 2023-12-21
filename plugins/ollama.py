@@ -57,7 +57,7 @@ class Ollama(PluginLoader):
         if self.users.is_admin(message.sender_name):
             self.driver.reply_to(message, f"pulling {model}")
             data = {
-              "model": model
+              "name": model
             }
             async with aiohttp.ClientSession() as session:
                 async with session.post(self.URL + self.PULL_ENDPOINT, json=data) as response:

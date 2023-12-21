@@ -142,7 +142,9 @@ class Ollama(PluginLoader):
                   "model": self.model,
                   "messages": messages
                 }
-                response = await aiohttp.request('POST', self.URL + self.CHAT_ENDPOINT, json=messages)
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(self.URL + self.CHAT_ENDPOINT, json=messages) as response:
+                        response = await response.text()
             except error:
                 # update the message
                 self.driver.posts.patch_post(

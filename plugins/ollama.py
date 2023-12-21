@@ -76,7 +76,7 @@ class Ollama(PluginLoader):
                 async with aiohttp.ClientSession() as session:
                     async with session.get(self.URL + self.TAGS_ENDPOINT) as response:
                         obj = await response.json(content_type=None)
-                        modeltxt = ""
+                        modeltxt = "models:\n"
                         if "models" in obj:
                             for model in obj["models"]:
                                 name = model["name"]

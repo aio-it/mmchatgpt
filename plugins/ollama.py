@@ -68,7 +68,10 @@ class Ollama(PluginLoader):
             try:
                 async with aiohttp.ClientSession() as session:
                     async with session.post(self.URL + self.PULL_ENDPOINT, json=data) as response:
-                        response = await response.content.scan_until(b'\n')
+                        async for chunk in response.content.iter_any():
+                            chunk = chunk.decode("utf-8")
+                            chunk = json.loads(chunk)
+                            self.driver.reply_to(message, f"{chunk}")
                         self.driver.reply_to(message, f"pulled {model}")
 
             except Exception as error:

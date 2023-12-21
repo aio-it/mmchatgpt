@@ -202,18 +202,47 @@ class Ollama(PluginLoader):
                 }
                 async with aiohttp.ClientSession() as session:
                     async with session.post(self.URL + self.CHAT_ENDPOINT, json=data) as response:
-                        self.helper.log(f"response: {response}")
+                        await self.helper.log(f"response: {response}")
                         async for chunk in response.content.iter_any():
-                            for obj in chunk.decode("utf-8").split("\n"):
-                                self.helper.log(f"obj: {obj}")
-                                if obj == "":
-                                    continue
-                                obj = json.loads(obj)
-                                if "messages" in obj:
-                                    reply = obj["messages"]['content']
-                                    self.helper.log(f"reply: {reply}")
-                                    self.helper.log(f"obj: {pformat(obj)}")
-                                    self.driver.reply_to(message, f"@{message.sender_name}: {reply}")
+                            if "error" in chunk:
+                                if "message" in chunk:
+                                    self.driver.reply_to(
+                                        message, f"Error: {response['message']}"
+                                    )
+                                else:
+                                    self.driver.reply_to(message, "Error")
+                                # remove thought balloon
+                                self.driver.reactions.delete_reaction(
+                                    self.driver.user_id, message.id, "thought_balloon"
+                                )
+                                # add x reaction to the message that failed to show error
+                                self.driver.react_to(message, "x")
+                                return
+
+                            # extract the message
+                            from pprint import pformat
+                            self.helper.reply_to(message, pformat(chunk))
+                            chunk_message = chunk.message.content
+                            # self.driver.reply_to(message, chunk_message.content)
+                            # if the message has content, add it to the full message
+                            if chunk_message.content:
+                                full_message += chunk_message.content
+                                # await self.helper.debug((time.time() - last_update_time) * 1000)
+                                if (
+                                    time.time() - last_update_time
+                                ) * 1000 > stream_update_delay_ms:
+                                    # await self.helper.debug("updating message")
+                                    # update the message
+                                    self.driver.posts.patch_post(
+                                        reply_msg_id,
+                                        {"message": f"{post_prefix}{full_message}"},
+                                    )
+                                    # update last_update_time
+                                    last_update_time = time.time()
+                        # update the message a final time to make sure we have the full message
+                        self.driver.posts.patch_post(
+                            reply_msg_id, {"message": f"{post_prefix}{full_message}"}
+                        )
             except error:
                 # update the message
                 self.driver.posts.patch_post(

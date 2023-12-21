@@ -202,6 +202,7 @@ class Ollama(PluginLoader):
                 }
                 async with aiohttp.ClientSession() as session:
                     async with session.post(self.URL + self.CHAT_ENDPOINT, json=data) as response:
+                        self.helper.log(f"response: {response}")
                         async for chunk in response.content.iter_any():
                             for obj in chunk.decode("utf-8").split("\n"):
                                 if obj == "":

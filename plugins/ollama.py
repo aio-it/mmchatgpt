@@ -47,8 +47,8 @@ class Ollama(PluginLoader):
             self.redis.set(self.REDIS_PREFIX + "stream", stream)
             self.stream = False
             self.driver.reply_to(message, f"streaming disabled")
-    @listen_to(r"^\.ollama stream enabled")
-    async def ollama_stream_disable(self, message: Message, stream: str):
+    @listen_to(r"^\.ollama stream enable")
+    async def ollama_stream_enable(self, message: Message, stream: str):
         if self.users.is_admin(message.sender_name):
             self.redis.set(self.REDIS_PREFIX + "stream", stream)
             self.stream = False

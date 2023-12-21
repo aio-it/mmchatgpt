@@ -96,10 +96,7 @@ class Ollama(PluginLoader):
                     model=self.model,
                     messages=self.return_last_x_messages(
                         messages, self.MAX_TOKENS_PER_MODEL[self.model]
-                    ),
-                    temperature=temperature,
-                    top_p=top_p,
-                    stream=stream,
+                    )
                 )
                 # check for error in the responses and send error message
                 if "error" in response:

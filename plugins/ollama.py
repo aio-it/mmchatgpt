@@ -73,6 +73,7 @@ class Ollama(PluginLoader):
                             # trim any trailing newlines
                             chunk = chunk.rstrip()
                             chunk_length = len(chunk)
+                            self.driver.reply_to(message, f"chunk ({chunk_length}): {chunk}")
                             chunk = json.loads(chunk)
                             if "status" in chunk:
                                 self.driver.reply_to(message, f"status ({chunk_length}): {pformat(chunk)}")

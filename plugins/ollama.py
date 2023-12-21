@@ -37,7 +37,7 @@ class Ollama(PluginLoader):
     async def ollama_model_get(self, message: Message):
         if self.users.is_admin(message.sender_name):
             self.driver.reply_to(message, f"model: {self.redis.get(self.REDIS_PREFIX + 'model')}")
-    @listen_to("ollama", needs_mention=True)
+    @listen_to("ollama")
     async def ollama_chat(self, message: Message):
         """listen to everything and respond when mentioned"""
         #self.driver.reply_to(message, "Hej")

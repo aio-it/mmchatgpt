@@ -70,6 +70,7 @@ class Ollama(PluginLoader):
                         buffer = ""
                         async for chunk in response.content.iter_any():
                             for char in chunk.decode('utf-8'):
+                                self.helper.log(f"buffer: {char}")
                                 buffer += char
                                 if '}' in buffer:
                                     try:

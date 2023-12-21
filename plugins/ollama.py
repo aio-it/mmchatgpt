@@ -85,12 +85,10 @@ class Ollama(PluginLoader):
         # add system message
         if self.get_chatgpt_setting("system") != "":
             messages.insert(
-                0, {"role": "system", "content": self.get_chatgpt_setting("system")}
+                0, {"role": "system", "content": self.system_message}
             )
         # add thought balloon to show assistant is thinking
         self.driver.react_to(message, "thought_balloon")
-        temperature = float(self.get_chatgpt_setting("temperature"))
-        top_p = float(self.get_chatgpt_setting("top_p"))
         if not stream:
             try:
                 # send async request to openai
@@ -142,11 +140,8 @@ class Ollama(PluginLoader):
                 response = await aclient.chat.completions.create(
                     model=self.model,
                     messages=self.return_last_x_messages(
-                        messages, self.MAX_TOKENS_PER_MODEL[self.model]
+                        messages, 7000
                     ),
-                    temperature=temperature,
-                    top_p=top_p,
-                    stream=stream,
                 )
             except (openai.error.RateLimitError, openai.error.APIError) as error:
                 # update the message

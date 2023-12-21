@@ -137,6 +137,8 @@ class Ollama(PluginLoader):
             # post initial message as a reply and save the message id
             reply_msg_id = self.driver.reply_to(message, full_message)["id"]
             # send async request to openai
+            last_update_time = time.time()
+            stream_update_delay_ms = float(100)
             try:
                 data = {
                   "model": self.model,
@@ -155,16 +157,6 @@ class Ollama(PluginLoader):
                 )
                 self.driver.react_to(message, "x")
                 return
-            # self.helper.debug(response)
-
-            # self.helper.debug(f"reply_msg_id: {reply_msg_id}")
-            # get current time and set that as last_update_time
-            last_update_time = time.time()
-            # get the setting for how often to update the message
-#            stream_update_delay_ms = float(
-#                self.get_chatgpt_setting("stream_update_delay_ms")
-#            )
-            stream_update_delay_ms = float(50)
             try:
                 async for chunk in response:
                     # await self.helper.debug(

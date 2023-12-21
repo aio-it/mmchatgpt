@@ -69,7 +69,7 @@ class Ollama(PluginLoader):
                     async with session.post(self.URL + self.PULL_ENDPOINT, json=data) as response:
                         buffer = ""
                         async for chunk in response.content.iter_any():
-                            self.helper.log(f"chunk: {char}")
+                            self.helper.log(f"chunk: {chunk}")
                             for char in chunk.decode('utf-8'):
                                 self.helper.log(f"char: {char}")
                                 buffer += char

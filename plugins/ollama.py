@@ -94,10 +94,7 @@ class Ollama(PluginLoader):
                                 size = model["size"]
                                 modified_at = model["modified_at"]
                                 modeltxt += f"model: {name} size: {size} modified_at: {modified_at}\n"
-                            self.driver.reply_to(message, f"model: {model} size: {size} modified_at: {modified_at}")
-
-                            models = obj["models"]
-                            self.driver.reply_to(message, f"models: {models}")
+                            self.driver.reply_to(message, modeltxt)
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 self.helper.add_reaction(message, "x")

@@ -118,8 +118,6 @@ class Ollama(PluginLoader):
                             for obj in chunk:
                                 if obj == "":
                                     continue
-                                chunk_length = len(obj)
-                                #self.driver.reply_to(message, f"chunk ({chunk_length}): {obj}")
                                 obj = json.loads(obj)
                                 if "status" in obj:
                                     self.driver.reply_to(message, f"{pformat(obj['status'])}")
@@ -153,7 +151,7 @@ class Ollama(PluginLoader):
         if message.text[0] == "!":
             return
         # set stream using ternary
-        stream = self.stream
+        stream = True if self.stream else False
         msg = message.text
         # log the message if user is admin
         # if self.is_admin(message.sender_name):
@@ -198,23 +196,14 @@ class Ollama(PluginLoader):
         if not stream:
             try:
                 # send async request to openai
-                response = await aclient.chat.completions.create(
-                    model=self.model,
-                    messages=messages,
-                )
-                # check for error in the responses and send error message
-                if "error" in response:
-                    if "message" in response:
-                        self.driver.reply_to(message, f"Error: {response['message']}")
-                    else:
-                        self.driver.reply_to(message, "Error")
-                    # remove thought balloon
-                    self.driver.reactions.delete_reaction(
-                        self.driver.user_id, message.id, "thought_balloon"
-                    )
-                    # add x reaction to the message that failed to show error
-                    self.driver.react_to(message, "x")
-                    return
+                data = {
+                    "model": self.model,
+                    "messages": messages,
+                    "stream": False
+                }
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(self.URL + self.CHAT_ENDPOINT, json=data) as response:
+                        response = await response.json(content_type=None)
             except error:
                 self.driver.reply_to(message, f"Error: {error}")
                 self.driver.reactions.delete_reaction(
@@ -224,12 +213,14 @@ class Ollama(PluginLoader):
                 return
             # self.helper.debug(response)
             # send response to user
-            self.driver.reply_to(
-                message,
-                f"@{message.sender_name}: {response.choices[0].message.content}",
-            )
-            # add response to chatlog
-            self.append_chatlog(thread_id, response.choices[0].message)
+            if "message" in response:
+
+                self.driver.reply_to(
+                    message,
+                    f"@{message.sender_name}: {response["message"]["content"]}",
+                )
+                # add response to chatlog
+                self.append_chatlog(thread_id, response.choices[0].message)
         else:
             # we are streaming baby
             full_message = ""

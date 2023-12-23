@@ -352,3 +352,54 @@ class ShellCmds(PluginLoader):
             if timeout:
                 self.driver.reply_to(message, f"Timed out: 10 seconds")
             await self.helper.log(f"{message.sender_name} ran command: {command} {args} {input}")
+
+    @listen_to(r"^\.exec (.*)")
+    async def admin_exec_function(self, message, code):
+        """exec function that allows admins to run arbitrary python code and return the result to the chat"""
+        reply = ""
+        if self.users.is_admin(message.sender_name):
+            try:
+                resp = exec(code)  # pylint: disable=exec-used
+                reply = f"Executed: {code} \nResult: {resp}"
+            except Exception as error_message:  # pylint: disable=broad-except
+                reply = f"Error: {error_message}"
+            self.driver.reply_to(message, reply)
+
+    @listen_to(r"^\.shell (.*)")
+    async def admin_shell_function(self, message, code):
+        """shell function that allows admins to run arbitrary shell commands and return the result to the chat"""
+        reply = ""
+        shellescaped_code = shlex.quote(code)
+        shell_part = f"docker run lbr/ubuntu:utils /bin/bash -c "
+        shellcode = (
+            f'docker run lbr/ubuntu:utils /bin/bash -c "{shellescaped_code}"'
+        )
+        command = f"{shell_part} {shellcode}"
+        command_parts = shlex.split(command)
+        c = command_parts[0]
+        c_rest = command_parts[1:]
+        if self.users.is_admin(message.sender_name):
+            try:
+                self.driver.react_to(message, "runner")
+                proc = await asyncio.create_subprocess_exec(
+                    c,
+                    *command_parts,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                )
+                stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=120)
+                stdout = stdout.decode("utf-8")
+                stderr = stderr.decode("utf-8")
+                reply = f"Executed: {code}\t\n{shellcode} \nResult: {proc.returncode} \nOutput:\n{stdout}"
+                if proc.returncode != 0:
+                    reply += f"\nError:\n{stderr}"
+                    self.driver.react_to(message, "x")
+                else:
+                    self.driver.react_to(message, "white_check_mark")
+            except asyncio.TimeoutError as error_message:
+                reply = f"Error: {error_message}"
+            self.driver.reply_to(message, reply)
+            # remove thought balloon
+            self.driver.reactions.delete_reaction(
+                self.driver.user_id, message.id, "runner"
+            )

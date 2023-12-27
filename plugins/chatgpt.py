@@ -715,9 +715,7 @@ class ChatGPT(PluginLoader):
                                 functions_to_call.append({"function": tool_call.function.name, "tool_call_id": tool_call.id})
                             function_name = tool_call.function.name
                             #append the argument to the chunked_arguments dict
-                            if function_name not in chunked_arguments:
-                                chunked_arguments[function_name] = []
-                            chunked_arguments[function_name].append(tool_call.function.arguments)
+                            functions_to_call[function_name]['arguments'] += tool_call.function.arguments
                 # lets try to run the functions
                 for tool_function in functions_to_call:
                     # get the function

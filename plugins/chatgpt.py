@@ -524,7 +524,7 @@ class ChatGPT(PluginLoader):
             }
         ]
         tool_run = False
-        if tool_run in message and message.tool_run == True:
+        if hasattr(message, 'tool_run') and message.tool_run == True:
             tool_run = True
         if not self.users.is_user(message.sender_name):
             return

@@ -735,7 +735,7 @@ class ChatGPT(PluginLoader):
                     # get the arguments
                     arguments = json.loads(tool_function['arguments'])
                     # run the function
-                    function_result = await function(*arguments)
+                    function_result = await function(arguments.get("url"))
                     # add the result to the full message
                     full_message += function_result
                     # add to chatlog

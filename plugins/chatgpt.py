@@ -493,11 +493,32 @@ class ChatGPT(PluginLoader):
                     self.helper.remove_reaction(message, "thought_balloon")
 
                     await self.helper.log(f"{message.sender_name} used .vision")
-
+    async def download_webpage(self, url):
+        """download a webpage and return the content"""
+        response = requests.get(url)
+        if response.status_code == 200:
+            return response.content
+        return None
     @listen_to(".+", needs_mention=True)
     async def chat(self, message: Message):
         """listen to everything and respond when mentioned"""
         #self.driver.reply_to(message, "Hej")
+        # chatgpt "function calling"
+        functions =  [{
+                "name": "download_webpage",
+                "description": "download a webpage and return the content",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "url": {
+                            "type": "string",
+                            "description": "the url for the webpage"
+                        }
+                    },
+                    "required": ["url"]
+                }
+            }
+        ]
         if not self.users.is_user(message.sender_name):
             return
         # if message.is_direct_message and not self.is_admin(message.sender_name):
@@ -615,6 +636,8 @@ class ChatGPT(PluginLoader):
                     temperature=temperature,
                     top_p=top_p,
                     stream=stream,
+                    function=functions,
+                    function_call = "auto"
                 )
             except (openai.error.RateLimitError, openai.error.APIError) as error:
                 # update the message

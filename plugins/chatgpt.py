@@ -720,13 +720,12 @@ class ChatGPT(PluginLoader):
                             await self.helper.log(f"tool_call: {tool_call.function.name} {tool_call.function.arguments}")
                             await self.helper.log(pformat(functions_to_call))
                 # lets try to run the functions
-                for tool_function in functions_to_call:
+                for function_name, tool_function in functions_to_call:
                     # get the function
-                    function_name = tool_function["function"]
                     tool_call_id = tool_function["tool_call_id"]
                     function = getattr(self, function_name)
                     # get the arguments
-                    arguments = json.loads(functions_to_call[function_name]['arguments'])
+                    arguments = json.loads(tool_function['arguments'])
                     # run the function
                     function_result = await function(*arguments)
                     # add the result to the full message

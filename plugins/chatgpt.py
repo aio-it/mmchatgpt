@@ -732,7 +732,7 @@ class ChatGPT(PluginLoader):
                                 function_name = tools[tool_call.index]["function"]["name"]
                             if function_name not in functions_to_call:
                                 functions_to_call[function_name] = {
-                                    "tool_call_id": None,
+                                    "tool_call_id": "",
                                     "arguments": "",
                                 }
                                 if tool_call.id:

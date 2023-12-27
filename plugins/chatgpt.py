@@ -636,7 +636,7 @@ class ChatGPT(PluginLoader):
                     temperature=temperature,
                     top_p=top_p,
                     stream=stream,
-                    function=functions,
+                    functions = functions,
                     function_call = "auto"
                 )
             except (openai.error.RateLimitError, openai.error.APIError) as error:

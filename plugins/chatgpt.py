@@ -772,7 +772,7 @@ class ChatGPT(PluginLoader):
                     self.append_chatlog(
                        thread_id, { "tool_call_id": tool_call_id ,"role": "tool", "name": function_name, "content": full_message }
                     )
-                    if tool_run:
+                    if not tool_run:
                         message.tool_run=True
                         message.reply_id = reply_msg_id
                         await self.chat(message)

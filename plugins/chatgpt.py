@@ -728,8 +728,10 @@ class ChatGPT(PluginLoader):
                                     functions_to_call[function_name]["tool_call_id"] = tool_call.id
                                 # append to chatlog so we don't get an error when calling chatgpt with the result content
                                 self.append_chatlog(
-                                    thread_id, chunk_message.message
+                                    thread_id, self.serialize_choice_delta(tool_call)
                                 )
+                                #log
+                                await self.helper.log(f"added to chatlog: {pformat(self.serialize_choice_delta(tool_call))}")
 
                             #append the argument to the chunked_arguments dict
                             functions_to_call[function_name]['arguments'] += tool_call.function.arguments
@@ -801,6 +803,40 @@ class ChatGPT(PluginLoader):
             )
         else:
             await self.helper.log(f"User: {message.sender_name} used {self.model}")
+
+
+    def serialize_choice_delta(self, choice_delta):
+        # This function will create a JSON-serializable representation of ChoiceDelta and its nested objects.
+        tool_calls = []
+        for tool_call in choice_delta.tool_calls:
+            tool_calls.append({
+                'index': tool_call.index,
+                'id': tool_call.id,
+                'function': {
+                    'arguments': tool_call.function.arguments,
+                    'name': tool_call.function.name
+                },
+                'type': tool_call.type
+            })
+        return {
+            'content': choice_delta.content,
+            'function_call': choice_delta.function_call,
+            'role': choice_delta.role,
+            'tool_calls': tool_calls
+        }
+
+    def custom_serializer(self, obj):
+        # This function is a custom serializer for objects that are not JSON serializable by default.
+        if obj.__class__.__name__ == 'ChoiceDelta':
+            return self.serialize_choice_delta(obj)
+        raise TypeError(f'Object of type {obj.__class__.__name__} is not JSON serializable')
+
+    # Assuming `choice_delta_instance` is your instance of ChoiceDelta:
+    json_data = json.dumps(choice_delta_instance, default=custom_serializer)
+
+    # Now you can push the JSON data to Redis
+    thread_key = 'your-thread-key'  # replace with your actual thread key
+    redis.rpush(thread_key, json_data)
 
     @listen_to(r"^\.help")
     async def help_function(self, message):

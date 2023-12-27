@@ -545,7 +545,7 @@ class ChatGPT(PluginLoader):
         thread_key = REDIS_PREPEND + thread_id
         # check if thread exists in redis
         messages = []
-        if self.redis.exists(thread_key):
+        if self.redis.exists(thread_key) and not tool_run:
             messages = self.append_chatlog(thread_id, {"role": "user", "content": msg})
         else:
             # thread does not exist, fetch all posts in thread

@@ -713,8 +713,8 @@ class ChatGPT(PluginLoader):
                             # update last_update_time
                             last_update_time = time.time()
                     if chunk_message.tool_calls:
-                        if self.users.is_admin(message.sender_name) and message.sender_name == "lbr":
-                            await self.helper.log(pformat(chunk_message))
+                        #if self.users.is_admin(message.sender_name) and message.sender_name == "lbr":
+                        #    await self.helper.log(pformat(chunk_message))
                         # we are running tools. this sucks when streaming but lets try
                         for tool_call in chunk_message.tool_calls:
                             function_name = tool_call.function.name
@@ -821,7 +821,7 @@ class ChatGPT(PluginLoader):
                 'type': tool_call.type
             })
         return_object = {}
-        
+
         if choice_delta.content is not None:
             return_object['content'] = choice_delta.content
         if choice_delta.function_call is not None:

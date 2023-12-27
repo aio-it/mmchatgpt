@@ -20,7 +20,23 @@ class Docker(PluginLoader):
     # initialize parent class
     super().__init__()
     self.dockerclient = aiodocker.Docker()
-  
+  # help
+  @listen_to("^\.docker help")
+  async def dockerhelp(self, message: Message):
+    """docker help"""
+    if not self.users.is_admin(messagetxt.sender_name):
+      return
+    messagetxt = ""
+    messagetxt += "```"
+    messagetxt += ".docker ps\n"
+    messagetxt += ".docker run <command>\n"
+    messagetxt += ".docker stop <container_id>\n"
+    messagetxt += ".docker rm <container_id>\n"
+    messagetxt += ".docker logs <container_id>\n"
+    messagetxt += ".docker image pull <image>\n"
+    messagetxt += ".docker image ls\n"
+    messagetxt += "```"
+    self.driver.reply_to(message, f"{messagetxt}")
   @listen_to("^\.docker ps")
   async def dockerps(self, message: Message):
     """list docker containers"""

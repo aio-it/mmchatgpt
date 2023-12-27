@@ -777,6 +777,7 @@ class ChatGPT(PluginLoader):
             "**.calc <expression>** - calculate an expression using mathjs(lol) api returns the result",
             "**.decode <encoding> <text>** - decode text using an encoding",
             "**.encode <encoding> <text>** - encode text using an encoding",
+            "**.docker help** - returns a list of docker commands",
         ]
 
         commands_admin = [

@@ -16,7 +16,7 @@ REDIS_PREPEND = "ollama_"
 class Ollama(PluginLoader):
     REDIS_PREFIX = "ollama_"
     DEFAULT_MODEL = "mistral"
-    URL = env.get("OLLAMA_URL")
+    URL = env.get("OLLAMA_URL","http://localhost:11434/api")
     CHAT_ENDPOINT = "/chat"
     PULL_ENDPOINT = "/pull"
     SHOW_ENDPOINT = "/show"

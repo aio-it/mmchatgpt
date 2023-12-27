@@ -403,3 +403,11 @@ class ShellCmds(PluginLoader):
             self.driver.reactions.delete_reaction(
                 self.driver.user_id, message.id, "runner"
             )
+    # restart bot
+    @listen_to(r"^\.restart$")
+    async def restart(self, message: Message):
+        """restarts the bot"""
+        if self.users.is_admin(message.sender_name):
+            await self.helper.log(f"{message.sender_name} is restarting the bot")
+            self.driver.reply_to(message, "Restarting...")
+            await sys.exit(1)

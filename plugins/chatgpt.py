@@ -728,7 +728,7 @@ class ChatGPT(PluginLoader):
                             await self.helper.log(f"tool_call: {function_name} {tool_call.function.arguments}")
                             await self.helper.log(pformat(functions_to_call))
                 # lets try to run the functions
-                for function_name, tool_function in functions_to_call:
+                for function_name, tool_function in functions_to_call.items():
                     # get the function
                     tool_call_id = tool_function["tool_call_id"]
                     function = getattr(self, function_name)

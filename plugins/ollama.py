@@ -45,7 +45,7 @@ class Ollama(PluginLoader):
     @listen_to(r"^\.ollama help")
     async def ollama_help(self, message: Message):
         if self.users.is_admin(message.sender_name):
-            self.driver.reply_to(message, f"commands: model set/get/show/pull, stream set/get, system_message set/get")
+            self.driver.reply_to(message, f"commands: model set/get/show/pull, stream enable/disable, stream delay get/set, system_message set/get")
     @listen_to(r"^\.ollama stream disable")
     async def ollama_stream_disable(self, message: Message):
         if self.users.is_admin(message.sender_name):

@@ -751,8 +751,9 @@ class ChatGPT(PluginLoader):
                 
                     # add to chatlog
                     self.append_chatlog(
-                       thread_id, { "tool_call_id": tool_call_id ,"role": "tool", "content": full_message }
+                       thread_id, { "tool_call_id": tool_call_id ,"role": "tool", "name": function_name, "content": full_message }
                     )
+                    tool_run = True
                     # update the message
                     self.driver.posts.patch_post(
                         reply_msg_id, {"message": f"{post_prefix}{full_message}"}
@@ -762,10 +763,11 @@ class ChatGPT(PluginLoader):
                     reply_msg_id, {"message": f"{post_prefix}{full_message}"}
                 )
 
-                # add response to chatlog
-                self.append_chatlog(
-                    thread_id, {"role": "assistant", "content": full_message}
-                )
+                # add response to chatlog if it wasn't a tool run
+                if not tool_run:
+                    self.append_chatlog(
+                        thread_id, {"role": "assistant", "content": full_message}
+                    )
             except aiohttp_client_exceptions.ClientPayloadError as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 self.driver.reactions.delete_reaction(

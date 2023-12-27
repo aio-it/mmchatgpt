@@ -708,10 +708,6 @@ class ChatGPT(PluginLoader):
         else:
             await self.helper.log(f"User: {message.sender_name} used {self.model}")
 
-
-
-
-
     @listen_to(r"^\.help")
     async def help_function(self, message):
         """help function that returns a list of commands"""

@@ -576,6 +576,9 @@ class ChatGPT(PluginLoader):
                 messages = self.append_chatlog(
                     thread_id, {"role": role, "content": thread_post["message"]}
                 )
+        else:
+            # we are running a tool
+            messages = self.append_chatlog(thread_id, {"role": "user", "content": msg})
         # add system message
         if self.get_chatgpt_setting("system") != "":
             messages.insert(
@@ -907,6 +910,11 @@ class ChatGPT(PluginLoader):
         thread_key = REDIS_PREPEND + thread_id
         self.redis.rpush(thread_key, self.helper.redis_serialize_json(msg))
         self.redis.expire(thread_key, expiry)
+        messages = self.helper.redis_deserialize_json(self.redis.lrange(thread_key, 0, -1))
+        return messages
+    def get_chatlog(self, thread_id):
+        """get a chatlog"""
+        thread_key = REDIS_PREPEND + thread_id
         messages = self.helper.redis_deserialize_json(self.redis.lrange(thread_key, 0, -1))
         return messages
 

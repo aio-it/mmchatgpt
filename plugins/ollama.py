@@ -42,6 +42,12 @@ class Ollama(PluginLoader):
         self.helper.slog(f"stream: {self.stream}")
         self.helper.slog(f"system_message: {self.system_message}")
         self.helper.slog(f"stream_delay: {self.stream_delay}ms")
+        # get keywords from redis
+        self.keyword = self.redis.get(self.REDIS_PREFIX + "keyword")
+        if self.keyword is None:
+            self.keyword = "ollama"
+            self.redis.set(self.REDIS_PREFIX + "keyword", self.keyword)
+        self.ollama_chat = listen_to(f"^{self.keyword}")(self.ollama_chat)
     @listen_to(r"^\.ollama stop")
     def stop(self, message: Message):
         """stop the bot"""
@@ -53,6 +59,17 @@ class Ollama(PluginLoader):
     async def ollama_help(self, message: Message):
         if self.users.is_admin(message.sender_name):
             self.driver.reply_to(message, f"commands: model set/get/show/pull, stream set/get, system_message set/get")
+    @listen_to(r"^\.ollama keyword set ([\s\S]*)")
+    async def ollama_keyword_set(self, message: Message, keyword: str):
+        if self.users.is_admin(message.sender_name):
+            self.redis.set(self.REDIS_PREFIX + "keyword", keyword)
+            self.keyword = keyword
+            self.driver.reply_to(message, f"keyword set to: {keyword}")
+            self.ollama_chat = listen_to(f"^{self.keyword}")(self.ollama_chat)
+    @listen_to(r"^\.ollama keyword get")
+    async def ollama_keyword_get(self, message: Message):
+            if self.users.is_user(message.sender_name):
+                self.driver.reply_to(message, f"keyword: {self.redis.get(self.REDIS_PREFIX + 'keyword')}")
     @listen_to(r"^\.ollama stream disable")
     async def ollama_stream_disable(self, message: Message):
         if self.users.is_admin(message.sender_name):

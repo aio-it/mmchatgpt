@@ -506,6 +506,7 @@ class ChatGPT(PluginLoader):
         #self.driver.reply_to(message, "Hej")
         # chatgpt "function calling"
         tools =  [{
+                "type": "function",
                 "name": "download_webpage",
                 "description": "download a webpage and return the content",
                 "parameters": {

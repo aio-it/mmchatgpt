@@ -744,8 +744,8 @@ class ChatGPT(PluginLoader):
                         full_message = "Error: function returned None"
                     # log
                     # log length
-                    await self.helper.log(f"function_result len: {len(function_result)}")
-                    await self.helper.log(f"function_result: {function_result}")
+                    await self.helper.log(f"function_result len: {len(full_message)}")
+                    await self.helper.log(f"function_result: {full_message}")
 
                     
                 

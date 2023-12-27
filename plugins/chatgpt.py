@@ -23,6 +23,7 @@ from mmpy_bot.plugins.base import Plugin, PluginManager
 from mmpy_bot.settings import Settings
 from mmpy_bot.wrappers import Message
 from redis_rate_limit import RateLimit, TooManyRequests
+from pprint import pformat
 
 MODEL = "gpt-3.5-turbo-0301"
 REDIS_PREPEND = "thread_"
@@ -639,7 +640,6 @@ class ChatGPT(PluginLoader):
                     tools = tools,
                     tool_choice = "auto"
                 )
-                from pprint import pformat
             except (openai.error.RateLimitError, openai.error.APIError) as error:
                 # update the message
                 self.driver.posts.patch_post(

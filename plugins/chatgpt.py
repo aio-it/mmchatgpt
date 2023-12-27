@@ -504,7 +504,7 @@ class ChatGPT(PluginLoader):
         """listen to everything and respond when mentioned"""
         #self.driver.reply_to(message, "Hej")
         # chatgpt "function calling"
-        functions =  [{
+        tools =  [{
                 "name": "download_webpage",
                 "description": "download a webpage and return the content",
                 "parameters": {
@@ -636,8 +636,8 @@ class ChatGPT(PluginLoader):
                     temperature=temperature,
                     top_p=top_p,
                     stream=stream,
-                    functions = functions,
-                    function_call = "auto"
+                    tools = tools,
+                    tool_choice = "auto"
                 )
                 from pprint import pformat
                 if self.users.is_admin(message.sender_name):
@@ -688,6 +688,8 @@ class ChatGPT(PluginLoader):
                     from pprint import pprint
 
                     chunk_message = chunk.choices[0].delta
+                    if self.users.is_admin(message.sender_name) and message.sender_name == "lbr":
+                        await self.helper.log(pformat(chunk_message))
                     # self.driver.reply_to(message, chunk_message.content)
                     # if the message has content, add it to the full message
                     if chunk_message.content:

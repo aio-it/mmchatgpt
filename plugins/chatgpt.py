@@ -738,6 +738,13 @@ class ChatGPT(PluginLoader):
                     function_result = await function(arguments.get("url"))
                     # add the result to the full message
                     full_message = function_result
+                    # log
+                    # log length
+                    await self.helper.log(f"function_result len: {len(function_name)}")
+                    await self.helper.log(f"function_result: {function_result}")
+
+                    
+                
                     # add to chatlog
                     self.append_chatlog(
                        thread_id, { "tool_call_id": tool_call_id ,"role": "tool", "content": full_message }

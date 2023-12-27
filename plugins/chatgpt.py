@@ -694,8 +694,6 @@ class ChatGPT(PluginLoader):
                     from pprint import pprint
 
                     chunk_message = chunk.choices[0].delta
-                    if self.users.is_admin(message.sender_name) and message.sender_name == "lbr":
-                        await self.helper.log(pformat(chunk_message))
                     #self.driver.reply_to(message, chunk_message.content)
                     #if the message has content, add it to the full message
                     if chunk_message.content:
@@ -713,6 +711,8 @@ class ChatGPT(PluginLoader):
                             # update last_update_time
                             last_update_time = time.time()
                     if chunk_message.tool_calls:
+                        if self.users.is_admin(message.sender_name) and message.sender_name == "lbr":
+                            await self.helper.log(pformat(chunk_message))
                         # we are running tools. this sucks when streaming but lets try
                         for tool_call in chunk_message.tool_calls:
                             function_name = tool_call.function.name

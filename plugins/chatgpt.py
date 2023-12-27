@@ -640,8 +640,6 @@ class ChatGPT(PluginLoader):
                     tool_choice = "auto"
                 )
                 from pprint import pformat
-                if self.users.is_admin(message.sender_name):
-                    await self.helper.log(pformat(response))
             except (openai.error.RateLimitError, openai.error.APIError) as error:
                 # update the message
                 self.driver.posts.patch_post(

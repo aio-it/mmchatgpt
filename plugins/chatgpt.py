@@ -728,7 +728,7 @@ class ChatGPT(PluginLoader):
                                     functions_to_call[function_name]["tool_call_id"] = tool_call.id
                                 # append to chatlog so we don't get an error when calling chatgpt with the result content
                                 self.append_chatlog(
-                                    thread_id, chunk_message
+                                    thread_id, chunk_message.message
                                 )
 
                             #append the argument to the chunked_arguments dict

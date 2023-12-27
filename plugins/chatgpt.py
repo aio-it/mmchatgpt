@@ -777,13 +777,6 @@ class ChatGPT(PluginLoader):
             "**.calc <expression>** - calculate an expression using mathjs(lol) api returns the result",
             "**.decode <encoding> <text>** - decode text using an encoding",
             "**.encode <encoding> <text>** - encode text using an encoding",
-            "**.whois <url>** - whois a url",
-            "**.dig <url>** - dig a url",
-            "**.ping6 <url>** - ping6 a ip or hostname",
-            "**.head <url>** - curl -i a url",
-            "**.ping <url>** - ping a ip or hostname",
-            "**.traceroute <url>** - traceroute a ip or hostname",
-            "**.traceroute6 <url>** - traceroute6 a ip or hostname",
         ]
 
         commands_admin = [

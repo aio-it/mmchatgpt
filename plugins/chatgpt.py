@@ -740,7 +740,7 @@ class ChatGPT(PluginLoader):
                     full_message = function_result
                     # log
                     # log length
-                    await self.helper.log(f"function_result len: {len(function_name)}")
+                    await self.helper.log(f"function_result len: {len(function_result)}")
                     await self.helper.log(f"function_result: {function_result}")
 
                     

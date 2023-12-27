@@ -501,7 +501,7 @@ class ChatGPT(PluginLoader):
             return response.text
         return None
     @listen_to(".+", needs_mention=True)
-    async def chat(self, message: Message, tool_run: bool = False):
+    async def chat(self, message: Message):
         """listen to everything and respond when mentioned"""
         #self.driver.reply_to(message, "Hej")
         # chatgpt "function calling"
@@ -523,6 +523,9 @@ class ChatGPT(PluginLoader):
                 }
             }
         ]
+        tool_run = False
+        if message.tool_run:
+            tool_run = True
         if not self.users.is_user(message.sender_name):
             return
         # if message.is_direct_message and not self.is_admin(message.sender_name):

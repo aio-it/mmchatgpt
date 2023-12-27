@@ -507,17 +507,19 @@ class ChatGPT(PluginLoader):
         # chatgpt "function calling"
         tools =  [{
                 "type": "function",
-                "name": "download_webpage",
-                "description": "download a webpage and return the content",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "url": {
-                            "type": "string",
-                            "description": "the url for the webpage"
-                        }
-                    },
-                    "required": ["url"]
+                "function": {
+                    "name": "download_webpage",
+                    "description": "download a webpage and return the content",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "url": {
+                                "type": "string",
+                                "description": "the url for the webpage"
+                            }
+                        },
+                        "required": ["url"]
+                    }
                 }
             }
         ]

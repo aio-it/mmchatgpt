@@ -101,6 +101,8 @@ class ChatGPT(PluginLoader):
         print(f"Allowed models: {self.ALLOWED_MODELS}")
     def return_last_x_messages(self, messages, max_length_in_tokens):
         """return last x messages from list of messages limited by max_length_in_tokens"""
+        #fuck this bs
+        return messages
         limited_messages = []
         current_length_in_tokens = 0
 

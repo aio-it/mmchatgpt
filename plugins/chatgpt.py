@@ -737,7 +737,10 @@ class ChatGPT(PluginLoader):
                     # run the function
                     function_result = await function(arguments.get("url"))
                     # add the result to the full message
-                    full_message = function_result
+                    if (function_result != None):
+                        full_message = function_result
+                    else:
+                        full_message = "Error: function returned None"
                     # log
                     # log length
                     await self.helper.log(f"function_result len: {len(function_result)}")

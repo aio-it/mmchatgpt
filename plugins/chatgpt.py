@@ -754,9 +754,6 @@ class ChatGPT(PluginLoader):
                        thread_id, { "tool_call_id": tool_call_id ,"role": "tool", "name": function_name, "content": full_message }
                     )
                     tool_run = True
-                    #after the tool run we need to call ourself again to get a response from the model with the function result as context
-                    # just set the message to the function result and call this function again
-                    msg = full_message
                     # new Message object
                     await self.chat(message, tool_run=True)
                     # update the message

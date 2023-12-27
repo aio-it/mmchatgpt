@@ -749,16 +749,13 @@ class ChatGPT(PluginLoader):
                     # log length
                     await self.helper.log(f"function_result len: {len(full_message)}")
                     await self.helper.log(f"function_result: {full_message}")
-
-                    
-                
                     # add to chatlog
                     self.append_chatlog(
                        thread_id, { "tool_call_id": tool_call_id ,"role": "tool", "name": function_name, "content": full_message }
                     )
                     tool_run = True
                     # new Message object
-                    message._replace(tool_run=True)
+                    message.tool_run=True
                     await self.chat(message)
                     # update the message
                     self.driver.posts.patch_post(

@@ -755,7 +755,8 @@ class ChatGPT(PluginLoader):
                     )
                     tool_run = True
                     # new Message object
-                    await self.chat(message, tool_run=True)
+                    message._replace(tool_run=True)
+                    await self.chat(message)
                     # update the message
                     self.driver.posts.patch_post(
                         reply_msg_id, {"message": f"{post_prefix}{full_message}"}

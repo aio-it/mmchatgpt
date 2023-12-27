@@ -639,6 +639,8 @@ class ChatGPT(PluginLoader):
                     functions = functions,
                     function_call = "auto"
                 )
+                from pprint import pformat
+                await self.helper.log(pformat(response))
             except (openai.error.RateLimitError, openai.error.APIError) as error:
                 # update the message
                 self.driver.posts.patch_post(

@@ -413,3 +413,64 @@ class ShellCmds(PluginLoader):
             self.driver.reply_to(message, "Restarting...")
             import sys
             sys.exit(1)
+    # eval function that allows admins to run arbitrary python code and return the result to the chat
+    @listen_to(r"^\.eval (.*)")
+    async def admin_eval_function(self, message, code):
+        """eval function that allows admins to run arbitrary python code and return the result to the chat"""
+        reply = ""
+        if self.users.is_admin(message.sender_name):
+            try:
+                resp = eval(code)  # pylint: disable=eval-used
+                reply = f"Evaluated: {code} \nResult: {resp}"
+            except Exception as error_message:  # pylint: disable=broad-except
+                reply = f"Error: {error_message}"
+            self.driver.reply_to(message, reply)
+
+    @listen_to(r"^.(de|en)code ([a-zA-Z0-9]+) (.*)")
+    async def decode(self, message: Message, method: str, encoding: str, text: str):
+        """decode text using a model"""
+        supported_encodings = ["base64", "b64", "url"]
+        encode = True if method == "en" else False
+        decode = True if method == "de" else False
+        if self.users.is_user(message.sender_name):
+            if text == "" or encoding == "" or encoding == "help":
+                # print help message
+                messagetxt = (
+                    f".encode <encoding> <text> - encode text using an encoding\n"
+                )
+                messagetxt += (
+                    f".decode <encoding> <text> - decode text using an encoding\n"
+                )
+                messagetxt += f"Supported encodings: {' '.join(supported_encodings)}\n"
+                self.driver.reply_to(message, messagetxt)
+                return
+            # check if encoding is supported
+            if encoding not in supported_encodings:
+                self.driver.reply_to(
+                    message,
+                    f"Error: {encoding} not supported. only {supported_encodings} is supported",
+                )
+                return
+            if encoding == "base64" or encoding == "b64":
+                try:
+                    import base64
+
+                    if decode:
+                        text = base64.b64decode(text).decode("utf-8")
+                    if encode:
+                        text = base64.b64encode(text.encode("utf-8")).decode("utf-8")
+                except Exception as error:
+                    self.driver.reply_to(message, f"Error: {error}")
+                    return
+            if encoding == "url":
+                try:
+                    import urllib.parse
+
+                    if decode:
+                        text = urllib.parse.unquote(text)
+                    if encode:
+                        text = urllib.parse.quote(text)
+                except Exception as error:
+                    self.driver.reply_to(message, f"Error: {error}")
+                    return
+            self.driver.reply_to(message, f"Result:\n{text}")

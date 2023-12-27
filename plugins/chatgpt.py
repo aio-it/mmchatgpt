@@ -663,7 +663,7 @@ class ChatGPT(PluginLoader):
                 self.get_chatgpt_setting("stream_update_delay_ms")
             )
             try:
-                functions_to_call = []
+                functions_to_call = {}
                 chunked_arguments = {}
                 async for chunk in response:
                     # await self.helper.debug(
@@ -713,22 +713,28 @@ class ChatGPT(PluginLoader):
                         # we are running tools. this sucks when streaming but lets try
                         for tool_call in chunk_message.tool_calls:
                             if tool_call.function.name not in functions_to_call:
-                                functions_to_call.append(tool_call.function.name)
+                                functions_to_call.append({"function": tool_call.function.name, "tool_call_id": tool_call.id})
                             function_name = tool_call.function.name
                             #append the argument to the chunked_arguments dict
                             if function_name not in chunked_arguments:
                                 chunked_arguments[function_name] = []
                             chunked_arguments[function_name].append(tool_call.function.arguments)
                 # lets try to run the functions
-                for function_name in functions_to_call:
+                for tool_function in functions_to_call:
                     # get the function
+                    function_name = tool_function["function"]
+                    tool_call_id = tool_function["tool_call_id"]
                     function = getattr(self, function_name)
                     # get the arguments
-                    arguments = chunked_arguments[function_name]
+                    arguments = json.loads(chunked_arguments[function_name])
                     # run the function
                     function_result = await function(*arguments)
                     # add the result to the full message
                     full_message += function_result
+                    # add to chatlog
+                    self.append_chatlog(
+                       thread_id, { "tool_call_id": tool_call_id ,"role": "tool", "content": full_message }
+                    )
                     # update the message
                     self.driver.posts.patch_post(
                         reply_msg_id, {"message": f"{post_prefix}{full_message}"}

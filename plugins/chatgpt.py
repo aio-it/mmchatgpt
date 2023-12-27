@@ -737,7 +737,7 @@ class ChatGPT(PluginLoader):
                     # run the function
                     function_result = await function(arguments.get("url"))
                     # add the result to the full message
-                    full_message = function_result.content.decode("utf-8")
+                    full_message = function_result.decode("utf-8")
                     # add to chatlog
                     self.append_chatlog(
                        thread_id, { "tool_call_id": tool_call_id ,"role": "tool", "content": full_message }

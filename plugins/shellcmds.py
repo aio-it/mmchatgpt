@@ -410,4 +410,5 @@ class ShellCmds(PluginLoader):
         if self.users.is_admin(message.sender_name):
             await self.helper.log(f"{message.sender_name} is restarting the bot")
             self.driver.reply_to(message, "Restarting...")
-            await sys.exit(1)
+            import sys
+            sys.exit(1)

@@ -731,7 +731,7 @@ class ChatGPT(PluginLoader):
                                     thread_id, self.serialize_choice_delta(tool_call)
                                 )
                                 #log
-                                await self.helper.log(f"added to chatlog: {pformat(self.serialize_choice_delta(tool_call))}")
+                                await self.helper.log(f"added to chatlog: {pformat(self.custom_serializer(tool_call))}")
 
                             #append the argument to the chunked_arguments dict
                             functions_to_call[function_name]['arguments'] += tool_call.function.arguments

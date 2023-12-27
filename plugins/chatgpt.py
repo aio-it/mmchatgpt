@@ -542,7 +542,10 @@ class ChatGPT(PluginLoader):
             return
         # set stream using ternary
         stream = True if self.get_chatgpt_setting("stream") == "true" else False
-        msg = message.text
+        if tool_run:
+            msg = ""
+        else:
+            msg = message.text
         # log the message if user is admin
         # if self.is_admin(message.sender_name):
         #    await self.helper.log(f"{message.sender_name}:  {pformat(message.body)}")

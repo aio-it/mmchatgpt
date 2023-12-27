@@ -723,7 +723,7 @@ class ChatGPT(PluginLoader):
                     tool_call_id = tool_function["tool_call_id"]
                     function = getattr(self, function_name)
                     # get the arguments
-                    arguments = json.loads(chunked_arguments[function_name])
+                    arguments = json.loads(functions_to_call[function_name]['arguments'])
                     # run the function
                     function_result = await function(*arguments)
                     # add the result to the full message

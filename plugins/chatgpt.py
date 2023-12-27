@@ -712,14 +712,27 @@ class ChatGPT(PluginLoader):
                     if chunk_message.tool_calls:
                         # we are running tools. this sucks when streaming but lets try
                         for tool_call in chunk_message.tool_calls:
-                            functions_to_call.append(tool_call.function.name)
+                            if tool_call.function.name not in functions_to_call:
+                                functions_to_call.append(tool_call.function.name)
                             function_name = tool_call.function.name
-                            function_to_call = getattr(self, function_name)
                             #append the argument to the chunked_arguments dict
                             if function_name not in chunked_arguments:
                                 chunked_arguments[function_name] = []
                             chunked_arguments[function_name].append(tool_call.function.arguments)
-                            await self.helper.debug(f"tool_call: {function_name} {function_args}")
+                # lets try to run the functions
+                for function_name in functions_to_call:
+                    # get the function
+                    function = getattr(self, function_name)
+                    # get the arguments
+                    arguments = chunked_arguments[function_name]
+                    # run the function
+                    function_result = await function(*arguments)
+                    # add the result to the full message
+                    full_message += function_result
+                    # update the message
+                    self.driver.posts.patch_post(
+                        reply_msg_id, {"message": f"{post_prefix}{full_message}"}
+                    )
                 # update the message a final time to make sure we have the full message
                 self.driver.posts.patch_post(
                     reply_msg_id, {"message": f"{post_prefix}{full_message}"}

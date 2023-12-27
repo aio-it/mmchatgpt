@@ -634,6 +634,7 @@ class ChatGPT(PluginLoader):
             # post initial message as a reply and save the message id
             reply_msg_id = self.driver.reply_to(message, full_message)["id"]
             # send async request to openai
+            first_chunk = True
             try:
                 response = await aclient.chat.completions.create(
                     model=self.model,
@@ -723,8 +724,13 @@ class ChatGPT(PluginLoader):
                                     "tool_call_id": None,
                                     "arguments": "",
                                 }
-                            if tool_call.id:
-                                functions_to_call[function_name]["tool_call_id"] = tool_call.id
+                                if tool_call.id:
+                                    functions_to_call[function_name]["tool_call_id"] = tool_call.id
+                                # append to chatlog so we don't get an error when calling chatgpt with the result content
+                                self.append_chatlog(
+                                    thread_id, chunk_message
+                                )
+
                             #append the argument to the chunked_arguments dict
                             functions_to_call[function_name]['arguments'] += tool_call.function.arguments
                             #log

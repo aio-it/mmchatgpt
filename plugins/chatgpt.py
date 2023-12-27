@@ -725,7 +725,7 @@ class ChatGPT(PluginLoader):
                             #append the argument to the chunked_arguments dict
                             functions_to_call[function_name]['arguments'] += tool_call.function.arguments
                             #log
-                            await self.helper.log(f"tool_call: {tool_call.function.name} {tool_call.function.arguments}")
+                            await self.helper.log(f"tool_call: {function_name} {tool_call.function.arguments}")
                             await self.helper.log(pformat(functions_to_call))
                 # lets try to run the functions
                 for function_name, tool_function in functions_to_call:

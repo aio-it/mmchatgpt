@@ -707,6 +707,13 @@ class ChatGPT(PluginLoader):
                             )
                             # update last_update_time
                             last_update_time = time.time()
+                    if chunk_message.tool_calls:
+                        # we are running tools. this sucks when streaming but lets try
+                        for tool_call in chunk_message.tool_calls:
+                            function_name = tool_call.name
+                            function_to_call = getattr(self, function_name)
+                            function_args = json.loads(tool_call.function.arguments)
+                            await self.helper.debug(f"tool_call: {function_name} {function_args}")
                 # update the message a final time to make sure we have the full message
                 self.driver.posts.patch_post(
                     reply_msg_id, {"message": f"{post_prefix}{full_message}"}

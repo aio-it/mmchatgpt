@@ -663,6 +663,8 @@ class ChatGPT(PluginLoader):
                 self.get_chatgpt_setting("stream_update_delay_ms")
             )
             try:
+                functions_to_call = []
+                chunked_arguments = {}
                 async for chunk in response:
                     # await self.helper.debug(
                     #    f"time since last chunk: {(time.time() - last_chunk_time) * 1000}")
@@ -710,9 +712,13 @@ class ChatGPT(PluginLoader):
                     if chunk_message.tool_calls:
                         # we are running tools. this sucks when streaming but lets try
                         for tool_call in chunk_message.tool_calls:
+                            functions_to_call.append(tool_call.function.name)
                             function_name = tool_call.function.name
                             function_to_call = getattr(self, function_name)
-                            function_args = json.loads(tool_call.function.arguments)
+                            #append the argument to the chunked_arguments dict
+                            if function_name not in chunked_arguments:
+                                chunked_arguments[function_name] = []
+                            chunked_arguments[function_name].append(tool_call.function.arguments)
                             await self.helper.debug(f"tool_call: {function_name} {function_args}")
                 # update the message a final time to make sure we have the full message
                 self.driver.posts.patch_post(

@@ -54,7 +54,6 @@ class Ollama(PluginLoader):
         if self.users.is_admin(message.sender_name):
             import sys
             sys.exit(1)
-
     @listen_to(r"^\.ollama help")
     async def ollama_help(self, message: Message):
         if self.users.is_admin(message.sender_name):

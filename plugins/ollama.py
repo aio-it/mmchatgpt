@@ -9,11 +9,14 @@ import json
 import aiohttp
 import aiohttp.client_exceptions as aiohttp_client_exceptions
 from pprint import pformat
+from environs import Env
+env = Env()
+
 REDIS_PREPEND = "ollama_"
 class Ollama(PluginLoader):
     REDIS_PREFIX = "ollama_"
     DEFAULT_MODEL = "mistral"
-    URL= "http://***REMOVED***:11434/api"
+    URL = env.get("OLLAMA_URL")
     CHAT_ENDPOINT = "/chat"
     PULL_ENDPOINT = "/pull"
     SHOW_ENDPOINT = "/show"

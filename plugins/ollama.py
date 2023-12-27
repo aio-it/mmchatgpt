@@ -187,7 +187,9 @@ class Ollama(PluginLoader):
             model = model.split(":")[0]
         if self.users.is_admin(message.sender_name):
             self.driver.reply_to(message, f"system_message for {model}: {self.get_system_message(model)}")
+    @listen_to("^bitch please")
     @listen_to("^sudo")
+    @listen_to("^ollama")
     async def ollama_chat(self, message: Message):
         """listen to everything and respond when mentioned"""
         #self.driver.reply_to(message, "Hej")

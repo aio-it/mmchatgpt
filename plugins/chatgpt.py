@@ -578,7 +578,7 @@ class ChatGPT(PluginLoader):
                 )
         else:
             # we are running a tool
-            messages = self.append_chatlog(thread_id, {"role": "user", "content": msg})
+            messages = self.get_chatlog(thread_id)
         # add system message
         if self.get_chatgpt_setting("system") != "":
             messages.insert(

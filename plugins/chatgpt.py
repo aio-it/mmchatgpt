@@ -712,6 +712,9 @@ class ChatGPT(PluginLoader):
                         # we are running tools. this sucks when streaming but lets try
                         for tool_call in chunk_message.tool_calls:
                             function_name = tool_call.function.name
+                            if function_name == None:
+                                # get the function name from the arguments index
+                                function_name = tools[tool_call.index]["function"]["name"]
                             if function_name not in functions_to_call:
                                 functions_to_call[function_name] = {
                                     "tool_call_id": None,

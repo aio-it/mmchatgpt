@@ -831,13 +831,6 @@ class ChatGPT(PluginLoader):
             return self.serialize_choice_delta(obj)
         raise TypeError(f'Object of type {obj.__class__.__name__} is not JSON serializable')
 
-    # Assuming `choice_delta_instance` is your instance of ChoiceDelta:
-    json_data = json.dumps(choice_delta_instance, default=custom_serializer)
-
-    # Now you can push the JSON data to Redis
-    thread_key = 'your-thread-key'  # replace with your actual thread key
-    redis.rpush(thread_key, json_data)
-
     @listen_to(r"^\.help")
     async def help_function(self, message):
         """help function that returns a list of commands"""

@@ -664,7 +664,6 @@ class ChatGPT(PluginLoader):
             )
             try:
                 functions_to_call = {}
-                chunked_arguments = {}
                 async for chunk in response:
                     # await self.helper.debug(
                     #    f"time since last chunk: {(time.time() - last_chunk_time) * 1000}")

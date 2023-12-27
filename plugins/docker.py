@@ -24,10 +24,7 @@ class Docker(PluginLoader):
   @listen_to("^\.docker help")
   async def dockerhelp(self, message: Message):
     """docker help"""
-    if not self.users.is_admin(messagetxt.sender_name):
-      return
-    messagetxt = ""
-    messagetxt += "```"
+    messagetxt = "```"
     messagetxt += ".docker ps\n"
     messagetxt += ".docker run <command>\n"
     messagetxt += ".docker stop <container_id>\n"

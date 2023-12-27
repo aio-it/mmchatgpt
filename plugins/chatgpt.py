@@ -738,7 +738,8 @@ class ChatGPT(PluginLoader):
                     function_result = await function(arguments.get("url"))
                     # add the result to the full message
                     if (function_result != None):
-                        full_message = function_result
+                        # limit the length to 4000 characters
+                        full_message = function_result[:4000]
                     else:
                         full_message = "Error: function returned None"
                     # log

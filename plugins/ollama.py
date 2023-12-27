@@ -107,7 +107,8 @@ class Ollama(PluginLoader):
             "stream": False
             }
             try:
-                async with aiohttp.ClientSession() as session:
+                timeout = aiohttp.ClientTimeout(total=60*60*24*7)
+                async with aiohttp.ClientSession(timeout=timeout) as session:
                     async with session.post(self.URL + self.PULL_ENDPOINT, json=data) as response:
                         async for chunk in response.content.iter_any():
                             chunk = chunk.decode("utf-8")
@@ -235,7 +236,8 @@ class Ollama(PluginLoader):
                     "messages": messages,
                     "stream": False
                 }
-                async with aiohttp.ClientSession() as session:
+                timeout = aiohttp.ClientTimeout(total=60*60*24*7)
+                async with aiohttp.ClientSession(timeout=timeout) as session:
                     async with session.post(self.URL + self.CHAT_ENDPOINT, json=data) as response:
                         response = await response.json(content_type=None)
             except error:
@@ -272,7 +274,8 @@ class Ollama(PluginLoader):
                   "model": self.model,
                   "messages": messages
                 }
-                async with aiohttp.ClientSession() as session:
+                timeout = aiohttp.ClientTimeout(total=60*60*24*7)
+                async with aiohttp.ClientSession(timeout=timeout) as session:
                     async with session.post(self.URL + self.CHAT_ENDPOINT, json=data) as response:
                         #await self.helper.log(f"response: {response}")
                         async for chunks in response.content.iter_any():

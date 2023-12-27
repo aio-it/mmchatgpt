@@ -710,7 +710,7 @@ class ChatGPT(PluginLoader):
                     if chunk_message.tool_calls:
                         # we are running tools. this sucks when streaming but lets try
                         for tool_call in chunk_message.tool_calls:
-                            function_name = tool_call.name
+                            function_name = tool_call.function.name
                             function_to_call = getattr(self, function_name)
                             function_args = json.loads(tool_call.function.arguments)
                             await self.helper.debug(f"tool_call: {function_name} {function_args}")

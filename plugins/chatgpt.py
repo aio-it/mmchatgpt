@@ -728,7 +728,7 @@ class ChatGPT(PluginLoader):
                                     functions_to_call[function_name]["tool_call_id"] = tool_call.id
                                 # append to chatlog so we don't get an error when calling chatgpt with the result content
                                 self.append_chatlog(
-                                    thread_id, self.serialize_choice_delta(tool_call)
+                                    thread_id, self.custom_serializer(tool_call)
                                 )
                                 #log
                                 await self.helper.log(f"added to chatlog: {pformat(self.custom_serializer(tool_call))}")

@@ -8,6 +8,7 @@ import ipaddress
 import urllib.parse
 import subprocess
 import shlex
+import asyncio
 SHELL_COMMANDS = {
             "ping": {
                 "validators": ["ipv4", "domain"],

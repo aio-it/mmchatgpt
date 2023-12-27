@@ -821,6 +821,7 @@ class ChatGPT(PluginLoader):
                 'type': tool_call.type
             })
         return_object = {}
+        
         if choice_delta.content is not None:
             return_object['content'] = choice_delta.content
         if choice_delta.function_call is not None:
@@ -829,7 +830,7 @@ class ChatGPT(PluginLoader):
             return_object['role'] = choice_delta.role
         if tool_calls:
             return_object['tool_calls'] = tool_calls
-        
+
         return return_object
 
     def custom_serializer(self, obj):

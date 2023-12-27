@@ -498,7 +498,7 @@ class ChatGPT(PluginLoader):
         """download a webpage and return the content"""
         response = requests.get(url)
         if response.status_code == 200:
-            return response.content
+            return response.text
         return None
     @listen_to(".+", needs_mention=True)
     async def chat(self, message: Message):

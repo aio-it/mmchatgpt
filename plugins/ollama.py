@@ -383,20 +383,3 @@ class Ollama(PluginLoader):
                     break
 
         return list(reversed(limited_messages))
-
-    def require_admin(func):
-        async def wrapper(self, message, *args, **kwargs):
-            if not self.users.is_admin(message.sender_name):
-                await self.helper.log(f"{message.sender_name} is not admin")
-                return # exit silently
-            await self.helper.log(f"{message.sender_name} is an admin")           
-            return await func(self, message, *args, **kwargs)
-        return wrapper
-
-            
-    #@listen_to(r"testing")
-    @require_admin
-    async def testadmin(self, message: Message):
-        self.driver.reply_to(message, f"admin")
-
-    

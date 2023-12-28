@@ -734,7 +734,6 @@ class ChatGPT(PluginLoader):
                 self.get_chatgpt_setting("stream_update_delay_ms")
             )
             try:
-                tool_calls_messages = {}
                 functions_to_call = {}
                 async for chunk in response:
                     # await self.helper.debug(
@@ -872,7 +871,7 @@ class ChatGPT(PluginLoader):
                     # we ran all the functions, now run the chatgpt again to get the response
                     await self.helper.log(f"exit_after_loop: {exit_after_loop} and not tool_run: {not tool_run}")
                     # log the messages
-                    mm = self.get_chatlog(thread_id)
+                    #mm = self.get_chatlog(thread_id)
                     #await self.helper.log(f"messages: {pformat(mm)[:1000]}")
                     await self.chat(message)
                     return

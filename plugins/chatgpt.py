@@ -662,7 +662,7 @@ class ChatGPT(PluginLoader):
             try:
                 response = await aclient.chat.completions.create(
                     model=self.model,
-                    messages=,
+                    messages=messages,
                     temperature=temperature,
                     top_p=top_p,
                     stream=stream,

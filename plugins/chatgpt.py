@@ -820,7 +820,7 @@ class ChatGPT(PluginLoader):
                         await self.helper.log(f"ran: {function_name}, for user: {message.sender_name} with arguments: {tool_function['arguments']}")
                         # just return becuase we let the other thread handle the rest
                 if exit_after_loop and not tool_run:
-                    # we ran all the functions, return
+                    # we ran all the functions, now run the chatgpt again to get the response
                     await self.chat(message)
                     return
 

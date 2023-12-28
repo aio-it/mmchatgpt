@@ -507,6 +507,9 @@ class ChatGPT(PluginLoader):
                 script.decompose()    # rip it out
             # only get the body
             text = soup.body.get_text()
+            # remove all places where there is multiple newlines and replace with single newline
+            import re
+            text = re.sub(r'[\r\n]{2,}', '\n', text)
             # get the title
             title = soup.title.string
             # get text

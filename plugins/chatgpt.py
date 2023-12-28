@@ -774,7 +774,7 @@ class ChatGPT(PluginLoader):
                             #await self.helper.log(pformat(functions_to_call))
                 # lets try to run the functions now that we are done streaming
                 exit_after_loop = False
-                status_msg = "running functions\n"
+                status_msg = "running functions...\n"
                 for index, tool_function in functions_to_call.items():
                     exit_after_loop = True
                     # get the function

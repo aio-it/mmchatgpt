@@ -781,6 +781,7 @@ class ChatGPT(PluginLoader):
                         message.reply_id = reply_msg_id
                         await self.helper.log(f"ran: {function_name}, calling self with run_tool = True")
                         await self.chat(message)
+                        # just return becuase we let the other thread handle the rest
                         return
                     # update the message
                     self.driver.posts.patch_post(

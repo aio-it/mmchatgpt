@@ -499,6 +499,7 @@ class ChatGPT(PluginLoader):
     async def download_webpage(self, url):
         """download a webpage and return the content"""
         response = requests.get(url)
+        blacklisted_tags = ["script", "style", "meta", "link", "head", "title", "noscript"]
         try:
             if response.status_code == 200:
                 #extract all text from the webpage
@@ -507,10 +508,22 @@ class ChatGPT(PluginLoader):
                 for script in soup(["script", "style"]):
                     script.decompose()    # rip it out
                 # only get the body
-                text = soup.body.get_text()
+                text = soup.body.find_all(text=True)
+                # remove blacklisted tags
+                output = ''
+                for t in text:
+                    if t.parent.name not in blacklisted_tags:
+                        output += '{} '.format(t)
+                text = output
                 # remove all places where there is multiple newlines and replace with single newline
                 import re
                 text = re.sub(r'[\r\n]{2,}', '\n', text)
+                # remove all places where there is multiple spaces and replace with single space
+                text = re.sub(r' {2,}', ' ', text)
+                # remove all places where there is multiple tabs and replace with single tab
+                text = re.sub(r'\t{2,}', '\t', text)
+                # cleanup any remaining newlines
+                text = text.replace("\n", " ")
                 # get the title
                 title = soup.title.string
                 # get text

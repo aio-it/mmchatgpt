@@ -561,6 +561,7 @@ class ChatGPT(PluginLoader):
                     return {
                         "title": title,
                         "text": text,
+                        "meta": meta_tags,
                         "description": description,
                         "keywords": keywords,
                         "og_description": og_description,

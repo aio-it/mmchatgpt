@@ -745,22 +745,17 @@ class ChatGPT(PluginLoader):
                     if chunk_message.tool_calls and chunk_message.content is None:
                         # we are running tools. this sucks when streaming but lets try
                         for tool_call in chunk_message.tool_calls:
+                            index = tool_call.index
                             function_name = tool_call.function.name
-                            if function_name == None:
-                                # get the function name from the arguments index
-                                try:
-                                    function_name = tools[tool_call.index]["function"]["name"]
-                                except IndexError:
-                                    # i don't really know i think i should change to use the index from the tool_call instead of the function name but now we are here so lets deal with it.
-                                    function_name = tools[0]["function"]["name"] # lol TODO: fix this asap
-
-                            if function_name not in functions_to_call:
-                                functions_to_call[function_name] = {
+                            if function_name is not None:
+                                functions_to_call[index]['function_name'] = function_name
+                            if index not in functions_to_call:
+                                functions_to_call[index] = {
                                     "tool_call_id": "",
                                     "arguments": "",
                                 }
                                 if tool_call.id:
-                                    functions_to_call[function_name]["tool_call_id"] = tool_call.id
+                                    functions_to_call[index]["tool_call_id"] = tool_call.id
                                 # append to chatlog so we don't get an error when calling chatgpt with the result content
                                 self.append_chatlog(
                                     thread_id, self.custom_serializer(chunk_message)
@@ -769,13 +764,14 @@ class ChatGPT(PluginLoader):
                                 #await self.helper.log(f"added to chatlog: {pformat(self.custom_serializer(chunk_message))}")
 
                             #append the argument to the chunked_arguments dict
-                            functions_to_call[function_name]['arguments'] += tool_call.function.arguments
+                            functions_to_call[index]['arguments'] += tool_call.function.arguments
                             #log
                             #await self.helper.log(f"tool_call: {function_name} {tool_call.function.arguments}")
                             #await self.helper.log(pformat(functions_to_call))
                 # lets try to run the functions now that we are done streaming
-                for function_name, tool_function in functions_to_call.items():
+                for index, tool_function in functions_to_call.items():
                     # get the function
+                    function_name = tool_function["function_name"]
                     tool_call_id = tool_function["tool_call_id"]
                     function = getattr(self, function_name)
                     # get the arguments

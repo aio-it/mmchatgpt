@@ -522,7 +522,7 @@ class ChatGPT(PluginLoader):
                     # extract all text from the body
                     text = soup.body.get_text()
                     # remove all newlines and replace them with spaces
-                    text = text.replace("\n", " ")
+                    #text = text.replace("\n", " ")
                     # remove all double spaces
                     return f"{title.strip()}\n{text.strip()}".strip()
             else:

@@ -540,7 +540,12 @@ class ChatGPT(PluginLoader):
                     return response.text
             else:
                 return f"Error: could not download webpage (status code {response.status_code})"
-            return None
+        except requests.exceptions.Timeout:
+            return "Error: could not download webpage (Timeout)"
+        except requests.exceptions.TooManyRedirects:
+            return "Error: could not download webpage (TooManyRedirects)"
+        except requests.exceptions.RequestException as e:
+            return "Error: could not download webpage (RequestException) " + str(e)
         except Exception as e: # pylint: disable=bare-except
             return "Error: could not download webpage (Exception) " + str(e)
     @listen_to(".+", needs_mention=True)

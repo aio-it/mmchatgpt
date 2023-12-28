@@ -507,7 +507,7 @@ class ChatGPT(PluginLoader):
                 script.decompose()    # rip it out
             # only get the body
             text = soup.body.get_text()
-            # get the title as well
+            # get the title
             title = soup.title.string
             # get text
             return f"{title}\n{text}"

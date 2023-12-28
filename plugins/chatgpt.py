@@ -522,8 +522,6 @@ class ChatGPT(PluginLoader):
                 text = re.sub(r'[\r\n]{2,}', '\n', text)
                 # remove all places where there is multiple spaces and replace with single space
                 text = re.sub(r' {2,}', ' ', text)
-                # remove all places where there is multiple tabs and replace with single tab
-                text = re.sub(r'\t{2,}', '\t', text)
                 # cleanup any remaining newlines
                 text = text.replace("\n", " ")
                 # get text

@@ -796,7 +796,7 @@ class ChatGPT(PluginLoader):
                     # add the result to the full message
                     if (function_result != None):
                         # limit the length to x characters
-                        function_result = function_result[:3000]
+                        function_result = function_result[:2000]
                         #pass
                     else:
                         function_result = "Error: function returned None"
@@ -818,7 +818,7 @@ class ChatGPT(PluginLoader):
                             reply_msg_id, {"message": f"{post_prefix} {status_msg}"}
                         )
                         await self.helper.log(f"ran: {function_name}, for user: {message.sender_name} with arguments: {tool_function['arguments']}")
-                        #await self.chat(message)
+                        await self.chat(message)
                         # just return becuase we let the other thread handle the rest
                 if exit_after_loop and not tool_run:
                     # we ran all the functions, return

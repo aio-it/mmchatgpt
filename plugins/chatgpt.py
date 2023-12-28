@@ -498,7 +498,6 @@ class ChatGPT(PluginLoader):
                     await self.helper.log(f"{message.sender_name} used .vision")
     async def download_webpage(self, url):
         """download a webpage and return the content"""
-        return "simple string from function"
         response = requests.get(url)
         if response.status_code == 200:
             return response.text

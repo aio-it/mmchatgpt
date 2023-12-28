@@ -19,6 +19,8 @@ wheel = "*"
 validators = "*"
 dnspython = "*"
 aiodocker = "*"
+bs4 = "*"
+beautifulsoup4 = "*"
 
 [dev-packages]
 autopep8 = "*"

@@ -761,20 +761,23 @@ class ChatGPT(PluginLoader):
                     # add the result to the full message
                     if (function_result != None):
                         # limit the length to 4000 characters
-                        full_message = function_result[:4000]
+                        function_result = function_result[:4000]
                     else:
-                        full_message = "Error: function returned None"
+                        function_result = "Error: function returned None"
                     # log
                     # log length
                     #await self.helper.log(f"function_result len: {len(full_message)}")
                     #await self.helper.log(f"function_result: {full_message}")
                     # add to chatlog
                     self.append_chatlog(
-                       thread_id, { "tool_call_id": tool_call_id, "role": "tool", "name": function_name, "content": full_message }
+                       thread_id, { "tool_call_id": tool_call_id, "role": "tool", "name": function_name, "content": function_result }
                     )
+                    # log 
+                    await self.helper.log(f"added to chatlog: {pformat({ 'tool_call_id': tool_call_id, 'role': 'tool', 'name': function_name, 'content': function_result })}")
                     if not tool_run:
                         message.tool_run=True
                         message.reply_id = reply_msg_id
+                        await self.helper.log(f"function_result: {function_result}, calling self")
                         await self.chat(message)
                     # update the message
                     self.driver.posts.patch_post(

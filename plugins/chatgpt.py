@@ -668,8 +668,8 @@ class ChatGPT(PluginLoader):
                     temperature=temperature,
                     top_p=top_p,
                     stream=stream,
-                    tools = tools,
-                    tool_choice = "auto"
+                    tools = tools if not tool_run else None,
+                    tool_choice = "auto" if not tool_run else None,
                 )
             except (openai.error.RateLimitError, openai.error.APIError) as error:
                 # update the message

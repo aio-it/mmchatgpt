@@ -505,6 +505,7 @@ class ChatGPT(PluginLoader):
         blacklisted_tags = ["script", "style", "meta", "link", "head", "title", "noscript"]
         # debug response
         await self.helper.debug(f"response: {pformat(response.text)}")
+        # check to see if response is json and 
         try:
             if response.status_code == 200:
                 #extract all text from the webpage
@@ -518,14 +519,14 @@ class ChatGPT(PluginLoader):
                 for script in soup(['script', 'style']):
                     script.decompose()    # rip it out
                 # only get the body
-                text = soup.body.find_all(text=True)
-                # remove blacklisted tags
+                text = ''
                 output = ''
-                for t in text:
-                    if t.parent.name not in blacklisted_tags:
-                        output += '{} '.format(t)
-                text = output
-                # remove all places where there is multiple newlines and replace with single newline greedy
+                if soup.body:
+                    text = soup.body.find_all(text=True)
+                    for t in text:
+                        if t.parent.name not in blacklisted_tags:
+                            output += '{} '.format(t)
+                    text = output
                 import re
                 text = re.sub(r'[\r\n]{2,}', '\n', text)
                 # remove all places where there is multiple spaces and replace with single space

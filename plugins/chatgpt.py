@@ -510,7 +510,7 @@ class ChatGPT(PluginLoader):
                 soup = bs4.BeautifulSoup(response.text, 'html.parser')
                 # get the title
                 title = soup.title.string
-                for script in soup(blacklisted_tags):
+                for script in soup(['script', 'style']):
                     script.decompose()    # rip it out
                 # only get the body
                 text = soup.body.find_all(text=True)

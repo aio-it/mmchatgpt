@@ -505,7 +505,7 @@ class ChatGPT(PluginLoader):
                 #extract all text from the webpage
                 import bs4
                 soup = bs4.BeautifulSoup(response.text, 'html.parser')
-                for script in soup(["script", "style"]):
+                for script in soup(blacklisted_tags):
                     script.decompose()    # rip it out
                 # only get the body
                 text = soup.body.find_all(text=True)

@@ -615,8 +615,8 @@ class ChatGPT(PluginLoader):
         if message.sender_name == "lbr":
         #    await self.helper.log(f"messages from thread: {thread_id}")
             #log all messages but limit each one to 1000 characters
-            for message in messages:
-                await self.helper.log(pformat(message)[:100])
+            for mes in messages:
+                await self.helper.log(pformat(mes)[:100])
         # add system message
         if self.get_chatgpt_setting("system") != "":
             messages.insert(

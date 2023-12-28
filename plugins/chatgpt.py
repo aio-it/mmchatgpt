@@ -505,7 +505,6 @@ class ChatGPT(PluginLoader):
         blacklisted_tags = ["script", "style", "meta", "link", "head", "title", "noscript"]
         # debug response
         await self.helper.debug(f"response: {pformat(response.text)}")
-        # check to see if response is json and 
         try:
             if response.status_code == 200:
                 #extract all text from the webpage

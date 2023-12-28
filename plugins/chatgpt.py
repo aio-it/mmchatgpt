@@ -500,6 +500,12 @@ class ChatGPT(PluginLoader):
         """download a webpage and return the content"""
         response = requests.get(url)
         if response.status_code == 200:
+            #extract all text from the webpage
+            import bs4
+            soup = bs4.BeautifulSoup(response.text, 'html.parser')
+            for script in soup(["script", "style"]):
+                script.decompose()    # rip it out
+            # get text
             return response.text
         return None
     @listen_to(".+", needs_mention=True)

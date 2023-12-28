@@ -505,6 +505,8 @@ class ChatGPT(PluginLoader):
                 #extract all text from the webpage
                 import bs4
                 soup = bs4.BeautifulSoup(response.text, 'html.parser')
+                # get the title
+                title = soup.title.string
                 for script in soup(blacklisted_tags):
                     script.decompose()    # rip it out
                 # only get the body
@@ -524,8 +526,6 @@ class ChatGPT(PluginLoader):
                 text = re.sub(r'\t{2,}', '\t', text)
                 # cleanup any remaining newlines
                 text = text.replace("\n", " ")
-                # get the title
-                title = soup.title.string
                 # get text
                 return f"{title}\n{text}"
             return None

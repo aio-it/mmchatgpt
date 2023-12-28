@@ -538,6 +538,8 @@ class ChatGPT(PluginLoader):
                     return f"{title}\n{text}"
                 else:
                     return response.text
+            else:
+                return f"Error: could not download webpage (status code {response.status_code})"
             return None
         except Exception as e: # pylint: disable=bare-except
             return "Error: could not download webpage (Exception) " + str(e)

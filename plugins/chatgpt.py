@@ -841,6 +841,8 @@ class ChatGPT(PluginLoader):
                 if exit_after_loop and not tool_run:
                     # we ran all the functions, now run the chatgpt again to get the response
                     await self.helper.log(f"exit_after_loop: {exit_after_loop} and not tool_run: {not tool_run}")
+                    # log the messages
+                    #await self.helper.log(f"messages: {pformat(messages)}")
                     await self.chat(message)
                     return
 

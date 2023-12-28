@@ -504,7 +504,7 @@ class ChatGPT(PluginLoader):
         response = requests.get(url, headers=self.headers, timeout=10, allow_redirects=True)
         blacklisted_tags = ["script", "style", "head", "title", "noscript"]
         # debug response
-        await self.helper.debug(f"response: {pformat(response.text[:500])}")
+        #await self.helper.debug(f"response: {pformat(response.text[:500])}")
         try:
             if response.status_code == 200:
                 #extract all text from the webpage
@@ -612,9 +612,11 @@ class ChatGPT(PluginLoader):
                     thread_id, {"role": role, "content": thread_post["message"]}
                 )
         # log if lbr
-        #if message.sender_name == "lbr":
+        if message.sender_name == "lbr":
         #    await self.helper.log(f"messages from thread: {thread_id}")
-        #    await self.helper.log(pformat(messages))
+            #log all messages but limit each one to 1000 characters
+            for message in messages:
+                await self.helper.log(pformat(message)[:1000])
         # add system message
         if self.get_chatgpt_setting("system") != "":
             messages.insert(

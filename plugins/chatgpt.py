@@ -790,7 +790,7 @@ class ChatGPT(PluginLoader):
                 )
 
                 # add response to chatlog if it wasn't a tool run
-                if not tool_run:
+                if not tool_run and full_message != "":
                     self.append_chatlog(
                         thread_id, {"role": "assistant", "content": full_message}
                     )

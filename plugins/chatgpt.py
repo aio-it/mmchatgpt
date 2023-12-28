@@ -1023,7 +1023,7 @@ class ChatGPT(PluginLoader):
         #self.helper.slog(f"append_chatlog {thread_id} {msg}")
         expiry = 60 * 60 * 24 * 7
         thread_key = REDIS_PREPEND + thread_id
-        self.redis.rpush(thread_key, self.helper.redis_serialize_json(msg))
+        self.redis.rpush(thread_key, self.redis_serialize_json(msg))
         self.redis.expire(thread_key, expiry)
         messages = self.helper.redis_deserialize_json(self.redis.lrange(thread_key, 0, -1))
         return messages

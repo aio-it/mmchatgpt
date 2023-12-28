@@ -665,14 +665,14 @@ class ChatGPT(PluginLoader):
             else:
                 reply_msg_id = message.reply_msg_id
             # send async request to openai
-            if self.users.is_admin(message.sender_name) and message.sender_name == "lbr":
-                await self.helper.log(pformat(self.get_chatlog(thread_id)))
+            #if self.users.is_admin(message.sender_name) and message.sender_name == "lbr":
+            #    await self.helper.log(pformat(self.get_chatlog(thread_id)))
 
             first_chunk = True
             messages = self.return_last_x_messages(
                         messages, self.MAX_TOKENS_PER_MODEL[self.model]
                     )
-            await self.helper.log(f"messages: {pformat(messages)}")
+            #await self.helper.log(f"messages: {pformat(messages)}")
             try:
                 response = await aclient.chat.completions.create(
                     model=self.model,

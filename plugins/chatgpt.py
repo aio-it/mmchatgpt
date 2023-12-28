@@ -501,7 +501,7 @@ class ChatGPT(PluginLoader):
                     await self.helper.log(f"{message.sender_name} used .vision")
     async def download_webpage(self, url):
         """download a webpage and return the content"""
-        response = requests.get(url)
+        response = requests.get(url, headers=self.headers)
         blacklisted_tags = ["script", "style", "meta", "link", "head", "title", "noscript"]
         try:
             if response.status_code == 200:

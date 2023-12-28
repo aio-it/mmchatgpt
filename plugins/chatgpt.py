@@ -546,16 +546,6 @@ class ChatGPT(PluginLoader):
                     for meta_tag in meta_tags:
                         if meta_tag.get("name") == "keywords":
                             keywords = meta_tag.get("content")
-                    # get the og:description
-                    og_description = ""
-                    for meta_tag in meta_tags:
-                        if meta_tag.get("property") == "og:description":
-                            og_description = meta_tag.get("content")
-                    # get the og:title
-                    og_title = ""
-                    for meta_tag in meta_tags:
-                        if meta_tag.get("property") == "og:title":
-                            og_title = meta_tag.get("content")
 
                     # get return all
                     return {
@@ -564,8 +554,6 @@ class ChatGPT(PluginLoader):
                         "meta": meta_tags,
                         "description": description,
                         "keywords": keywords,
-                        "og_description": og_description,
-                        "og_title": og_title,
                     }
                 else:
                     return response.text
@@ -1044,10 +1032,27 @@ class ChatGPT(PluginLoader):
         thread_key = REDIS_PREPEND + thread_id
         messages = self.helper.redis_deserialize_json(self.redis.lrange(thread_key, 0, -1))
         return messages
+    def redis_custom_serializer(obj):
+        """Custom serializer function that tries to convert objects to a 
+        serializable form using a generic approach"""
+        try:
+            # Try to get the object's dictionary, which is serializable. This will
+            # work if the object is an instance of a user-defined class, and 
+            # the class is simple enough or properly implements serialization.
+            return obj.__dict__
+        except AttributeError:
+            # If the object doesn't have a __dict__ attribute, try the default serializer.
+            try:
+                return json.JSONEncoder().default(obj)
+            except TypeError:
+                # As a last resort, convert it to a string
+                return str(obj)
 
-    def redis_serialize_json(self, msg):
-        """serialize a message to json"""
-        return json.dumps(msg)
+    def redis_serialize_json(self,msg):
+        """serialize a message to json, using a custom serializer for types not
+        handled by the default json serialization"""
+        #return json.dumps(msg)
+        return json.dumps(msg, default=self.redis_custom_serializer)
 
     def redis_deserialize_json(self, msg):
         """deserialize a message from json"""

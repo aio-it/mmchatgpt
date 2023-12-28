@@ -524,7 +524,7 @@ class ChatGPT(PluginLoader):
                     # remove all newlines and replace them with spaces
                     text = text.replace("\n", " ")
                     # remove all double spaces
-                    return f"{title}\n{text}"
+                    return f"{title.strip()}\n{text.strip()}".strip()
             else:
                 return f"Error: could not download webpage (status code {response.status_code})"
         except requests.exceptions.Timeout:

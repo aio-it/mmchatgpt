@@ -865,9 +865,9 @@ class ChatGPT(PluginLoader):
                         return
                     # add the result to the full message
                     if (function_result != None):
-                        # limit the length to x characters
-                        function_result = function_result[:6000]
-                        #pass
+                        # limit all the keys in the dict to 1000 characters
+                        #function_result = function_result[:6000]
+                        pass
                     else:
                         function_result = "Error: function returned None"
                     # log

@@ -762,7 +762,7 @@ class ChatGPT(PluginLoader):
                                     functions_to_call[index]["tool_call_id"] = tool_call.id
                                 # append to chatlog so we don't get an error when calling chatgpt with the result content
                                 chunk_message.role = "assistant"
-                                tool_calls_messages[index] = self.custom_serializer(chunk_message)
+                                functions_to_call[index]["tool_call_message"] = self.custom_serializer(chunk_message)
                                 #self.append_chatlog(
                                 #    thread_id, self.custom_serializer(chunk_message)
                                 #)
@@ -811,7 +811,7 @@ class ChatGPT(PluginLoader):
                     #await self.helper.log(f"function_result len: {len(full_message)}")
                     #await self.helper.log(f"function_result: {full_message}")
                     # add tool call to chatlog
-                    self.append_chatlog(thread_id, tool_calls_messages[index])
+                    self.append_chatlog(thread_id, functions_to_call[index]['tool_call_message'])
 
                     # add to chatlog
                     self.append_chatlog(

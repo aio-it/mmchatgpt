@@ -596,9 +596,9 @@ class ChatGPT(PluginLoader):
                     thread_id, {"role": role, "content": thread_post["message"]}
                 )
         # log if lbr
-        if message.sender_name == "lbr":
-            await self.helper.log(f"messages from thread: {thread_id}")
-            await self.helper.log(pformat(messages))
+        #if message.sender_name == "lbr":
+        #    await self.helper.log(f"messages from thread: {thread_id}")
+        #    await self.helper.log(pformat(messages))
         # add system message
         if self.get_chatgpt_setting("system") != "":
             messages.insert(

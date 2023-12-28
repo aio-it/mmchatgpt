@@ -502,7 +502,7 @@ class ChatGPT(PluginLoader):
     async def download_webpage(self, url):
         """download a webpage and return the content"""
         response = requests.get(url, headers=self.headers, timeout=10, allow_redirects=True)
-        blacklisted_tags = ["script", "style", "meta", "head", "title", "noscript"]
+        blacklisted_tags = ["script", "style", "head", "title", "noscript"]
         # debug response
         await self.helper.debug(f"response: {pformat(response.text[:500])}")
         try:

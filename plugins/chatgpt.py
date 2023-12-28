@@ -668,7 +668,6 @@ class ChatGPT(PluginLoader):
             #if self.users.is_admin(message.sender_name) and message.sender_name == "lbr":
             #    await self.helper.log(pformat(self.get_chatlog(thread_id)))
 
-            first_chunk = True
             messages = self.return_last_x_messages(
                         messages, self.MAX_TOKENS_PER_MODEL[self.model]
                     )

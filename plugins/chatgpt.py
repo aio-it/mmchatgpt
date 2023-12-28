@@ -774,6 +774,7 @@ class ChatGPT(PluginLoader):
                             #await self.helper.log(pformat(functions_to_call))
                 # lets try to run the functions now that we are done streaming
                 exit_after_loop = False
+                status_msg = ""
                 for index, tool_function in functions_to_call.items():
                     exit_after_loop = True
                     # get the function
@@ -809,6 +810,7 @@ class ChatGPT(PluginLoader):
                     if not tool_run:
                         message.tool_run=True
                         message.reply_msg_id = reply_msg_id
+                        status_msg += f"ran: {function_name} with arguments: {tool_function['arguments']}\n"
                         self.driver.posts.patch_post(
                             reply_msg_id, {"message": f"{post_prefix} ran {function_name} with {tool_function['arguments']}"}
                         )

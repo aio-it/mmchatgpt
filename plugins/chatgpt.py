@@ -528,32 +528,11 @@ class ChatGPT(PluginLoader):
                             if t.parent.name not in blacklisted_tags:
                                 output += '{} '.format(t)
                         text = output
-                    import re
-                    text = re.sub(r'[\r\n]{2,}', '\n', text)
-                    # remove all places where there is multiple spaces and replace with single space
-                    text = re.sub(r' {2,}', ' ', text)
-                    # cleanup any remaining newlines
-                    text = text.replace("\n", " ")
-                    # get all meta tags
-                    meta_tags = soup.find_all("meta")
-                    # get the description
-                    description = ""
-                    for meta_tag in meta_tags:
-                        if meta_tag.get("name") == "description":
-                            description = meta_tag.get("content")
-                    # get the keywords
-                    keywords = ""
-                    for meta_tag in meta_tags:
-                        if meta_tag.get("name") == "keywords":
-                            keywords = meta_tag.get("content")
 
                     # get return all
                     return {
                         "title": title,
                         "text": text,
-                        "meta": meta_tags,
-                        "description": description,
-                        "keywords": keywords,
                     }
                 else:
                     return response.text

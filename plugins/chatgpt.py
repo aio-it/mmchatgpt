@@ -524,7 +524,7 @@ class ChatGPT(PluginLoader):
                 "type": "function",
                 "function": {
                     "name": "download_webpage",
-                    "description": "download a webpage and return the content and a tldr",
+                    "description": "download a webpage to import as context and respond to the users query about the content and snippets from the webpage if needed",
                     "parameters": {
                         "type": "object",
                         "properties": {

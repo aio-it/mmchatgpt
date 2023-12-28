@@ -750,7 +750,6 @@ class ChatGPT(PluginLoader):
                                 index = tool_call.index
                             if tool_call.function.name is not None:
                                 function_name = tool_call.function.name
-                            if function_name is not None:
                                 functions_to_call[index]['function_name'] = function_name
                             if index not in functions_to_call:
                                 functions_to_call[index] = {

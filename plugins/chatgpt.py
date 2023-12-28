@@ -762,7 +762,7 @@ class ChatGPT(PluginLoader):
                                     thread_id, self.custom_serializer(chunk_message)
                                 )
                                 #log
-                                await self.helper.log(f"added to chatlog: {pformat(self.custom_serializer(chunk_message))}")
+                                #await self.helper.log(f"added to chatlog: {pformat(self.custom_serializer(chunk_message))}")
 
                             #append the argument to the chunked_arguments dict
                             functions_to_call[function_name]['arguments'] += tool_call.function.arguments

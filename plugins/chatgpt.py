@@ -810,7 +810,7 @@ class ChatGPT(PluginLoader):
                     if not tool_run:
                         message.tool_run=True
                         message.reply_msg_id = reply_msg_id
-                        status_msg += f"ran: {function_name} with arguments: {json.loads(tool_function['arguments']).get('url')}\n"
+                        status_msg += f"ran: {function_name} with arguments: {json.loads(tool_function['arguments'])}\n"
                         self.driver.posts.patch_post(
                             reply_msg_id, {"message": f"{post_prefix} {status_msg}"}
                         )

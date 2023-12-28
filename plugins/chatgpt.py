@@ -784,7 +784,7 @@ class ChatGPT(PluginLoader):
                     await self.helper.log(f"added to chatlog: {pformat({ 'tool_call_id': tool_call_id, 'role': 'tool', 'name': function_name, 'content': function_result })}")
                     if not tool_run:
                         message.tool_run=True
-                        message.reply_id = reply_msg_id
+                        message.reply_msg_id = reply_msg_id
                         self.driver.posts.patch_post(
                             reply_msg_id, {"message": f"{post_prefix} ran {function_name} with {tool_function['arguments']}"}
                         )

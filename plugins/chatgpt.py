@@ -503,6 +503,8 @@ class ChatGPT(PluginLoader):
         """download a webpage and return the content"""
         response = requests.get(url, headers=self.headers, timeout=10, allow_redirects=True)
         blacklisted_tags = ["script", "style", "meta", "link", "head", "title", "noscript"]
+        # debug response
+        await self.helper.debug(f"response: {pformat(response)}")
         try:
             if response.status_code == 200:
                 #extract all text from the webpage

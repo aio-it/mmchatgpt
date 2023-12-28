@@ -728,7 +728,7 @@ class ChatGPT(PluginLoader):
                             )
                             # update last_update_time
                             last_update_time = time.time()
-                    if chunk_message.tool_calls:
+                    if chunk_message.tool_calls and chunk_message.content is None:
                         # we are running tools. this sucks when streaming but lets try
                         for tool_call in chunk_message.tool_calls:
                             function_name = tool_call.function.name

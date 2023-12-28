@@ -750,12 +750,14 @@ class ChatGPT(PluginLoader):
                                 index = tool_call.index
                             if tool_call.function.name is not None:
                                 function_name = tool_call.function.name
-                                functions_to_call[index]['function_name'] = function_name
                             if index not in functions_to_call.keys():
                                 functions_to_call[index] = {
                                     "tool_call_id": "",
                                     "arguments": "",
                                 }
+                                if function_name is not None:
+                                    functions_to_call[index]['function_name'] = function_name
+
                                 if tool_call.id:
                                     functions_to_call[index]["tool_call_id"] = tool_call.id
                                 # append to chatlog so we don't get an error when calling chatgpt with the result content

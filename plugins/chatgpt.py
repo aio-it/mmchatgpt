@@ -843,7 +843,7 @@ class ChatGPT(PluginLoader):
                     await self.helper.log(f"exit_after_loop: {exit_after_loop} and not tool_run: {not tool_run}")
                     # log the messages
                     mm = self.get_chatlog(thread_id)
-                    await self.helper.log(f"messages: {pformat(mm)}")
+                    await self.helper.log(f"messages: {pformat(mm)[:1000]}")
                     await self.chat(message)
                     return
 

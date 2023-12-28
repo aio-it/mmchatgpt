@@ -499,22 +499,25 @@ class ChatGPT(PluginLoader):
     async def download_webpage(self, url):
         """download a webpage and return the content"""
         response = requests.get(url)
-        if response.status_code == 200:
-            #extract all text from the webpage
-            import bs4
-            soup = bs4.BeautifulSoup(response.text, 'html.parser')
-            for script in soup(["script", "style"]):
-                script.decompose()    # rip it out
-            # only get the body
-            text = soup.body.get_text()
-            # remove all places where there is multiple newlines and replace with single newline
-            import re
-            text = re.sub(r'[\r\n]{2,}', '\n', text)
-            # get the title
-            title = soup.title.string
-            # get text
-            return f"{title}\n{text}"
-        return None
+        try:
+            if response.status_code == 200:
+                #extract all text from the webpage
+                import bs4
+                soup = bs4.BeautifulSoup(response.text, 'html.parser')
+                for script in soup(["script", "style"]):
+                    script.decompose()    # rip it out
+                # only get the body
+                text = soup.body.get_text()
+                # remove all places where there is multiple newlines and replace with single newline
+                import re
+                text = re.sub(r'[\r\n]{2,}', '\n', text)
+                # get the title
+                title = soup.title.string
+                # get text
+                return f"{title}\n{text}"
+            return None
+        except: # pylint: disable=bare-except
+            return None
     @listen_to(".+", needs_mention=True)
     async def chat(self, message: Message):
         """listen to everything and respond when mentioned"""

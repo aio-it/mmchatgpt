@@ -784,7 +784,7 @@ class ChatGPT(PluginLoader):
                         return
                     # add the result to the full message
                     if (function_result != None):
-                        # limit the length to 4000 characters
+                        # limit the length to x characters
                         function_result = function_result[:10000]
                         #pass
                     else:

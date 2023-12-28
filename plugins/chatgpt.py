@@ -505,8 +505,12 @@ class ChatGPT(PluginLoader):
             soup = bs4.BeautifulSoup(response.text, 'html.parser')
             for script in soup(["script", "style"]):
                 script.decompose()    # rip it out
+            # only get the body
+            text = soup.body.get_text()
+            # get the title as well
+            title = soup.title.string
             # get text
-            return response.text
+            return f"{title}\n{text}"
         return None
     @listen_to(".+", needs_mention=True)
     async def chat(self, message: Message):

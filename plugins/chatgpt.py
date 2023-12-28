@@ -777,7 +777,7 @@ class ChatGPT(PluginLoader):
                     if not tool_run:
                         message.tool_run=True
                         message.reply_id = reply_msg_id
-                        await self.helper.log(f"ran: {function_name}, calling self")
+                        await self.helper.log(f"ran: {function_name}, calling self with run_tool = True")
                         await self.chat(message)
                     # update the message
                     self.driver.posts.patch_post(

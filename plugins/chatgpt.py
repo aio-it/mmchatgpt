@@ -821,6 +821,10 @@ class ChatGPT(PluginLoader):
                     self.append_chatlog(
                        thread_id, { "tool_call_id": tool_call_id, "role": "tool", "name": function_name, "content": function_result }
                     )
+                    # add a user message to the chatlog so it doesn't break when we call chatgpt with the result
+                    self.append_chatlog(
+                        thread_id, {"role": "user", "content": ""}
+                    )
                     # save the tool_call_id to the redis db so we can check next time and skip the tool call if it's already been run
                     self.redis.hset(call_key, tool_call_id, "true")
                     # log 

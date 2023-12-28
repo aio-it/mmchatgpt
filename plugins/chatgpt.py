@@ -799,15 +799,15 @@ class ChatGPT(PluginLoader):
                        thread_id, { "tool_call_id": tool_call_id, "role": "tool", "name": function_name, "content": function_result }
                     )
                     # log 
-                    await self.helper.log(f"added to chatlog: {pformat({ 'tool_call_id': tool_call_id, 'role': 'tool', 'name': function_name, 'content': function_result })}")
+                    #await self.helper.log(f"added to chatlog: {pformat({ 'tool_call_id': tool_call_id, 'role': 'tool', 'name': function_name, 'content': function_result })}")
                     if not tool_run:
                         message.tool_run=True
                         message.reply_msg_id = reply_msg_id
                         self.driver.posts.patch_post(
                             reply_msg_id, {"message": f"{post_prefix} ran {function_name} with {tool_function['arguments']}"}
                         )
-                        await self.helper.log(f"ran: {function_name}, calling self with run_tool = True")
-                        await self.chat(message)
+                        #await self.helper.log(f"ran: {function_name}, calling self with run_tool = True")
+                        #await self.chat(message)
                         # just return becuase we let the other thread handle the rest
                         return
 

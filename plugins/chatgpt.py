@@ -1051,7 +1051,7 @@ class ChatGPT(PluginLoader):
         """serialize a message to json, using a custom serializer for types not
         handled by the default json serialization"""
         import jsonpickle
-        return jsonpickle.encode(msg)
+        return jsonpickle.encode(msg, unpicklable=False)
 
     def redis_deserialize_jsonpickle(self, msg):
         """deserialize a message from json"""

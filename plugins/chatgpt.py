@@ -770,7 +770,7 @@ class ChatGPT(PluginLoader):
                     #await self.helper.log(f"function_result: {full_message}")
                     # add to chatlog
                     self.append_chatlog(
-                       thread_id, { "tool_call_id": tool_call_id ,"role": "tool", "name": function_name, "content": full_message }
+                       thread_id, { "tool_call_id": tool_call_id, "role": "tool", "name": function_name, "content": full_message }
                     )
                     if not tool_run:
                         message.tool_run=True
@@ -791,6 +791,8 @@ class ChatGPT(PluginLoader):
 
                 # add response to chatlog if it wasn't a tool run
                 if not tool_run:
+                    if self.users.is_admin(message.sender_name) and message.sender_name == "lbr":
+                        await self.helper.log(pformat(self.get_chatlog(thread_id)))
                     self.append_chatlog(
                         thread_id, {"role": "assistant", "content": full_message}
                     )

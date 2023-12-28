@@ -777,6 +777,9 @@ class ChatGPT(PluginLoader):
                 status_msg = "running functions...\n"
                 for index, tool_function in functions_to_call.items():
                     exit_after_loop = True
+                    self.driver.posts.patch_post(
+                        reply_msg_id, {"message": f"{post_prefix} {status_msg}"}
+                    )
                     # get the function
                     function_name = tool_function["function_name"]
                     tool_call_id = tool_function["tool_call_id"]

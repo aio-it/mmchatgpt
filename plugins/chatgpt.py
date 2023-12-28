@@ -783,6 +783,10 @@ class ChatGPT(PluginLoader):
                     self.driver.posts.patch_post(
                         reply_msg_id, {"message": f"{post_prefix} {status_msg}"}
                     )
+                    # check if the tool call has already been run
+                    if self.redis.hexists(thread_key, tool_function["tool_call_id"]):
+                        # tool call has already been run, skip it
+                        continue
                     # get the function
                     function_name = tool_function["function_name"]
                     tool_call_id = tool_function["tool_call_id"]
@@ -814,6 +818,8 @@ class ChatGPT(PluginLoader):
                     self.append_chatlog(
                        thread_id, { "tool_call_id": tool_call_id, "role": "tool", "name": function_name, "content": function_result }
                     )
+                    # save the tool_call_id to the redis db so we can check next time and skip the tool call if it's already been run
+                    self.redis.hset(thread_key, tool_call_id, "true")
                     # log 
                     #await self.helper.log(f"added to chatlog: {pformat({ 'tool_call_id': tool_call_id, 'role': 'tool', 'name': function_name, 'content': function_result })}")
                     if not tool_run:

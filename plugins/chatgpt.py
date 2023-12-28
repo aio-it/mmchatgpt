@@ -555,13 +555,13 @@ class ChatGPT(PluginLoader):
         # check if thread exists in redis
         messages = []
         if self.redis.exists(thread_key) and not tool_run:
-            await self.helper.log(f"thread exists: {thread_key} and not tool_run")
-            messages = self.append_chatlog(thread_key, {"role": "user", "content": msg})
+            await self.helper.log(f"thread exists: {thread_id} and not tool_run")
+            messages = self.append_chatlog(thread_id, {"role": "user", "content": msg})
         elif self.redis.exists(thread_key) and tool_run:
-            await self.helper.log(f"thread exists: {thread_key} and tool_run")
-            messages = self.get_chatlog(thread_key)
+            await self.helper.log(f"thread exists: {thread_id} and tool_run")
+            messages = self.get_chatlog(thread_id)
         else:
-            await self.helper.log(f"thread does not exist: {thread_key} and tool_run {tool_run}")
+            await self.helper.log(f"thread does not exist: {thread_id} and tool_run {tool_run}")
             # thread does not exist, fetch all posts in thread
             thread = self.driver.get_post_thread(thread_id)
             for thread_index in thread["order"]:
@@ -580,11 +580,11 @@ class ChatGPT(PluginLoader):
                 # self.redis.rpush(thread_key, self.helper.redis_serialize_json(
                 #    {"role": role, "content": thread_post['message']}))
                 messages = self.append_chatlog(
-                    thread_key, {"role": role, "content": thread_post["message"]}
+                    thread_id, {"role": role, "content": thread_post["message"]}
                 )
         # log if lbr
         if message.sender_name == "lbr":
-            await self.helper.log(f"messages from thread: {thread_key}")
+            await self.helper.log(f"messages from thread: {thread_id}")
             await self.helper.log(pformat(messages))
         # add system message
         if self.get_chatgpt_setting("system") != "":

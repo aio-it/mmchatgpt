@@ -98,6 +98,9 @@ class ChatGPT(PluginLoader):
         for key, value in self.ChatGPT_DEFAULTS.items():
             if self.redis.hget(self.SETTINGS_KEY, key) is None:
                 self.redis.hset(self.SETTINGS_KEY, key, value)
+        self.headers = {
+            "User-Agent": self.USER_AGENT,
+        }
         print(f"Allowed models: {self.ALLOWED_MODELS}")
     def return_last_x_messages(self, messages, max_length_in_tokens):
         """return last x messages from list of messages limited by max_length_in_tokens"""

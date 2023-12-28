@@ -579,6 +579,9 @@ class ChatGPT(PluginLoader):
         else:
             # we are running a tool
             messages = self.get_chatlog(thread_id)
+        # log if lbr
+        if message.sender_name == "lbr":
+            await self.helper.log(pformat(messages))
         # add system message
         if self.get_chatgpt_setting("system") != "":
             messages.insert(

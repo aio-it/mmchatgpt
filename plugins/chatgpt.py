@@ -680,7 +680,7 @@ class ChatGPT(PluginLoader):
                     top_p=top_p,
                     stream=stream,
                     tools = tools,
-                    tool_choice = "auto" if not tool_run else "none",
+                    tool_choice = "auto",
                 )
             except (openai.error.RateLimitError, openai.error.APIError) as error:
                 # update the message

@@ -812,7 +812,7 @@ class ChatGPT(PluginLoader):
                         message.reply_msg_id = reply_msg_id
                         status_msg += f"ran: {function_name} with arguments: {tool_function['arguments'].get('url')}\n"
                         self.driver.posts.patch_post(
-                            reply_msg_id, {"message": f"{post_prefix} ran {function_name} with {tool_function['arguments']}"}
+                            reply_msg_id, {"message": f"{post_prefix} {status_msg}"}
                         )
                         await self.helper.log(f"ran: {function_name}, for user: {message.sender_name} with arguments: {tool_function['arguments']}")
                         #await self.chat(message)

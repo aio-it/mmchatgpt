@@ -773,7 +773,9 @@ class ChatGPT(PluginLoader):
                             #await self.helper.log(f"tool_call: {function_name} {tool_call.function.arguments}")
                             #await self.helper.log(pformat(functions_to_call))
                 # lets try to run the functions now that we are done streaming
+                exit_after_loop = False
                 for index, tool_function in functions_to_call.items():
+                    exit_after_loop = True
                     # get the function
                     function_name = tool_function["function_name"]
                     tool_call_id = tool_function["tool_call_id"]

@@ -821,7 +821,7 @@ class ChatGPT(PluginLoader):
                     self.append_chatlog(
                        thread_id, { "tool_call_id": tool_call_id, "role": "tool", "name": function_name, "content": function_result }
                     )
-                    # add a user message to the chatlog so it doesn't break when we call chatgpt with the result
+                    # add a user message to the chatlog so it doesn't break when we call chatgpt with the result no idea why this is needed but it is
                     self.append_chatlog(
                         thread_id, {"role": "user", "content": ""}
                     )

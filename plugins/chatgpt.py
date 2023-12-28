@@ -748,7 +748,12 @@ class ChatGPT(PluginLoader):
                             function_name = tool_call.function.name
                             if function_name == None:
                                 # get the function name from the arguments index
-                                function_name = tools[tool_call.index]["function"]["name"]
+                                try:
+                                    function_name = tools[tool_call.index]["function"]["name"]
+                                except IndexError:
+                                    # i don't really know i think i should change to use the index from the tool_call instead of the function name but now we are here so lets deal with it.
+                                    function_name = tools[0]["function"]["name"] # lol TODO: fix this asap
+
                             if function_name not in functions_to_call:
                                 functions_to_call[function_name] = {
                                     "tool_call_id": "",

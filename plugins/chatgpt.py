@@ -512,7 +512,7 @@ class ChatGPT(PluginLoader):
                 "type": "function",
                 "function": {
                     "name": "download_webpage",
-                    "description": "download a webpage and return the content",
+                    "description": "download a webpage and return the content and a tldr",
                     "parameters": {
                         "type": "object",
                         "properties": {

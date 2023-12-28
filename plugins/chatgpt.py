@@ -651,7 +651,7 @@ class ChatGPT(PluginLoader):
             if not tool_run:
                 reply_msg_id = self.driver.reply_to(message, full_message)["id"]
             else:
-                reply_msg_id = message.reply_id
+                reply_msg_id = message.reply_msg_id
             # send async request to openai
             if self.users.is_admin(message.sender_name) and message.sender_name == "lbr":
                 await self.helper.log(pformat(self.get_chatlog(thread_id)))

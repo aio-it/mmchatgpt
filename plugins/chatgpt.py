@@ -757,7 +757,7 @@ class ChatGPT(PluginLoader):
                             #log
                             #await self.helper.log(f"tool_call: {function_name} {tool_call.function.arguments}")
                             #await self.helper.log(pformat(functions_to_call))
-                # lets try to run the functions
+                # lets try to run the functions now that we are done streaming
                 for function_name, tool_function in functions_to_call.items():
                     # get the function
                     tool_call_id = tool_function["tool_call_id"]
@@ -765,7 +765,12 @@ class ChatGPT(PluginLoader):
                     # get the arguments
                     arguments = json.loads(tool_function['arguments'])
                     # run the function
-                    function_result = await function(arguments.get("url"))
+                    # TODO: parse the arguments to the function from the tools dict instead of this hardcoded bs but it's literally from the example from openai
+                    if function_name == "download_webpage":
+                        function_result = await function(arguments.get("url"))
+                    else:
+                        # we shouldn't get to here. panic and run (return)
+                        return
                     # add the result to the full message
                     if (function_result != None):
                         # limit the length to 4000 characters

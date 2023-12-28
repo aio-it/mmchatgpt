@@ -645,6 +645,9 @@ class ChatGPT(PluginLoader):
             else:
                 reply_msg_id = message.reply_id
             # send async request to openai
+            if self.users.is_admin(message.sender_name) and message.sender_name == "lbr":
+                await self.helper.log(pformat(self.get_chatlog(thread_id)))
+
             first_chunk = True
             try:
                 response = await aclient.chat.completions.create(
@@ -701,9 +704,6 @@ class ChatGPT(PluginLoader):
                         self.driver.react_to(message, "x")
                         return
 
-                    # extract the message
-                    from pprint import pprint
-
                     chunk_message = chunk.choices[0].delta
                     #self.driver.reply_to(message, chunk_message.content)
                     #if the message has content, add it to the full message
@@ -722,8 +722,6 @@ class ChatGPT(PluginLoader):
                             # update last_update_time
                             last_update_time = time.time()
                     if chunk_message.tool_calls:
-                        #if self.users.is_admin(message.sender_name) and message.sender_name == "lbr":
-                        #    await self.helper.log(pformat(chunk_message))
                         # we are running tools. this sucks when streaming but lets try
                         for tool_call in chunk_message.tool_calls:
                             function_name = tool_call.function.name

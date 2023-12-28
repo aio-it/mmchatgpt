@@ -510,30 +510,34 @@ class ChatGPT(PluginLoader):
                 #extract all text from the webpage
                 import bs4
                 soup = bs4.BeautifulSoup(response.text, 'html.parser')
-                # get the title
-                if soup.title:
-                    title = soup.title.string
+                # check if the soup could parse anything
+                if soup.find():
+                    # get the title
+                    if soup.title:
+                        title = soup.title.string
+                    else:
+                        title = ""
+                    for script in soup(['script', 'style']):
+                        script.decompose()    # rip it out
+                    # only get the body
+                    text = ''
+                    output = ''
+                    if soup.body:
+                        text = soup.body.find_all(text=True)
+                        for t in text:
+                            if t.parent.name not in blacklisted_tags:
+                                output += '{} '.format(t)
+                        text = output
+                    import re
+                    text = re.sub(r'[\r\n]{2,}', '\n', text)
+                    # remove all places where there is multiple spaces and replace with single space
+                    text = re.sub(r' {2,}', ' ', text)
+                    # cleanup any remaining newlines
+                    text = text.replace("\n", " ")
+                    # get text
+                    return f"{title}\n{text}"
                 else:
-                    title = ""
-                for script in soup(['script', 'style']):
-                    script.decompose()    # rip it out
-                # only get the body
-                text = ''
-                output = ''
-                if soup.body:
-                    text = soup.body.find_all(text=True)
-                    for t in text:
-                        if t.parent.name not in blacklisted_tags:
-                            output += '{} '.format(t)
-                    text = output
-                import re
-                text = re.sub(r'[\r\n]{2,}', '\n', text)
-                # remove all places where there is multiple spaces and replace with single space
-                text = re.sub(r' {2,}', ' ', text)
-                # cleanup any remaining newlines
-                text = text.replace("\n", " ")
-                # get text
-                return f"{title}\n{text}"
+                    return response.text
             return None
         except Exception as e: # pylint: disable=bare-except
             return "Error: could not download webpage (Exception) " + str(e)

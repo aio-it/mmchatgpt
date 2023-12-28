@@ -534,8 +534,38 @@ class ChatGPT(PluginLoader):
                     text = re.sub(r' {2,}', ' ', text)
                     # cleanup any remaining newlines
                     text = text.replace("\n", " ")
-                    # get text
-                    return f"{title}\n{text}"
+                    # get all meta tags
+                    meta_tags = soup.find_all("meta")
+                    # get the description
+                    description = ""
+                    for meta_tag in meta_tags:
+                        if meta_tag.get("name") == "description":
+                            description = meta_tag.get("content")
+                    # get the keywords
+                    keywords = ""
+                    for meta_tag in meta_tags:
+                        if meta_tag.get("name") == "keywords":
+                            keywords = meta_tag.get("content")
+                    # get the og:description
+                    og_description = ""
+                    for meta_tag in meta_tags:
+                        if meta_tag.get("property") == "og:description":
+                            og_description = meta_tag.get("content")
+                    # get the og:title
+                    og_title = ""
+                    for meta_tag in meta_tags:
+                        if meta_tag.get("property") == "og:title":
+                            og_title = meta_tag.get("content")
+
+                    # get return all
+                    return {
+                        "title": title,
+                        "text": text,
+                        "description": description,
+                        "keywords": keywords,
+                        "og_description": og_description,
+                        "og_title": og_title,
+                    }
                 else:
                     return response.text
             else:

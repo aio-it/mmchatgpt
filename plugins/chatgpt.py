@@ -512,30 +512,16 @@ class ChatGPT(PluginLoader):
                 soup = bs4.BeautifulSoup(response.text, 'html.parser')
                 # check if the soup could parse anything
                 if soup.find():
-                    # get the title
-                    if soup.title:
-                        title = soup.title.string
-                    else:
-                        title = ""
-                    for script in soup(['script', 'style']):
-                        script.decompose()    # rip it out
-                    # only get the body
-                    text = ''
-                    output = ''
-                    if soup.body:
-                        text = soup.body.find_all(text=True)
-                        for t in text:
-                            if t.parent.name not in blacklisted_tags:
-                                output += '{} '.format(t)
-                        text = output
-
-                    # get return all
-                    return {
-                        "title": title,
-                        "text": text,
-                    }
-                else:
-                    return response.text
+                    # soup parsed something lets extract the text
+                    # remove all blacklisted tags
+                    for tag in blacklisted_tags:
+                        for match in soup.find_all(tag):
+                            match.decompose()
+                    # check if title exists and set it to a variable
+                    title = soup.title.string if soup.title else ""
+                    # extract all text
+                    text = soup.get_text()
+                    return f"{title}\n{text}"
             else:
                 return f"Error: could not download webpage (status code {response.status_code})"
         except requests.exceptions.Timeout:

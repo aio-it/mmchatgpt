@@ -702,6 +702,7 @@ class ChatGPT(PluginLoader):
                 self.get_chatgpt_setting("stream_update_delay_ms")
             )
             try:
+                tool_calls_messages = {}
                 functions_to_call = {}
                 async for chunk in response:
                     # await self.helper.debug(
@@ -762,9 +763,10 @@ class ChatGPT(PluginLoader):
                                     functions_to_call[index]["tool_call_id"] = tool_call.id
                                 # append to chatlog so we don't get an error when calling chatgpt with the result content
                                 chunk_message.role = "assistant"
-                                self.append_chatlog(
-                                    thread_id, self.custom_serializer(chunk_message)
-                                )
+                                tool_calls_messages[index] = self.custom_serializer(chunk_message)
+                                #self.append_chatlog(
+                                #    thread_id, self.custom_serializer(chunk_message)
+                                #)
                                 #log
                                 #await self.helper.log(f"added to chatlog: {pformat(self.custom_serializer(chunk_message))}")
 
@@ -805,6 +807,9 @@ class ChatGPT(PluginLoader):
                     # log length
                     #await self.helper.log(f"function_result len: {len(full_message)}")
                     #await self.helper.log(f"function_result: {full_message}")
+                    # add tool call to chatlog
+                    self.append_chatlog(thread_id, tool_calls_messages[index])
+
                     # add to chatlog
                     self.append_chatlog(
                        thread_id, { "tool_call_id": tool_call_id, "role": "tool", "name": function_name, "content": function_result }

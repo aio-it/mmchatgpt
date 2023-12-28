@@ -702,7 +702,7 @@ class ChatGPT(PluginLoader):
                 self.get_chatgpt_setting("stream_update_delay_ms")
             )
             try:
-                functions_to_call = {}
+                functions_to_call = []
                 async for chunk in response:
                     # await self.helper.debug(
                     #    f"time since last chunk: {(time.time() - last_chunk_time) * 1000}")

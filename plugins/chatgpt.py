@@ -816,6 +816,7 @@ class ChatGPT(PluginLoader):
                         #await self.chat(message)
                         # just return becuase we let the other thread handle the rest
                 if exit_after_loop:
+                    # we ran all the functions, return
                     return
 
                 # update the message a final time to make sure we have the full message

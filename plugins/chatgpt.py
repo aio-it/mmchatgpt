@@ -1032,7 +1032,7 @@ class ChatGPT(PluginLoader):
         thread_key = REDIS_PREPEND + thread_id
         messages = self.helper.redis_deserialize_json(self.redis.lrange(thread_key, 0, -1))
         return messages
-    def redis_custom_serializer(obj):
+    def redis_custom_serializer(self, obj):
         """Custom serializer function that tries to convert objects to a 
         serializable form using a generic approach"""
         try:

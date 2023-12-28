@@ -521,6 +521,9 @@ class ChatGPT(PluginLoader):
                     title = soup.title.string if soup.title else ""
                     # extract all text
                     text = soup.get_text()
+                    # remove all newlines and replace them with spaces
+                    text = text.replace("\n", " ")
+                    # remove all double spaces
                     return f"{title}\n{text}"
             else:
                 return f"Error: could not download webpage (status code {response.status_code})"

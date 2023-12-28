@@ -519,8 +519,8 @@ class ChatGPT(PluginLoader):
                             match.decompose()
                     # check if title exists and set it to a variable
                     title = soup.title.string if soup.title else ""
-                    # extract all text
-                    text = soup.get_text()
+                    # extract all text from the body
+                    text = soup.body.get_text()
                     # remove all newlines and replace them with spaces
                     text = text.replace("\n", " ")
                     # remove all double spaces

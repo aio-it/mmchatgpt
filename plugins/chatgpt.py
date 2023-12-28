@@ -762,7 +762,7 @@ class ChatGPT(PluginLoader):
                                 if tool_call.id:
                                     functions_to_call[index]["tool_call_id"] = tool_call.id
                                 # append to chatlog so we don't get an error when calling chatgpt with the result content
-                                chunk_message.role = "assistant"
+                                #chunk_message.role = "assistant"
                                 tool_calls_messages[index] = self.custom_serializer(chunk_message)
                                 #self.append_chatlog(
                                 #    thread_id, self.custom_serializer(chunk_message)

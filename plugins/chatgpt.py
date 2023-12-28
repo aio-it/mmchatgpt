@@ -517,7 +517,7 @@ class ChatGPT(PluginLoader):
                     if t.parent.name not in blacklisted_tags:
                         output += '{} '.format(t)
                 text = output
-                # remove all places where there is multiple newlines and replace with single newline
+                # remove all places where there is multiple newlines and replace with single newline greedy
                 import re
                 text = re.sub(r'[\r\n]{2,}', '\n', text)
                 # remove all places where there is multiple spaces and replace with single space

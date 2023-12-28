@@ -821,9 +821,9 @@ class ChatGPT(PluginLoader):
                     self.append_chatlog(
                         thread_id, {"role": "assistant", "content": full_message}
                     )
-                    if self.users.is_admin(message.sender_name) and message.sender_name == "lbr":
-                        await self.helper.log(f"appended: 'role': 'assistant', 'content': {full_message}]")
-                        await self.helper.log(pformat(self.get_chatlog(thread_id)))
+                    #if self.users.is_admin(message.sender_name) and message.sender_name == "lbr":
+                    #    await self.helper.log(f"appended: 'role': 'assistant', 'content': {full_message}]")
+                    #    await self.helper.log(pformat(self.get_chatlog(thread_id)))
             except aiohttp_client_exceptions.ClientPayloadError as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 self.driver.reactions.delete_reaction(

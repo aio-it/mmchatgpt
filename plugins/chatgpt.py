@@ -783,9 +783,9 @@ class ChatGPT(PluginLoader):
                     )
 
                 # update the message a final time to make sure we have the full message
-                #self.driver.posts.patch_post(
-                #    reply_msg_id, {"message": f"{post_prefix}{full_message}"}
-                #)
+                self.driver.posts.patch_post(
+                    reply_msg_id, {"message": f"{post_prefix}{full_message}"}
+                )
 
                 # add response to chatlog if it wasn't a tool run
                 if not tool_run:

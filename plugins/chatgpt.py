@@ -555,7 +555,9 @@ class ChatGPT(PluginLoader):
         messages = []
         if self.redis.exists(thread_key) and not tool_run:
             messages = self.append_chatlog(thread_id, {"role": "user", "content": msg})
-        elif not tool_run:
+        elif self.redis.exists(thread_key) and tool_run:
+            messages = self.get_chatlog(thread_id)
+        else:
             # thread does not exist, fetch all posts in thread
             thread = self.driver.get_post_thread(thread_id)
             for thread_index in thread["order"]:
@@ -576,9 +578,6 @@ class ChatGPT(PluginLoader):
                 messages = self.append_chatlog(
                     thread_id, {"role": role, "content": thread_post["message"]}
                 )
-        else:
-            # we are running a tool
-            messages = self.get_chatlog(thread_id)
         # log if lbr
         if message.sender_name == "lbr":
             await self.helper.log(pformat(messages))

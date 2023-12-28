@@ -22,6 +22,7 @@ aiodocker = "*"
 bs4 = "*"
 beautifulsoup4 = "*"
 pedantic = "*"
+jsonpickle = "*"
 
 [dev-packages]
 autopep8 = "*"

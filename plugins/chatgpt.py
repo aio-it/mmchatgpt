@@ -1032,33 +1032,33 @@ class ChatGPT(PluginLoader):
         thread_key = REDIS_PREPEND + thread_id
         messages = self.helper.redis_deserialize_json(self.redis.lrange(thread_key, 0, -1))
         return messages
-    def redis_custom_serializer(self, obj):
-        """Custom serializer function that tries to convert objects to a 
-        serializable form using a generic approach"""
-        try:
-            # Try to get the object's dictionary, which is serializable. This will
-            # work if the object is an instance of a user-defined class, and 
-            # the class is simple enough or properly implements serialization.
-            return obj.__dict__
-        except AttributeError:
-            # If the object doesn't have a __dict__ attribute, try the default serializer.
-            try:
-                return json.JSONEncoder().default(obj)
-            except TypeError:
-                # As a last resort, convert it to a string
-                return str(obj)
 
     def redis_serialize_json(self,msg):
         """serialize a message to json, using a custom serializer for types not
         handled by the default json serialization"""
         #return json.dumps(msg)
+        return self.redis_serialize_jsonpickle(msg)
         return json.dumps(msg, default=self.redis_custom_serializer)
 
     def redis_deserialize_json(self, msg):
         """deserialize a message from json"""
+        return self.redis_deserialize_jsonpickle(msg)
         if isinstance(msg, list):
             return [json.loads(m) for m in msg]
         return json.loads(msg)
+    
+    def redis_serialize_jsonpickle(self,msg):
+        """serialize a message to json, using a custom serializer for types not
+        handled by the default json serialization"""
+        import jsonpickle
+        return jsonpickle.encode(msg)
+
+    def redis_deserialize_jsonpickle(self, msg):
+        """deserialize a message from json"""
+        import jsonpickle
+        if isinstance(msg, list):
+            return [jsonpickle.decode(m) for m in msg]
+        return jsonpickle.decode(msg)
 
 
 if __name__ == "__main__":

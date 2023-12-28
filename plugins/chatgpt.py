@@ -517,7 +517,7 @@ class ChatGPT(PluginLoader):
                 return f"{title}\n{text}"
             return None
         except: # pylint: disable=bare-except
-            return None
+            return "Error: could not download webpage (Exception)"
     @listen_to(".+", needs_mention=True)
     async def chat(self, message: Message):
         """listen to everything and respond when mentioned"""

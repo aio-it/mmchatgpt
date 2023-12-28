@@ -672,6 +672,7 @@ class ChatGPT(PluginLoader):
                         messages, self.MAX_TOKENS_PER_MODEL[self.model]
                     )
             #await self.helper.log(f"messages: {pformat(messages)}")
+            tools = []
             try:
                 response = await aclient.chat.completions.create(
                     model=self.model,

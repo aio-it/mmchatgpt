@@ -547,6 +547,7 @@ class ChatGPT(PluginLoader):
             msg = ""
         else:
             msg = message.text
+        orig_reply_id = message.reply_id
         # log the message if user is admin
         # if self.is_admin(message.sender_name):
         #    await self.helper.log(f"{message.sender_name}:  {pformat(message.body)}")

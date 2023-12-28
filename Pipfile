@@ -21,6 +21,7 @@ dnspython = "*"
 aiodocker = "*"
 bs4 = "*"
 beautifulsoup4 = "*"
+pedantic = "*"
 
 [dev-packages]
 autopep8 = "*"

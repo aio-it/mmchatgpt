@@ -818,10 +818,10 @@ class ChatGPT(PluginLoader):
                             reply_msg_id, {"message": f"{post_prefix} {status_msg}"}
                         )
                         await self.helper.log(f"ran: {function_name}, for user: {message.sender_name} with arguments: {tool_function['arguments']}")
-                        await self.chat(message)
                         # just return becuase we let the other thread handle the rest
                 if exit_after_loop and not tool_run:
                     # we ran all the functions, return
+                    await self.chat(message)
                     return
 
                 # update the message a final time to make sure we have the full message

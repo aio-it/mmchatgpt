@@ -777,8 +777,9 @@ class ChatGPT(PluginLoader):
                 # lets try to run the functions now that we are done streaming
                 exit_after_loop = False
                 status_msg = "running functions...\n"
+                call_key = f"{REDIS_PREPEND}_call_{thread_id}"
                 for index, tool_function in functions_to_call.items():
-                    if self.redis.hexists(thread_key, tool_function["tool_call_id"]):
+                    if self.redis.hexists(call_key, tool_function["tool_call_id"]):
                         # tool call has already been run, skip it
                         continue
                     exit_after_loop = True
@@ -818,7 +819,7 @@ class ChatGPT(PluginLoader):
                        thread_id, { "tool_call_id": tool_call_id, "role": "tool", "name": function_name, "content": function_result }
                     )
                     # save the tool_call_id to the redis db so we can check next time and skip the tool call if it's already been run
-                    self.redis.hset(thread_key, tool_call_id, "true")
+                    self.redis.hset(call_key, tool_call_id, "true")
                     # log 
                     #await self.helper.log(f"added to chatlog: {pformat({ 'tool_call_id': tool_call_id, 'role': 'tool', 'name': function_name, 'content': function_result })}")
                     if not tool_run:

@@ -104,7 +104,7 @@ class ChatGPT(PluginLoader):
         print(f"Allowed models: {self.ALLOWED_MODELS}")
     def return_last_x_messages(self, messages, max_length_in_tokens):
         """return last x messages from list of messages limited by max_length_in_tokens"""
-        #fuck this bs
+        # fuck this bs
         return messages
         limited_messages = []
         current_length_in_tokens = 0
@@ -295,8 +295,6 @@ class ChatGPT(PluginLoader):
                 # self.driver.reply_to(message, f"Error: {pformat(error)}")
             except:  # pylint: disable=bare-except
                 self.driver.reply_to(message, "Error: OpenAI API error")
-
-
 
     @listen_to(r"^\.gif ([\s\S]*)")
     async def gif(self, message: Message, text: str):
@@ -504,10 +502,10 @@ class ChatGPT(PluginLoader):
         response = requests.get(url, headers=self.headers, timeout=10, allow_redirects=True)
         blacklisted_tags = ["script", "style", "head", "title", "noscript"]
         # debug response
-        #await self.helper.debug(f"response: {pformat(response.text[:500])}")
+        # await self.helper.debug(f"response: {pformat(response.text[:500])}")
         try:
             if response.status_code == 200:
-                #extract all text from the webpage
+                # extract all text from the webpage
                 import bs4
                 soup = bs4.BeautifulSoup(response.text, 'html.parser')
                 # check if the soup could parse anything
@@ -523,9 +521,9 @@ class ChatGPT(PluginLoader):
                     text = soup.body.get_text(separator=" | ", strip=True)
                     # trim all newlines to 2 spaces
                     text = text.replace("\n", "  ")
-                    
+
                     # remove all newlines and replace them with spaces
-                    #text = text.replace("\n", " ")
+                    # text = text.replace("\n", " ")
                     # remove all double spaces
                     return f"{title} | {text}".strip()
             else:
@@ -541,24 +539,25 @@ class ChatGPT(PluginLoader):
     @listen_to(".+", needs_mention=True)
     async def chat(self, message: Message):
         """listen to everything and respond when mentioned"""
-        #self.driver.reply_to(message, "Hej")
+        # self.driver.reply_to(message, "Hej")
         # chatgpt "function calling"
-        tools =  [{
+        tools = [
+            {
                 "type": "function",
                 "function": {
                     "name": "download_webpage",
-                    "description": "download a webpage to import as context and respond to the users query about the content and snippets from the webpage if needed",
+                    "description": "download a webpage to import as context and respond to the users query about the content and snippets from the webpage if needed ask for confirmation from the user if they want to pull from the webpage before doing so and give them the option to use internal knowledge instead",
                     "parameters": {
                         "type": "object",
                         "properties": {
                             "url": {
                                 "type": "string",
-                                "description": "the url for the webpage"
+                                "description": "the url for the webpage",
                             }
                         },
-                        "required": ["url"]
-                    }
-                }
+                        "required": ["url"],
+                    },
+                },
             }
         ]
         tool_run = False
@@ -590,13 +589,13 @@ class ChatGPT(PluginLoader):
         # check if thread exists in redis
         messages = []
         if self.redis.exists(thread_key) and not tool_run:
-            #await self.helper.log(f"thread exists: {thread_id} and not tool_run")
+            # await self.helper.log(f"thread exists: {thread_id} and not tool_run")
             messages = self.append_chatlog(thread_id, {"role": "user", "content": msg})
         elif self.redis.exists(thread_key) and tool_run:
-            #await self.helper.log(f"thread exists: {thread_id} and tool_run")
+            # await self.helper.log(f"thread exists: {thread_id} and tool_run")
             messages = self.get_chatlog(thread_id)
         else:
-            #await self.helper.log(f"thread does not exist: {thread_id} and tool_run {tool_run}")
+            # await self.helper.log(f"thread does not exist: {thread_id} and tool_run {tool_run}")
             # thread does not exist, fetch all posts in thread
             thread = self.driver.get_post_thread(thread_id)
             for thread_index in thread["order"]:
@@ -619,8 +618,8 @@ class ChatGPT(PluginLoader):
                 )
         # log if lbr
         if message.sender_name == "lbr":
-        #    await self.helper.log(f"messages from thread: {thread_id}")
-            #log all messages but limit each one to 1000 characters
+            #    await self.helper.log(f"messages from thread: {thread_id}")
+            # log all messages but limit each one to 1000 characters
             for mes in messages:
                 await self.helper.log(pformat(mes)[:1000])
         # add system message
@@ -689,13 +688,13 @@ class ChatGPT(PluginLoader):
             else:
                 reply_msg_id = message.reply_msg_id
             # send async request to openai
-            #if self.users.is_admin(message.sender_name) and message.sender_name == "lbr":
+            # if self.users.is_admin(message.sender_name) and message.sender_name == "lbr":
             #    await self.helper.log(pformat(self.get_chatlog(thread_id)))
 
             messages = self.return_last_x_messages(
                         messages, self.MAX_TOKENS_PER_MODEL[self.model]
                     )
-            #await self.helper.log(f"messages: {pformat(messages)}")
+            # await self.helper.log(f"messages: {pformat(messages)}")
             try:
                 response = await aclient.chat.completions.create(
                     model=self.model,
@@ -750,8 +749,8 @@ class ChatGPT(PluginLoader):
                         return
 
                     chunk_message = chunk.choices[0].delta
-                    #self.driver.reply_to(message, chunk_message.content)
-                    #if the message has content, add it to the full message
+                    # self.driver.reply_to(message, chunk_message.content)
+                    # if the message has content, add it to the full message
                     if chunk_message.content:
                         full_message += chunk_message.content
                         # await self.helper.debug((time.time() - last_update_time) * 1000)
@@ -787,17 +786,17 @@ class ChatGPT(PluginLoader):
                                 # append to chatlog so we don't get an error when calling chatgpt with the result content
                                 chunk_message.role = "assistant"
                                 functions_to_call[index]["tool_call_message"] = self.custom_serializer(chunk_message)
-                                #self.append_chatlog(
+                                # self.append_chatlog(
                                 #    thread_id, self.custom_serializer(chunk_message)
-                                #)
-                                #log
-                                #await self.helper.log(f"added to chatlog: {pformat(self.custom_serializer(chunk_message))}")
+                                # )
+                                # log
+                                # await self.helper.log(f"added to chatlog: {pformat(self.custom_serializer(chunk_message))}")
 
-                            #append the argument to the chunked_arguments dict
+                            # append the argument to the chunked_arguments dict
                             functions_to_call[index]['arguments'] += tool_call.function.arguments
-                            #log
-                            #await self.helper.log(f"tool_call: {function_name} {tool_call.function.arguments}")
-                            #await self.helper.log(pformat(functions_to_call))
+                            # log
+                            # await self.helper.log(f"tool_call: {function_name} {tool_call.function.arguments}")
+                            # await self.helper.log(pformat(functions_to_call))
                 # lets try to run the functions now that we are done streaming
                 exit_after_loop = False
                 status_msg = "running functions...\n"
@@ -827,14 +826,14 @@ class ChatGPT(PluginLoader):
                     # add the result to the full message
                     if (function_result != None):
                         # limit all the keys in the dict to 1000 characters
-                        #function_result = function_result[:6000]
+                        # function_result = function_result[:6000]
                         pass
                     else:
                         function_result = "Error: function returned None"
                     # log
                     # log length
-                    #await self.helper.log(f"function_result len: {len(full_message)}")
-                    #await self.helper.log(f"function_result: {full_message}")
+                    # await self.helper.log(f"function_result len: {len(full_message)}")
+                    # await self.helper.log(f"function_result: {full_message}")
                     # add tool call to chatlog
                     self.append_chatlog(thread_id, tool_function['tool_call_message'])
 
@@ -843,13 +842,13 @@ class ChatGPT(PluginLoader):
                        thread_id, { "tool_call_id": tool_call_id, "role": "tool", "name": function_name, "content": function_result }
                     )
                     # add a user message to the chatlog so it doesn't break when we call chatgpt with the result no idea why this is needed but it is
-                    #self.append_chatlog(
+                    # self.append_chatlog(
                     #    thread_id, {"role": "user", "content": ""}
-                    #)
+                    # )
                     # save the tool_call_id to the redis db so we can check next time and skip the tool call if it's already been run
                     self.redis.hset(call_key, tool_call_id, "true")
-                    # log 
-                    #await self.helper.log(f"added to chatlog: {pformat({ 'tool_call_id': tool_call_id, 'role': 'tool', 'name': function_name, 'content': function_result })}")
+                    # log
+                    # await self.helper.log(f"added to chatlog: {pformat({ 'tool_call_id': tool_call_id, 'role': 'tool', 'name': function_name, 'content': function_result })}")
                     if not tool_run:
                         message.tool_run=True
                         message.reply_msg_id = reply_msg_id
@@ -863,8 +862,8 @@ class ChatGPT(PluginLoader):
                     # we ran all the functions, now run the chatgpt again to get the response
                     await self.helper.log(f"exit_after_loop: {exit_after_loop} and not tool_run: {not tool_run}")
                     # log the messages
-                    #mm = self.get_chatlog(thread_id)
-                    #await self.helper.log(f"messages: {pformat(mm)[:1000]}")
+                    # mm = self.get_chatlog(thread_id)
+                    # await self.helper.log(f"messages: {pformat(mm)[:1000]}")
                     await self.chat(message)
                     return
 
@@ -878,7 +877,7 @@ class ChatGPT(PluginLoader):
                     self.append_chatlog(
                         thread_id, {"role": "assistant", "content": full_message}
                     )
-                    #if self.users.is_admin(message.sender_name) and message.sender_name == "lbr":
+                    # if self.users.is_admin(message.sender_name) and message.sender_name == "lbr":
                     #    await self.helper.log(f"appended: 'role': 'assistant', 'content': {full_message}]")
                     #    await self.helper.log(pformat(self.get_chatlog(thread_id)))
             except aiohttp_client_exceptions.ClientPayloadError as error:
@@ -901,7 +900,6 @@ class ChatGPT(PluginLoader):
             )
         else:
             await self.helper.log(f"User: {message.sender_name} used {self.model}")
-
 
     def serialize_choice_delta(self, choice_delta):
         # This function will create a JSON-serializable representation of ChoiceDelta and its nested objects.
@@ -993,7 +991,7 @@ class ChatGPT(PluginLoader):
 
     def append_chatlog(self, thread_id, msg):
         """append a message to a chatlog"""
-        #self.helper.slog(f"append_chatlog {thread_id} {msg}")
+        # self.helper.slog(f"append_chatlog {thread_id} {msg}")
         expiry = 60 * 60 * 24 * 7
         thread_key = REDIS_PREPEND + thread_id
         self.redis.rpush(thread_key, self.redis_serialize_json(msg))
@@ -1009,7 +1007,7 @@ class ChatGPT(PluginLoader):
     def redis_serialize_json(self,msg):
         """serialize a message to json, using a custom serializer for types not
         handled by the default json serialization"""
-        #return json.dumps(msg)
+        # return json.dumps(msg)
         return self.redis_serialize_jsonpickle(msg)
         return json.dumps(msg, default=self.redis_custom_serializer)
 
@@ -1019,7 +1017,7 @@ class ChatGPT(PluginLoader):
         if isinstance(msg, list):
             return [json.loads(m) for m in msg]
         return json.loads(msg)
-    
+
     def redis_serialize_jsonpickle(self,msg):
         """serialize a message to json, using a custom serializer for types not
         handled by the default json serialization"""

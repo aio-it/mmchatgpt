@@ -546,7 +546,7 @@ class ChatGPT(PluginLoader):
                 "type": "function",
                 "function": {
                     "name": "download_webpage",
-                    "description": "download a webpage to import as context and respond to the users query about the content and snippets from the webpage if needed ask for confirmation from the user if they want to pull from the webpage before doing so and give them the option to use internal knowledge instead",
+                    "description": "download a webpage to import as context and respond to the users query about the content and snippets from the webpage. Ask for confirmation from the user if they want to run the function before doing so and give them the option to use internal knowledge instead",
                     "parameters": {
                         "type": "object",
                         "properties": {

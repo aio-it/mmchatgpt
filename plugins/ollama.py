@@ -131,7 +131,7 @@ class Ollama(PluginLoader):
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 self.helper.add_reaction(message, "x")
-    
+
     @listen_to(r"^\.ollama model set ([\s\S]*)")
     async def ollama_model_set(self, message: Message, model: str):
         if self.users.is_admin(message.sender_name):
@@ -322,7 +322,6 @@ class Ollama(PluginLoader):
                                         # update last_update_time
                                         last_update_time = time.time()
 
-            
             except (aiohttp_client_exceptions.ClientConnectorError, aiohttp_client_exceptions.ClientOSError) as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 self.driver.reactions.delete_reaction(
@@ -346,7 +345,6 @@ class Ollama(PluginLoader):
         )
 
         await self.helper.log(f"User: {message.sender_name} used {self.model}")
-
 
     def append_chatlog(self, thread_id, msg):
         """append a message to a chatlog"""

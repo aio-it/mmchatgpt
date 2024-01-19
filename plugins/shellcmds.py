@@ -10,106 +10,58 @@ import subprocess
 import shlex
 import asyncio
 SHELL_COMMANDS = {
-            "ping": {
-                "validators": ["ipv4", "domain"],
-                "command": "ping",
-                "args": "-c 4 -W 1"
-            },
-            "ping6": {
-                "validators": ["ipv6", "domain"],
-                "command": "ping6",
-                "args": "-c 4 -W 1"
-            },
-            "dig": {
-                "validators": ["ip", "domain"],
-                "command": "dig",
-                "args": "+short"
-            },
-            "traceroute": {
-                "validators": ["ipv4", "domain"],
-                "command": "traceroute",
-                "args": "-w 1"
-            },
-            "traceroute6": {
-                "validators": ["ipv6", "domain"],
-                "command": "traceroute6",
-                "args": "-w 1"
-            },
-            "whois": {
-                "validators": ["ip", "domain","asn"],
-                "command": "whois",
-                "args": ""
-            },
-            "head": {
-                "validators": ["url","domain"],
-                "command": "curl",
-                "args": "-I -L",
-                "allowed_args": ["-I","-L","-k"]
-            },
-            "get": {
-                "validators": ["url","domain"],
-                "command": "curl",
-                "args": "-L",
-                "allowed_args": ["-k"]
-            },
-            "date": {
-                "validators": [],
-                "command": "date",
-                "args": ""
-            },
-            "uptime": {
-                "validators": [],
-                "command": "uptime",
-                "args": ""
-            },
-            "ptr": {
-                "validators": ["ip"],
-                "command": "dig",
-                "args": "+short -x"
-            },
-            "aaaa": {
-                "validators": ["domain"],
-                "command": "dig",
-                "args": "+short -t AAAA"
-            },
-            "cname": {
-                "validators": ["domain"],
-                "command": "dig",
-                "args": "+short -t CNAME"
-            },
-            "mx": {
-                "validators": ["domain"],
-                "command": "dig",
-                "args": "+short -t MX"
-            },
-            "ns": {
-                "validators": ["domain"],
-                "command": "dig",
-                "args": "+short -t NS"
-            },
-            "soa": {
-                "validators": ["domain"],
-                "command": "dig",
-                "args": "+short -t SOA"
-            },
-            "txt": {
-                "validators": ["domain"],
-                "command": "dig",
-                "args": "+short -t TXT"
-            },
-            "nmap": {
-                "validators": ["ip", "domain"],
-                "command": "nmap",
-                "args": "-Pn",
-                "allowed_args": ["-Pn","-sC","-O","-T4","-p-"]
-            },
-            "tcpportcheck": {
-                "validators": ["ip", "domain", "port"],
-                "command": "nc",
-                "args": "-vz",
-                "allowed_args": ["-vz"]
-            },
-        }
+    "ping": {"validators": ["ipv4", "domain"], "command": "ping", "args": "-c 4 -W 1"},
+    "ping6": {
+        "validators": ["ipv6", "domain"],
+        "command": "ping6",
+        "args": "-c 4 -W 1",
+    },
+    "dig": {"validators": ["ip", "domain"], "command": "dig", "args": "+short"},
+    "traceroute": {
+        "validators": ["ipv4", "domain"],
+        "command": "traceroute",
+        "args": "-w 1",
+    },
+    "traceroute6": {
+        "validators": ["ipv6", "domain"],
+        "command": "traceroute6",
+        "args": "-w 1",
+    },
+    "whois": {"validators": ["ip", "domain", "asn"], "command": "whois", "args": ""},
+    "head": {
+        "validators": ["url", "domain"],
+        "command": "curl",
+        "args": "-I -L",
+        "allowed_args": ["-I", "-L", "-k"],
+    },
+    "get": {
+        "validators": ["url", "domain"],
+        "command": "curl",
+        "args": "-L",
+        "allowed_args": ["-k"],
+    },
+    "date": {"validators": [], "command": "date", "args": ""},
+    "uptime": {"validators": [], "command": "uptime", "args": ""},
+    "ptr": {"validators": ["ip"], "command": "dig", "args": "+short -x"},
+    "aaaa": {"validators": ["domain"], "command": "dig", "args": "+short -t AAAA"},
+    "cname": {"validators": ["domain"], "command": "dig", "args": "+short -t CNAME"},
+    "mx": {"validators": ["domain"], "command": "dig", "args": "+short -t MX"},
+    "ns": {"validators": ["domain"], "command": "dig", "args": "+short -t NS"},
+    "soa": {"validators": ["domain"], "command": "dig", "args": "+short -t SOA"},
+    "txt": {"validators": ["domain"], "command": "dig", "args": "+short -t TXT"},
+    "nmap": {
+        "validators": ["ip", "domain"],
+        "command": "nmap",
+        "args": "-Pn",
+        "allowed_args": ["-6", "-Pn", "-sC", "-O", "-T4", "-p-"],
+    },
+    "tcpportcheck": {
+        "validators": ["ip", "domain", "port"],
+        "command": "nc",
+        "args": "-vz",
+        "allowed_args": ["-vz"],
+    },
+}
 
 class ShellCmds(PluginLoader):
 
@@ -141,7 +93,7 @@ class ShellCmds(PluginLoader):
         for char in bad_chars:
             if char in input:
                 return { "error": f"bad char: {char}" }
-        
+
         for ctype in types:
             if ctype not in valid_types:
                 return { "error": f"invalid type: {ctype}" }
@@ -187,7 +139,7 @@ class ShellCmds(PluginLoader):
                         # if ipv6
                         if ip.version == 6:
                             if ip.sixtofour is not None:
-                                #verify the ipv4 address inside the ipv6 address is not private
+                                # verify the ipv4 address inside the ipv6 address is not private
                                 sixtofour = ipaddress.ip_address(ip.sixtofour)
                                 if sixtofour.is_private:
                                     return { "error": "private ip (nice try though)" }
@@ -232,13 +184,13 @@ class ShellCmds(PluginLoader):
                 if ipaddress.ip_address(input).is_private:
                     return { "error": "private ip" }
                 if ipaddress.ip_address(input).sixtofour is not None:
-                    #verify the ipv4 address inside the ipv6 address is not private
+                    # verify the ipv4 address inside the ipv6 address is not private
                     if ipaddress.ip_address(ipaddress.ip_address(input).sixtofour).is_private:
                         return { "error": "private ip (nice try though)" }
                 return True
         if "url" in types:
             if validators.url(input):
-                #get domain from url and validate it as a domain so we can check if it is a private ip
+                # get domain from url and validate it as a domain so we can check if it is a private ip
                 domain = urllib.parse.urlparse(input).netloc
                 if domain == input:
                     # no domain found in url
@@ -318,7 +270,7 @@ class ShellCmds(PluginLoader):
                 inputs = input.split(" ")
                 for word in inputs:
                     valid_input = self.validateinput(word,validators,allowed_args)
-                    #check if dict
+                    # check if dict
                     if type(valid_input) is dict:
                         if "error" in valid_input:
                             self.driver.reply_to(message, f"Error: {valid_input['error']}")

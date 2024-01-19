@@ -2,6 +2,8 @@ from mmpy_bot.function import listen_to
 from mmpy_bot.wrappers import Message
 from plugins.base import PluginLoader
 from environs import Env
+import datetime
+
 env = Env()
 
 class Pushups(PluginLoader):
@@ -22,7 +24,7 @@ class Pushups(PluginLoader):
     @listen_to("^\.pushups reset$")
     async def pushups_reset_self(self, message: Message):
         """pushups reset for self"""
-        if self.helper.is_user(message.sender_name):
+        if self.users.is_user(message.sender_name):
             # reset pushups for self
             for key in self.redis.scan_iter(f"pushupsdaily:{message.sender_name}:*"):
                 self.redis.delete(key)
@@ -47,7 +49,7 @@ class Pushups(PluginLoader):
     @listen_to(r"^\.pushups sub ([0-9]+)")  # pushups
     async def pushups_sub(self, message: Message, pushups_sub):
         """pushups substract"""
-        if self.helper.is_user(message.sender_name):
+        if self.users.is_user(message.sender_name):
             # check if we are substracting more than we have
             today = datetime.datetime.now().strftime("%Y-%m-%d")
             today_key = f"pushupsdaily:{message.sender_name}:{today}"

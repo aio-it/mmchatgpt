@@ -1,0 +1,21 @@
+version: '3'
+
+volumes:
+  redis-data:
+
+services:
+  bot:
+    build: .
+    environment:
+      REDIS_HOST: redis
+    links:
+      - redis
+    command: ['python', 'bot.py']
+
+  redis:
+    image: redis
+    volumes:
+      - redis-data:/data
+    command: ['redis-server', '--save', '60', '1', '--loglevel', 'warning']
+    expose:
+      - "6379"

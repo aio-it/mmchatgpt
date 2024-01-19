@@ -157,12 +157,12 @@ class Users(Plugin):
             # uid not found
             uid = None
             # throw exception if user is not found
-            raise Exception(f"User not found: {username}")
-        # cache the uid in redis for 1 hour
+            raise UserNotFound(f"User not found: {username}")
+        # cache the uid in redis for 10 hours
         if uid != None:
-            self.redis.set(f"uid:{username}", uid, ex=60 * 60)
+            self.redis.set(f"uid:{username}", uid, ex=10 * 60 * 60)
         return uid
-    
+
     @listen_to(r"\.uid ([a-zA-Z0-9_-]+)")
     async def uid(self, message: Message, username: str):
         """get user id from username"""

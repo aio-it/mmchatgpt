@@ -20,6 +20,7 @@ class Helper:
     def __init__(self, driver, rediss=None, log_channel=None):
         self.driver = driver
         self.redis = self.REDIS
+        self.redis_pool = self.REDIS.connection_pool
         self.log_channel = log_channel
         env_log_channel = env.str("MM_BOT_LOG_CHANNEL",None)
         if self.log_channel is None and env_log_channel is None:

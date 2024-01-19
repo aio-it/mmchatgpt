@@ -249,6 +249,7 @@ class ChatGPT(PluginLoader):
                     client=message.sender_name,
                     max_requests=1,
                     expire=5,
+                    redis_pool=self.redis_pool,
                 ):
                     self.helper.add_reaction(message, "frame_with_picture")
                     text = text.replace("\n", " ")
@@ -290,8 +291,8 @@ class ChatGPT(PluginLoader):
                 self.driver.reply_to(message, f"Error: {error.message}")
                 # self.driver.reply_to(message, f"Error: {pformat(error.message)}")
                 # self.driver.reply_to(message, f"Error: {pformat(error)}")
-            except:  # pylint: disable=bare-except
-                self.driver.reply_to(message, "Error: OpenAI API error")
+            # except:  # pylint: disable=bare-except
+            #    self.driver.reply_to(message, "Error: OpenAI API error")
 
     @listen_to(r"^\.gif ([\s\S]*)")
     async def gif(self, message: Message, text: str):
@@ -314,6 +315,7 @@ class ChatGPT(PluginLoader):
                     client=message.sender_name,
                     max_requests=1,
                     expire=5,
+                    redis_pool=self.redis_pool,
                 ):
                     self.helper.add_reaction(message, "frame_with_picture")
                     # get the gif from giphy api
@@ -359,6 +361,7 @@ class ChatGPT(PluginLoader):
                     client=message.sender_name,
                     max_requests=1,
                     expire=5,
+                    redis_pool=self.redis_pool,
                 ):
                     self.helper.add_reaction(message, "abacus")
                     # replace newlines with spaces

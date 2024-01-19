@@ -19,6 +19,7 @@ class TTS(PluginLoader):
                     client=message.sender_name,
                     max_requests=1,
                     expire=5,
+                    redis_pool=self.redis_pool,
                 ):
                     # get the audio from dr tts website https://www.dr.dk/tjenester/tts?text=<text> using the requests module urlencode the text
                     self.helper.add_reaction(message, "speaking_head_in_silhouette")
@@ -52,8 +53,8 @@ class TTS(PluginLoader):
         rate = engine.getProperty("rate")
         volume = engine.getProperty("volume")
         return voices, rate, volume
-    #Broken fix maybe?
-    #@listen_to(r"^\.tts ([\s\S]*)")
+    # Broken fix maybe?
+    # @listen_to(r"^\.tts ([\s\S]*)")
     async def tts(self, message: Message, text: str):
         if self.users.is_user(message.sender_name):
             try:
@@ -62,6 +63,7 @@ class TTS(PluginLoader):
                     client=message.sender_name,
                     max_requests=1,
                     expire=5,
+                    redis_pool=self.redis_pool,
                 ):
                     self.helper.add_reaction(message, "speaking_head_in_silhouette")
                     text = text.replace("\n", " ")

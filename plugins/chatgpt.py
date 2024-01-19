@@ -25,7 +25,7 @@ from mmpy_bot.wrappers import Message
 from redis_rate_limit import RateLimit, TooManyRequests
 from pprint import pformat
 
-MODEL = "gpt-3.5-turbo-0301"
+MODEL = "gpt-4-1106-preview"
 REDIS_PREPEND = "thread_"
 
 # Custom Exceptions
@@ -41,7 +41,7 @@ class ChatGPT(PluginLoader):
     """mmypy chatgpt plugin"""
     USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     # MODEL = "gpt-3.5-turbo-0301"
-    DEFAULT_MODEL = "gpt-4"
+    DEFAULT_MODEL = "gpt-4-1106-preview"
     ALLOWED_MODELS = [
         "gpt-3.5-turbo-0301",
         "gpt-3.5-turbo",

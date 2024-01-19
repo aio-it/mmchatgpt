@@ -80,7 +80,7 @@ class Pushups(PluginLoader):
     @listen_to(r"^\.pushups add ([-+]?[0-9]+)")  # pushups
     async def pushups_add(self, message: Message, pushups_add):
         """pushups"""
-        if self.helper.is_user(message.sender_name):
+        if self.users.is_user(message.sender_name):
             # check if pushups more than 1000
             pushups_add = int(pushups_add)
             if pushups_add > 1000:
@@ -120,7 +120,7 @@ class Pushups(PluginLoader):
     @listen_to(r"^\.pushups scores$")
     async def pushups_scores(self, message: Message):
         """pushups scores for all users"""
-        if self.helper.is_user(message.sender_name):
+        if self.users.is_user(message.sender_name):
             # get pushups in redis per user
             keys = self.redis.keys("pushupstotal:*")
             messagetxt = ""
@@ -133,7 +133,7 @@ class Pushups(PluginLoader):
     @listen_to(r"^\.pushups score$")
     async def pushups_score(self, message: Message):
         """pushups score"""
-        if self.helper.is_user(message.sender_name):
+        if self.users.is_user(message.sender_name):
             # get pushups for last 7 days and print them and a sum of those 7 days and a total
             messagetxt = ""
             today = datetime.datetime.now()

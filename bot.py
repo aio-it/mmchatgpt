@@ -28,13 +28,13 @@ bot = Bot(
     plugins=[
         Users(),
         ChatGPT(openai_api_key, giphy_api_key=giphy_api_key),
-        Docker(),
+        #        Docker(),
         Pushups(),
         TTS(),
         ShellCmds(),
         RedisTool(),
         Ollama(),
     ],
-    enable_logging=True
+    enable_logging=True,
 )
 bot.run()

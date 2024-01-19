@@ -33,7 +33,9 @@ class Ollama(PluginLoader):
             self.redis.set(self.REDIS_PREFIX + "model", self.DEFAULT_MODEL)
         self.model = self.redis.get(self.REDIS_PREFIX + "model")
         if self.redis.get(self.REDIS_PREFIX + "stream") is None:
-            self.redis.set(self.REDIS_PREFIX + "stream", self.DEFAULT_STREAM)
+            self.redis.set(
+                self.REDIS_PREFIX + "stream", 1 if self.DEFAULT_STREAM else 0
+            )
         self.stream = self.redis.get(self.REDIS_PREFIX + "stream")
         if self.redis.get(self.REDIS_PREFIX + "system_message") is None:
             self.redis.set(self.REDIS_PREFIX + "system_message", self.DEFAULT_SYSTEM_MESSAGE)
@@ -173,7 +175,7 @@ class Ollama(PluginLoader):
     @listen_to("^ollama")
     async def ollama_chat(self, message: Message):
         """listen to everything and respond when mentioned"""
-        #self.driver.reply_to(message, "Hej")
+        # self.driver.reply_to(message, "Hej")
         if not self.users.is_user(message.sender_name):
             return
         # if message.is_direct_message and not self.is_admin(message.sender_name):
@@ -215,8 +217,8 @@ class Ollama(PluginLoader):
                     # post is from user, set role to user
                     role = "user"
 
-                # self.redis.rpush(thread_key, self.helper.redis_serialize_json(
-                #    {"role": role, "content": thread_post['message']}))
+                    # self.redis.rpush(thread_key, self.helper.redis_serialize_json(
+                    #    {"role": role, "content": thread_post['message']}))
                     msg = {"role": role, "content": thread_post["message"]}
                 if cache_thread:
                     messages = self.append_chatlog(
@@ -280,7 +282,7 @@ class Ollama(PluginLoader):
                 timeout = aiohttp.ClientTimeout(total=60*60*24*7)
                 async with aiohttp.ClientSession(timeout=timeout) as session:
                     async with session.post(self.URL + self.CHAT_ENDPOINT, json=data) as response:
-                        #await self.helper.log(f"response: {response}")
+                        # await self.helper.log(f"response: {response}")
                         async for chunks in response.content.iter_any():
                             chunks = chunks.decode("utf-8")
                             # chunk contains one or more json objects, separated by newlines

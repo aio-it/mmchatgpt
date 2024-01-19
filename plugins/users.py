@@ -9,8 +9,22 @@ from plugins.helper import Helper
 env = Env()
 
 ADMINS = []  # put admins in here to prepopulate the redis db
+MM_BOT_ADMINS = env.list("MM_BOT_ADMINS", ADMINS)
+# merge admins
+ADMINS = ADMINS + MM_BOT_ADMINS
 USERS = []  # put users in here to prepopulate the redis db
+MM_BOT_USERS = env.list("MM_BOT_USERS", USERS)
+# merge users
+USERS = USERS + MM_BOT_USERS
 NEEDWHITELIST = False  # if true only users in the users can use the bot
+MM_BOT_USERS_NEEDWHITELIST = env.bool("MM_BOT_USERS_NEEDWHITELIST", NEEDWHITELIST)
+
+
+class UserNotFound(Exception):
+    """user not found exception"""
+
+    pass
+
 
 class Users(Plugin):
     """manage users"""
@@ -29,13 +43,38 @@ class Users(Plugin):
         self.plugin_manager = plugin_manager
         self.helper = Helper(self.driver)
         self.redis = self.helper.redis
-        if self.redis.scard("admins") <= 0 and len(ADMINS) > 0:
-            self.redis.sadd("admins", *ADMINS)
-        if self.redis.scard("users") <= 0 and len(USERS) > 0:
-            self.redis.sadd("users", *USERS)
-        if self.redis.scard("admins") > 0 and len(ADMINS) > 0:
-            self.redis.sadd("users", *ADMINS)
+        # add admins and users to redis
+        # walk through ADMINS
+        for admin in ADMINS:
+            # check if admin is already in redis
+            try:
+                uid = self.get_uid(admin)
+            except UserNotFound:
+                self.helper.slog(f"unable to add admin. User not found: {admin}")
+            if self.redis.sismember("admins", uid):
+                continue
+            if uid is not None:
+                self.redis.sadd("admins", uid)
+            else:
+                self.helper.slog(f"Admin not found: {admin}")
+        # walk through USERS
+        for user in USERS:
+            # check if user is already in redis
+            try:
+                uid = self.get_uid(user)
+            except UserNotFound:
+                self.helper.slog(f"unable to add user. User not found: {user}")
+            if self.redis.sismember("users", uid):
+                continue
+            if uid is not None:
+                self.redis.sadd("users", uid)
+            else:
+                self.helper.slog(f"User not found: {user}")
         self.helper.slog(f"Plugin initialized {self.__class__.__name__}")
+        # log admins
+        self.helper.slog(f"Admins: {self.redis.smembers('admins')}")
+        # log users
+        self.helper.slog(f"Users: {self.redis.smembers('users')}")
 
     def on_start(self):
         """on start"""

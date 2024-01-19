@@ -10,10 +10,9 @@ services:
       REDIS_HOST: redis
     links:
       - redis
+    command: ['python', 'bot.py']
     env_file:
       - .env
-    command: ['python', 'bot.py']
-
   redis:
     image: redis
     volumes:

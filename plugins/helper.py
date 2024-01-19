@@ -11,13 +11,12 @@ import os
 from environs import Env
 env = Env()
 import logging
-#logging.basicConfig(level=logging.DEBUG)
+# logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 class Helper:
+    REDIS_HOST = env.str("REDIS_HOST", "localhost")
     """helper functions"""
-    REDIS = redis.Redis(
-        host="localhost", port=6379, db=0, decode_responses=True
-    )
+    REDIS = redis.Redis(host=REDIS_HOST, port=6379, db=0, decode_responses=True)
     def __init__(self, driver, rediss=None, log_channel=None):
         self.driver = driver
         self.redis = self.REDIS

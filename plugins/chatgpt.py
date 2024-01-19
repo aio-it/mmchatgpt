@@ -60,15 +60,12 @@ class ChatGPT(PluginLoader):
     }
     ChatGPT_DEFAULTS = {
         "temperature": 1.0,
-        "system": """Du er en bot på Mattermost og
-                     dit formål er at være hjælpsom
-                     og du holder dig ikke tilbage""",
+        "system": """You're a helpful assistant.""",
         "top_p": 1.0,
         "moderation": "false",
-        "stream": "false",
+        "stream": "true",
         "stream_update_delay_ms": 200,
     }
-
     SETTINGS_KEY = "chatgpt_settings"
 
     def __init__(self, openai_api_key=None, log_channel=None, **kwargs):
@@ -617,7 +614,7 @@ class ChatGPT(PluginLoader):
                     thread_id, {"role": role, "content": thread_post["message"]}
                 )
         # log if lbr
-        if message.sender_name == "lbr":
+        if False or message.sender_name == "lbr":
             #    await self.helper.log(f"messages from thread: {thread_id}")
             # log all messages but limit each one to 1000 characters
             for mes in messages:

@@ -52,7 +52,7 @@ SHELL_COMMANDS = {
     "nmap": {
         "validators": ["ip", "domain"],
         "command": "nmap",
-        "args": "",
+        "args": "-T4",
         "allowed_args": [
             "-6",
             "-Pn",

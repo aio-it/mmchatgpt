@@ -63,7 +63,7 @@ SHELL_COMMANDS = {
             "-T4",
             "-p-",
             "--open",
-            "",
+            "-sV",
         ],
     },
     "tcpportcheck": {

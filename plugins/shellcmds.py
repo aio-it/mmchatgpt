@@ -52,8 +52,19 @@ SHELL_COMMANDS = {
     "nmap": {
         "validators": ["ip", "domain"],
         "command": "nmap",
-        "args": "-Pn",
-        "allowed_args": ["-6", "-Pn", "-sC", "-O", "-T4", "-p-"],
+        "args": "",
+        "allowed_args": [
+            "-6",
+            "-Pn",
+            "-sC",
+            "-PN",
+            "-sO",
+            "-O",
+            "-T4",
+            "-p-",
+            "--open",
+            "",
+        ],
     },
     "tcpportcheck": {
         "validators": ["ip", "domain", "port"],

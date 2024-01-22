@@ -64,6 +64,11 @@ SHELL_COMMANDS = {
             "-p-",
             "--open",
             "-sV",
+            "-n",
+            "-sS",
+            "-sU",
+            "-sT",
+            "-sA",
         ],
     },
     "tcpportcheck": {

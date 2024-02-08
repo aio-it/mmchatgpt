@@ -10,6 +10,8 @@ from plugins.tts import TTS
 from plugins.shellcmds import ShellCmds
 from plugins.redistool import RedisTool
 from plugins.ollama import Ollama
+from plugins.hibp import HIPB
+
 env = Env()
 log_channel = env.str("MM_BOT_LOG_CHANNEL")
 openai_api_key = env.str("OPENAI_API_KEY")
@@ -34,6 +36,7 @@ bot = Bot(
         ShellCmds(),
         RedisTool(),
         Ollama(),
+        HIPB(),
     ],
     enable_logging=True,
 )

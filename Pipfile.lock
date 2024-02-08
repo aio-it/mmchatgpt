@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "53554f9cd6b9b5680939729e42e54bb21811a9f0c9a54516355f2f3f4b4deea5"
+            "sha256": "ef867f039c03917b17d812077042931e76cfeee3748823831a086607615bf6bc"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -430,6 +430,13 @@
             ],
             "markers": "python_version >= '3.7'",
             "version": "==0.14.0"
+        },
+        "hibpwned": {
+            "hashes": [
+                "sha256:f1a9f10281cf001349b74000cf0f37096bb8709012255fa5427b1b24a729b867"
+            ],
+            "index": "pypi",
+            "version": "==1.3.7"
         },
         "httpcore": {
             "hashes": [

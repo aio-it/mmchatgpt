@@ -23,6 +23,7 @@ bs4 = "*"
 beautifulsoup4 = "*"
 pedantic = "*"
 jsonpickle = "*"
+hibpwned = "*"
 
 [dev-packages]
 autopep8 = "*"

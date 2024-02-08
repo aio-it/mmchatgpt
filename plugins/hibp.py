@@ -57,7 +57,7 @@ class HIPB(PluginLoader):
                 self.driver.reply_to(message, f"HIBP Results for {text}:\n{result}")
             else:
                 self.helper.slog(
-                    f"user {message.sender_name} used .hibp {text} and got no breaches"
+                    f"user {message.sender_name} used .hibp {text} and got no breaches: {result}"
                 )
                 # if there are no breaches
                 self.driver.reply_to(message, f"No breaches found for {text}")

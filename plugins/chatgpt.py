@@ -10,10 +10,8 @@ import openai
 from openai import AsyncOpenAI
 
 aclient = AsyncOpenAI(api_key=env.str("OPENAI_API_KEY"))
-import redis
 import aiohttp.client_exceptions as aiohttp_client_exceptions
 import tiktoken
-import shlex
 import base64
 from plugins.base import PluginLoader
 
@@ -49,6 +47,8 @@ class ChatGPT(PluginLoader):
         "gpt-4-32k",
         "gpt-4-1106-preview",
         "gpt-4-vision-preview",
+        "gpt-4-turbo-preview",
+        "gpt-4-0125-preview",
     ]
     MAX_TOKENS_PER_MODEL = {
         "gpt-3.5-turbo-0301": 3000,
@@ -57,6 +57,8 @@ class ChatGPT(PluginLoader):
         "gpt-4-32k": 7000,
         "gpt-4-1106-preview": 7000,
         "gpt-4-vision-preview": 7000,
+        "gpt-4-turbo-preview": 7000,
+        "gpt-4-0125-preview": 7000,
     }
     ChatGPT_DEFAULTS = {
         "temperature": 1.0,

@@ -40,8 +40,8 @@ class HIPB(PluginLoader):
             hibp = hibpwned.Pwned(text, "hibpwned", self.api_key)
             # search all breaches
             result = hibp.search_all_breaches()
-            # if there are breaches
-            if result:
+            # if there are breaches its a list
+            if isinstance(result, list):
                 # format result with title, Breachdate, domain, Description and dataclasses
                 result = "\n\n".join(
                     [
@@ -51,8 +51,14 @@ class HIPB(PluginLoader):
                 )
 
                 # send the breaches
+                self.helper.slog(
+                    f"user {message.sender_name} used .hibp {text} and got breaches"
+                )
                 self.driver.reply_to(message, f"HIBP Results for {text}:\n{result}")
             else:
+                self.helper.slog(
+                    f"user {message.sender_name} used .hibp {text} and got no breaches"
+                )
                 # if there are no breaches
                 self.driver.reply_to(message, f"No breaches found for {text}")
 

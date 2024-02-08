@@ -39,7 +39,7 @@ class ChatGPT(PluginLoader):
     """mmypy chatgpt plugin"""
     USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     # MODEL = "gpt-3.5-turbo-0301"
-    DEFAULT_MODEL = "gpt-4-1106-preview"
+    DEFAULT_MODEL = "gpt-4-turbo-preview"
     ALLOWED_MODELS = [
         "gpt-3.5-turbo-0301",
         "gpt-3.5-turbo",

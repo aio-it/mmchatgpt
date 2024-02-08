@@ -43,9 +43,9 @@ class HIPB(PluginLoader):
             # if there are breaches
             if result:
                 # format result with title, Breachdate, domain, Description and dataclasses
-                result = "\n".join(
+                result = "\n\n".join(
                     [
-                        f"{r['Title']}\nBreach Date: {r['BreachDate']}\nDomain: {r['Domain']}\nDescription: {r['Description']}\nData Classes: {', '.join(r['DataClasses'])}\n"
+                        f"**{r['Title']}**\nBreach Date: {r['BreachDate']}\nDomain: {r['Domain']}\nDescription: {r['Description']}\nData Classes: {', '.join(r['DataClasses'])}\n"
                         for r in result
                     ]
                 )

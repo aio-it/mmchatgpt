@@ -43,7 +43,7 @@ class HIPB(PluginLoader):
             # if there are breaches
             if result:
                 # send the breaches
-                self.driver.reply_to(message, result)
+                self.driver.reply_to(message, f"result: {result}")
             else:
                 # if there are no breaches
                 self.driver.reply_to(message, "No breaches found")

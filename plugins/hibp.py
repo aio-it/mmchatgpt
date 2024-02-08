@@ -42,6 +42,16 @@ class HIPB(PluginLoader):
             result = hibp.search_all_breaches()
             # if there are breaches its a list
             if isinstance(result, list):
+                # loop over result and convert any links to markdown
+                # <a href=".*" target="_blank" rel="noopener">.*</a>
+                for r in result:
+                    r["Description"] = (
+                        r["Description"]
+                        .replace("<a href=", "[")
+                        .replace(' target="_blank" rel="noopener">', "]")
+                        .replace("</a>", "")
+                    )
+
                 # format result with title, Breachdate, domain, Description and dataclasses
                 result = "\n\n".join(
                     [

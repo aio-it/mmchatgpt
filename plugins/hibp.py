@@ -54,7 +54,7 @@ class HIPB(PluginLoader):
                         r["Description"] = re.sub(regex, r"[\2](\1)", r["Description"])
 
                 # format result with title, Breachdate, domain, Description and dataclasses
-                result = "\n------\n\n------\n".join(
+                result = "\n------\n".join(
                     [
                         f"\n**[{r['Title']}]({r['Domain']}) {r['BreachDate']}**\nData Classes: {', '.join(r['DataClasses'])}\nDescription: {r['Description']}\n"
                         for r in result

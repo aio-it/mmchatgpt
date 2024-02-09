@@ -504,11 +504,13 @@ class ChatGPT(PluginLoader):
     async def web_search(self, searchterm):
         """search the web using duckduckgo"""
         from duckduckgo_search import AsyncDDGS
-
-        async with AsyncDDGS(headers=self.headers) as ddgs:
-            results = [r async for r in ddgs.text(searchterm, max_results=5)]
-            await self.helper.log(f"searchterm: {searchterm} results: {results}")
-            return results
+        try:
+            async with AsyncDDGS(headers=self.headers) as ddgs:
+                results = [r async for r in ddgs.text(searchterm, max_results=5)]
+                return results
+        except Exception as e:
+            await self.helper.log(f"Error: {e}")
+            return f"Error: {e}"
 
     async def download_webpage(self, url):
         """download a webpage and return the content"""

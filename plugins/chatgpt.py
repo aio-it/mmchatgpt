@@ -503,6 +503,7 @@ class ChatGPT(PluginLoader):
 
     async def web_search(self, searchterm):
         """search the web using duckduckgo"""
+        self.exit_after_loop = False
         from duckduckgo_search import AsyncDDGS
         try:
             async with AsyncDDGS(headers=self.headers) as ddgs:
@@ -514,6 +515,7 @@ class ChatGPT(PluginLoader):
 
     async def download_webpage(self, url):
         """download a webpage and return the content"""
+        self.exit_after_loop = False
         await self.helper.log(f"downloading webpage: {url}")
         # verify url is valid using validators
         if not validators.url(url):

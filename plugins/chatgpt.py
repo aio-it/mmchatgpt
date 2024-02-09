@@ -941,7 +941,7 @@ class ChatGPT(PluginLoader):
                             function_result = "Error: could not parse function_result"
                     # limit the length
                     if len(function_result) > 6000:
-                        function_result = function_result[:6000]
+                        function_result = function_result[:20000]
                     # add result to chatlog
                     self.append_chatlog(
                        thread_id, { "tool_call_id": tool_call_id, "role": "tool", "name": function_name, "content": function_result }

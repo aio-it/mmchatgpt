@@ -503,70 +503,12 @@ class ChatGPT(PluginLoader):
 
     async def web_search(self, searchterm):
         """search the web using duckduckgo"""
-        # url encode the searchterm
-        searchterm = self.helper.urlencode_text(searchterm)
+        from duckduckgo_search import AsyncDDGS
 
-        url = f"https://duckduckgo.com/?q={searchterm}&ia=web"
-        try:
-            response = requests.get(url, headers=self.headers)
-            await self.helper.log(f"searching the web: {url}")
-            await self.helper.debug(f"response: {response.text[:500]}")
-            if response.status_code == 200:
-                if "text/html" in response.headers.get("content-type"):
-                    # extract all text from the webpage
-                    import bs4
-
-                    soup = bs4.BeautifulSoup(response.text, "html.parser")
-                    # check if the soup could parse anything
-                    try:
-                        if soup.find():
-                            blacklisted_tags = [
-                                "script",
-                                "style",
-                                "head",
-                                "title",
-                                "noscript",
-                            ]
-                            # soup parsed something lets extract the text
-                            # remove all blacklisted tags
-                            for tag in blacklisted_tags:
-                                for match in soup.find_all(tag):
-                                    match.decompose()
-                            # get all links and links text from the webpage
-                            links = []
-                            for link in soup.find_all("a"):
-                                links.append(f"{link.get('href')} {link.text}")
-                            links = " | ".join(links)
-                            # check if title exists and set it to a variable
-                            title = soup.title.string if soup.title else ""
-                            # extract all text from the body
-                            text = soup.body.get_text(separator=" | ", strip=True)
-                            # trim all newlines to 2 spaces
-                            text = text.replace("\n", "  ")
-
-                            # remove all newlines and replace them with spaces
-                            # text = text.replace("\n", " ")
-                            # remove all double spaces
-                            return (
-                                f"all links on page {links} - {title} | {text}".strip()
-                            )
-                    except Exception as e:  # pylint: disable=bare-except
-                        await self.helper.log(
-                            f"Error: could not parse webpage (Exception) {e}"
-                        )
-                        return f"Error: could not parse webpage (Exception) {e}"
-                    else:
-                        return response.text
-            else:
-                await self.helper.log(
-                    f"Error: could not search the web (status code {response.status_code})"
-                )
-                return f"Error: could not search the web (status code {response.status_code})"
-        except requests.exceptions.RequestException as e:
-            await self.helper.log(
-                f"Error: could not search the web (RequestException) {e}"
-            )
-            return "Error: could not search the web (RequestException) " + str(e)
+        with AsyncDDGS(headers=self.headers) as ddgs:
+            results = [r async for r in ddgs.text(searchterm, max_results=5)]
+            await self.helper.log(f"searchterm: {searchterm} results: {results}")
+            return results
 
     async def download_webpage(self, url):
         """download a webpage and return the content"""

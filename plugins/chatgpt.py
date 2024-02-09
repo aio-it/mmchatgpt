@@ -1,5 +1,5 @@
 """ChatGPT plugin for mmpy_bot"""
-import asyncio
+
 import requests
 import time
 import json
@@ -8,6 +8,7 @@ env = Env()
 
 import openai
 from openai import AsyncOpenAI
+import validators
 
 aclient = AsyncOpenAI(api_key=env.str("OPENAI_API_KEY"))
 import aiohttp.client_exceptions as aiohttp_client_exceptions
@@ -502,6 +503,11 @@ class ChatGPT(PluginLoader):
     async def download_webpage(self, url):
         """download a webpage and return the content"""
         await self.helper.log(f"downloading webpage: {url}")
+        # verify url is valid using validators
+        if not validators.url(url):
+            self.helper.log(f"Error: invalid url {url}")
+            return f"Error: invalid url {url}"
+
         # follow redirects
         response = requests.get(url, headers=self.headers, timeout=10, allow_redirects=True)
         blacklisted_tags = ["script", "style", "head", "title", "noscript"]

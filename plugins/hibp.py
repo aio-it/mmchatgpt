@@ -25,7 +25,7 @@ class HIPB(PluginLoader):
         if not self.api_key:
             self.helper.slog("HIBP_API_KEY not found in .env")
             self.disabled = True
-
+    # TODO: add command to add a watch on a email address
     @listen_to(r"^\.hibp ([\s\S]*)")
     @listen_to(r"^\.haveibeenpwned ([\s\S]*)")
     async def hibp(self, message: Message, text: str):
@@ -54,9 +54,9 @@ class HIPB(PluginLoader):
                         r["Description"] = re.sub(regex, r"[\2](\1)", r["Description"])
 
                 # format result with title, Breachdate, domain, Description and dataclasses
-                result = "\n\n".join(
+                result = "------\n\n".join(
                     [
-                        f"\n**{r['Title']}**\nBreach Date: {r['BreachDate']}\nDomain: {r['Domain']}\nDescription: {r['Description']}\nData Classes: {', '.join(r['DataClasses'])}\n"
+                        f"\n**{r['Title']} ({r['BreachDate']} {r['Domain']}**\nData Classes: {', '.join(r['DataClasses'])}\nDescription: {r['Description']}\n"
                         for r in result
                     ]
                 )

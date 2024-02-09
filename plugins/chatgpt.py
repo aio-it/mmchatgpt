@@ -502,6 +502,7 @@ class ChatGPT(PluginLoader):
     async def download_webpage(self, url):
         """download a webpage and return the content"""
         await self.helper.log(f"downloading webpage: {url}")
+        # follow redirects
         response = requests.get(url, headers=self.headers, timeout=10, allow_redirects=True)
         blacklisted_tags = ["script", "style", "head", "title", "noscript"]
         # debug response
@@ -526,6 +527,11 @@ class ChatGPT(PluginLoader):
                             for tag in blacklisted_tags:
                                 for match in soup.find_all(tag):
                                     match.decompose()
+                            # get all links and links text from the webpage
+                            links = []
+                            for link in soup.find_all("a"):
+                                links.append(f"{link.get('href')} {link.text}")
+                            links = " | ".join(links)
                             # check if title exists and set it to a variable
                             title = soup.title.string if soup.title else ""
                             # extract all text from the body
@@ -536,7 +542,9 @@ class ChatGPT(PluginLoader):
                             # remove all newlines and replace them with spaces
                             # text = text.replace("\n", " ")
                             # remove all double spaces
-                            return f"{title} | {text}".strip()
+                            return (
+                                f"all links on page {links} - {title} | {text}".strip()
+                            )
                     except Exception as e:  # pylint: disable=bare-except
                         await self.helper.log(
                             f"Error: could not parse webpage (Exception) {e}"

@@ -5,6 +5,7 @@ from mmpy_bot.plugins.base import PluginManager
 from mmpy_bot.settings import Settings
 from plugins.base import PluginLoader
 import hibpwned
+import re
 
 # load env
 from environs import Env
@@ -46,13 +47,11 @@ class HIPB(PluginLoader):
                 # <a href="<url>" target="_blank" rel="noopener">title</a> to [title](url)
                 for r in result:
                     if r["Description"]:
-                        match = (
-                            r'<a href="(.+?)" target="_blank" rel="noopener">(.+?)</a>'
-                        )
-                        if match in r["Description"]:
-                            r["Description"] = r["Description"].replace(
-                                match, r"[\2](\1)"
-                            )
+                        # Compile the regular expression
+                        regex = re.compile(r'<a href="(.+?)".*?>(.+?)</a>')
+
+                        # Use re.sub() for substitution. Notice the use of '\\2' and '\\1' for referencing groups
+                        r["Description"] = re.sub(regex, r"[\2](\1)", r["Description"])
 
                 # format result with title, Breachdate, domain, Description and dataclasses
                 result = "\n\n".join(

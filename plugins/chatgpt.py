@@ -544,13 +544,14 @@ class ChatGPT(PluginLoader):
                         return f"Error: could not parse webpage (Exception) {e}"
 
                 elif "xml" in content_type or "json" in content_type:
-                    # xml
-                    return response.text[:4000]
+                    # xml or json
+                    return response.text
                 else:
                     # unknown content type
-                    return f"Error: unknown content type {content_type} for {url} (status code {response.status_code}) returned: {response.text}"[
-                        :4000
-                    ]
+                    await self.helper.log(
+                        f"Error: unknown content type {content_type} for {url} (status code {response.status_code}) returned: {response.text[:500]}"
+                    )
+                    return f"Error: unknown content type {content_type} for {url} (status code {response.status_code}) returned: {response.text}"
             else:
                 await self.helper.log(
                     f"Error: could not download webpage (status code {response.status_code})"

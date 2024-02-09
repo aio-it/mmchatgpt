@@ -510,6 +510,7 @@ class ChatGPT(PluginLoader):
             if response.status_code == 200:
                 # check what type of content we got
                 content_type = response.headers.get("content-type")
+                self.helper.log(f"content_type: {content_type}")
                 # html
                 if "text/html" in content_type:
                     # extract all text from the webpage
@@ -517,23 +518,29 @@ class ChatGPT(PluginLoader):
 
                     soup = bs4.BeautifulSoup(response.text, "html.parser")
                     # check if the soup could parse anything
-                    if soup.find():
-                        # soup parsed something lets extract the text
-                        # remove all blacklisted tags
-                        for tag in blacklisted_tags:
-                            for match in soup.find_all(tag):
-                                match.decompose()
-                        # check if title exists and set it to a variable
-                        title = soup.title.string if soup.title else ""
-                        # extract all text from the body
-                        text = soup.body.get_text(separator=" | ", strip=True)
-                        # trim all newlines to 2 spaces
-                        text = text.replace("\n", "  ")
+                    try:
+                        if soup.find():
+                            # soup parsed something lets extract the text
+                            # remove all blacklisted tags
+                            for tag in blacklisted_tags:
+                                for match in soup.find_all(tag):
+                                    match.decompose()
+                            # check if title exists and set it to a variable
+                            title = soup.title.string if soup.title else ""
+                            # extract all text from the body
+                            text = soup.body.get_text(separator=" | ", strip=True)
+                            # trim all newlines to 2 spaces
+                            text = text.replace("\n", "  ")
 
-                        # remove all newlines and replace them with spaces
-                        # text = text.replace("\n", " ")
-                        # remove all double spaces
-                        return f"{title} | {text}".strip()
+                            # remove all newlines and replace them with spaces
+                            # text = text.replace("\n", " ")
+                            # remove all double spaces
+                            return f"{title} | {text}".strip()
+                    except Exception as e:  # pylint: disable=bare-except
+                        await self.helper.log(
+                            f"Error: could not parse webpage (Exception) {e}"
+                        )
+                        return f"Error: could not parse webpage (Exception) {e}"
 
                 elif "application/xml" in content_type:
                     # xml

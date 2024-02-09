@@ -505,7 +505,7 @@ class ChatGPT(PluginLoader):
         """search the web using duckduckgo"""
         from duckduckgo_search import AsyncDDGS
 
-        with AsyncDDGS(headers=self.headers) as ddgs:
+        async with AsyncDDGS(headers=self.headers) as ddgs:
             results = [r async for r in ddgs.text(searchterm, max_results=5)]
             await self.helper.log(f"searchterm: {searchterm} results: {results}")
             return results

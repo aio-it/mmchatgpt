@@ -927,6 +927,17 @@ class ChatGPT(PluginLoader):
                     # add tool call to chatlog
                     self.append_chatlog(thread_id, tool_function['tool_call_message'])
 
+                    # if the function_result is not a string serialize it using the default serializer and turn it into a string
+                    if not isinstance(function_result, str) and function_result != None:
+                        try:
+                            function_result = json.dumps(function_result)
+                        except json.JSONDecodeError as e:
+                            # log
+                            await self.helper.log(
+                                f"Error: could not parse function_result: {function_result}: {e}"
+                            )
+                            function_result = "Error: could not parse function_result"
+
                     # add result to chatlog
                     self.append_chatlog(
                        thread_id, { "tool_call_id": tool_call_id, "role": "tool", "name": function_name, "content": function_result }

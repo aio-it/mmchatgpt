@@ -514,7 +514,7 @@ class ChatGPT(PluginLoader):
 
     async def download_webpage(self, url):
         """download a webpage and return the content"""
-        await self.helper.log(f"downloading webpage: {url}")
+        # await self.helper.log(f"downloading webpage: {url}")
         # verify url is valid using validators
         if not validators.url(url):
             self.helper.log(f"Error: invalid url {url}")
@@ -530,7 +530,7 @@ class ChatGPT(PluginLoader):
             if response.status_code == 200:
                 # check what type of content we got
                 content_type = response.headers.get("content-type")
-                await self.helper.log(f"content_type: {url} {content_type}")
+                # await self.helper.log(f"content_type: {url} {content_type}")
                 # html
                 if "text/html" in content_type:
                     # extract all text from the webpage

@@ -915,8 +915,13 @@ class ChatGPT(PluginLoader):
                     # TODO: parse the arguments to the function from the tools dict instead of this hardcoded bs but it's literally from the example from openai
                     if function_name == "download_webpage":
                         function_result = await function(arguments.get("url"))
+                    elif function_name == "web_search":
+                        function_result = await function(arguments.get("searchterm"))
                     else:
                         # we shouldn't get to here. panic and run (return)
+                        await self.helper.log(
+                            f"Error: function not found: {function_name}"
+                        )
                         return
                     # add the result to the full message
                     if (function_result != None):

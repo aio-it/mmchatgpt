@@ -24,6 +24,7 @@ beautifulsoup4 = "*"
 pedantic = "*"
 jsonpickle = "*"
 hibpwned = "*"
+duckduckgo-search = "*"
 
 [dev-packages]
 autopep8 = "*"

@@ -501,6 +501,7 @@ class ChatGPT(PluginLoader):
                     await self.helper.log(f"{message.sender_name} used .vision")
     async def download_webpage(self, url):
         """download a webpage and return the content"""
+        await self.helper.log(f"downloading webpage: {url}")
         response = requests.get(url, headers=self.headers, timeout=10, allow_redirects=True)
         blacklisted_tags = ["script", "style", "head", "title", "noscript"]
         # debug response
@@ -541,14 +542,25 @@ class ChatGPT(PluginLoader):
                     # json
                     return response.text
             else:
+                await self.helper.log(
+                    f"Error: could not download webpage (status code {response.status_code})"
+                )
                 return f"Error: could not download webpage (status code {response.status_code})"
         except requests.exceptions.Timeout:
+            await self.helper.log("Error: could not download webpage (Timeout)")
             return "Error: could not download webpage (Timeout)"
         except requests.exceptions.TooManyRedirects:
+            await self.helper.log(
+                "Error: could not download webpage (TooManyRedirects)"
+            )
             return "Error: could not download webpage (TooManyRedirects)"
         except requests.exceptions.RequestException as e:
+            await self.helper.log(
+                f"Error: could not download webpage (RequestException) {e}"
+            )
             return "Error: could not download webpage (RequestException) " + str(e)
         except Exception as e: # pylint: disable=bare-except
+            await self.helper.log(f"Error: could not download webpage (Exception) {e}")
             return "Error: could not download webpage (Exception) " + str(e)
     @listen_to(".+", needs_mention=True)
     async def chat(self, message: Message):

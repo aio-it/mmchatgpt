@@ -506,6 +506,7 @@ class ChatGPT(PluginLoader):
         blacklisted_tags = ["script", "style", "head", "title", "noscript"]
         # debug response
         # await self.helper.debug(f"response: {pformat(response.text[:500])}")
+        # mattermost limit is 4000 characters
         try:
             if response.status_code == 200:
                 # check what type of content we got
@@ -542,12 +543,14 @@ class ChatGPT(PluginLoader):
                         )
                         return f"Error: could not parse webpage (Exception) {e}"
 
-                elif "application/xml" in content_type:
+                elif "xml" in content_type or "json" in content_type:
                     # xml
-                    return response.text
-                elif "application/json" in content_type:
-                    # json
-                    return response.text
+                    return response.text[:4000]
+                else:
+                    # unknown content type
+                    return f"Error: unknown content type {content_type} for {url} (status code {response.status_code}) returned: {response.text}"[
+                        :4000
+                    ]
             else:
                 await self.helper.log(
                     f"Error: could not download webpage (status code {response.status_code})"

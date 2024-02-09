@@ -500,6 +500,26 @@ class ChatGPT(PluginLoader):
                     self.helper.remove_reaction(message, "thought_balloon")
 
                     await self.helper.log(f"{message.sender_name} used .vision")
+
+    async def web_search(self, searchterm):
+        """search the web using duckduckgo"""
+        searchterm = searchterm.replace(" ", "+")
+        url = f"https://duckduckgo.com/?q={searchterm}"
+        try:
+            response = requests.get(url, headers=self.headers)
+            if response.status_code == 200:
+                return response.text
+            else:
+                await self.helper.log(
+                    f"Error: could not search the web (status code {response.status_code})"
+                )
+                return f"Error: could not search the web (status code {response.status_code})"
+        except requests.exceptions.RequestException as e:
+            await self.helper.log(
+                f"Error: could not search the web (RequestException) {e}"
+            )
+            return "Error: could not search the web (RequestException) " + str(e)
+
     async def download_webpage(self, url):
         """download a webpage and return the content"""
         await self.helper.log(f"downloading webpage: {url}")
@@ -609,7 +629,24 @@ class ChatGPT(PluginLoader):
                         "required": ["url"],
                     },
                 },
-            }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "web_search",
+                    "description": "search the web using duckduckgo needs a search term",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "searchterm": {
+                                "type": "string",
+                                "description": "search term",
+                            }
+                        },
+                        "required": ["searchterm"],
+                    },
+                },
+            },
         ]
         tool_run = False
         if hasattr(message, 'tool_run') and message.tool_run == True:

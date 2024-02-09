@@ -56,7 +56,7 @@ class HIPB(PluginLoader):
                 # format result with title, Breachdate, domain, Description and dataclasses
                 result = "\n\n".join(
                     [
-                        f"\n**{r['Title']}**\n```\nBreach Date: {r['BreachDate']}\nDomain: {r['Domain']}\nDescription: {r['Description']}\nData Classes: {', '.join(r['DataClasses'])}\n```"
+                        f"\n**{r['Title']}**\nBreach Date: {r['BreachDate']}\nDomain: {r['Domain']}\nDescription: {r['Description']}\nData Classes: {', '.join(r['DataClasses'])}\n"
                         for r in result
                     ]
                 )

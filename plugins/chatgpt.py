@@ -510,7 +510,7 @@ class ChatGPT(PluginLoader):
             if response.status_code == 200:
                 # check what type of content we got
                 content_type = response.headers.get("content-type")
-                self.helper.log(f"content_type: {content_type}")
+                await self.helper.log(f"content_type: {url} {content_type}")
                 # html
                 if "text/html" in content_type:
                     # extract all text from the webpage

@@ -66,7 +66,7 @@ class HIPB(PluginLoader):
                     f"user {message.sender_name} used .hibp and got breaches"
                 )
                 self.driver.reply_to(message, f"HIBP Results for {text}:\n{result}")
-            elif result == "429":
+            elif result == 429:
                 self.helper.slog(
                     f"user {message.sender_name} used .hibp and got rate limited"
                 )

@@ -503,12 +503,19 @@ class ChatGPT(PluginLoader):
 
     async def web_search(self, searchterm):
         """search the web using duckduckgo"""
-        searchterm = searchterm.replace(" ", "+")
-        url = f"https://duckduckgo.com/?q={searchterm}"
+        # url encode the searchterm
+        searchterm = self.helper.urlencode_text(searchterm)
+        url = f"https://duckduckgo.com/?q={searchterm}&ia=web"
         try:
             response = requests.get(url, headers=self.headers)
             if response.status_code == 200:
-                return response.text
+                if response.text != "":
+                    return response.text
+                else:
+                    await self.helper.log(
+                        f"Error: empty result, could not search the web (status code {response.status_code})"
+                    )
+                    return f"Error: empty result, could not search the web (status code {response.status_code})"
             else:
                 await self.helper.log(
                     f"Error: could not search the web (status code {response.status_code})"

@@ -505,9 +505,12 @@ class ChatGPT(PluginLoader):
         """search the web using duckduckgo"""
         # url encode the searchterm
         searchterm = self.helper.urlencode_text(searchterm)
+
         url = f"https://duckduckgo.com/?q={searchterm}&ia=web"
         try:
             response = requests.get(url, headers=self.headers)
+            await self.helper.log(f"searching the web: {url}")
+            await self.helper.debug(f"response: {response.text[:500]}")
             if response.status_code == 200:
                 if response.text != "":
                     return response.text

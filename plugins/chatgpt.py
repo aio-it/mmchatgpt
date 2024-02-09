@@ -852,7 +852,14 @@ class ChatGPT(PluginLoader):
                     tool_call_id = tool_function["tool_call_id"]
                     function = getattr(self, function_name)
                     # get the arguments
-                    arguments = json.loads(tool_function['arguments'])
+                    try:
+                        arguments = json.loads(tool_function["arguments"])
+                    except json.JSONDecodeError as e:
+                        # log
+                        await self.helper.log(
+                            f"Error: could not parse arguments: {tool_function['arguments']}"
+                        )
+                        arguments = {}
                     # run the function
                     # TODO: parse the arguments to the function from the tools dict instead of this hardcoded bs but it's literally from the example from openai
                     if function_name == "download_webpage":

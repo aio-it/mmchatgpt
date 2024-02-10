@@ -722,7 +722,6 @@ class ChatGPT(PluginLoader):
         thread_id = message.reply_id
         messages = []
         messages = self.get_thread_messages(thread_id)
-        await self.helper.debug(f"messages: {pformat(messages)}")
         if not tool_run and len(messages) != 1:
             # we don't need to append if length = 1 because then it is already fetched via the mattermost api so we don't need to append it to the thread
             # append message to threads

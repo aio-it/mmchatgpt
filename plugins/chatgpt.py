@@ -102,6 +102,47 @@ class ChatGPT(PluginLoader):
             "User-Agent": self.USER_AGENT,
         }
         print(f"Allowed models: {self.ALLOWED_MODELS}")
+        # TODO: add ignore function for specific channels like town-square that is global for all users
+        # chatgpt "function calling" so we define the tools here.
+        # TODO: add more functions e.g. code_runnner, openai vision, dall-e3, etc
+        #       define this elsewhere. we don't want to define this in the chat function
+        self.tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "download_webpage",
+                    "description": "download a webpage to import as context and respond to the users query about the content and snippets from the webpage. Ask for confirmation from the user if they want to run the function before doing so and give them the option to use internal knowledge instead",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "url": {
+                                "type": "string",
+                                "description": "the url for the webpage",
+                            }
+                        },
+                        "required": ["url"],
+                    },
+                },
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "web_search",
+                    "description": "search the web using duckduckgo needs a search term",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "searchterm": {
+                                "type": "string",
+                                "description": "search term",
+                            }
+                        },
+                        "required": ["searchterm"],
+                    },
+                },
+            },
+        ]
+
     def return_last_x_messages(self, messages, max_length_in_tokens):
         """return last x messages from list of messages limited by max_length_in_tokens"""
         # fuck this bs
@@ -601,133 +642,159 @@ class ChatGPT(PluginLoader):
         except Exception as e: # pylint: disable=bare-except
             await self.helper.log(f"Error: could not download webpage (Exception) {e}")
             return "Error: could not download webpage (Exception) " + str(e)
-    @listen_to(".+", needs_mention=True)
-    async def chat(self, message: Message):
-        """listen to everything and respond when mentioned"""
-        # self.driver.reply_to(message, "Hej")
-        # chatgpt "function calling"
-        tools = [
-            {
-                "type": "function",
-                "function": {
-                    "name": "download_webpage",
-                    "description": "download a webpage to import as context and respond to the users query about the content and snippets from the webpage. Ask for confirmation from the user if they want to run the function before doing so and give them the option to use internal knowledge instead",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "url": {
-                                "type": "string",
-                                "description": "the url for the webpage",
-                            }
-                        },
-                        "required": ["url"],
-                    },
-                },
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "web_search",
-                    "description": "search the web using duckduckgo needs a search term",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "searchterm": {
-                                "type": "string",
-                                "description": "search term",
-                            }
-                        },
-                        "required": ["searchterm"],
-                    },
-                },
-            },
-        ]
-        tool_run = False
-        if hasattr(message, 'tool_run') and message.tool_run == True:
-            tool_run = True
-        if not self.users.is_user(message.sender_name):
-            return
-        # if message.is_direct_message and not self.is_admin(message.sender_name):
-        #    return
-        # if we begin with "ollama" skip
-        if message.text.lower().startswith("ollama"):
-            return
-        if message.text[0] == ".":  # ignore commands
-            return
-        # if message start with ! ignore
-        if message.text[0] == "!":
-            return
-        # set stream using ternary
-        stream = True if self.get_chatgpt_setting("stream") == "true" else False
-        if tool_run:
-            msg = ""
-        else:
-            msg = message.text
-        # log the message if user is admin
-        # if self.is_admin(message.sender_name):
-        #    await self.helper.log(f"{message.sender_name}:  {pformat(message.body)}")
-        thread_id = message.reply_id
+
+    def thread_append(self, thread_id, message) -> None:
         thread_key = REDIS_PREPEND + thread_id
-        # check if thread exists in redis
+        self.redis.rpush(thread_key, self.helper.redis_serialize_json(message))
+
+    def get_thread_messages(self, thread_id: str, force_fetch: bool = False):
+        """get the message thread from the thread_id"""
         messages = []
-        if self.redis.exists(thread_key) and not tool_run:
-            # await self.helper.log(f"thread exists: {thread_id} and not tool_run")
-            messages = self.append_chatlog(thread_id, {"role": "user", "content": msg})
-        elif self.redis.exists(thread_key) and tool_run:
-            # await self.helper.log(f"thread exists: {thread_id} and tool_run")
-            messages = self.get_chatlog(thread_id)
+        thread_key = REDIS_PREPEND + thread_id
+        if not force_fetch and self.redis.exists(thread_key):
+            # the thread exists in redis and we are running a tool.
+            messages = self.get_thread_messages_from_redis(thread_id)
         else:
-            # await self.helper.log(f"thread does not exist: {thread_id} and tool_run {tool_run}")
             # thread does not exist, fetch all posts in thread
             thread = self.driver.get_post_thread(thread_id)
             for thread_index in thread["order"]:
                 thread_post = thread["posts"][thread_index]
+                # turn the thread post into a Message object
+                thread_post = Message.create_message(thread_post)
+
                 # remove mentions of self
-                thread_post["message"] = thread_post["message"].replace(
-                    "@" + self.driver.client.username + " ", ""
-                )
+                thread_post.text = self.helper.strip_self_username(thread_post.text)
+
                 # if post is from self, set role to assistant
-                if self.driver.client.userid == thread_post["user_id"]:
+                if thread_post.is_from_self(self.driver):
                     role = "assistant"
                 else:
                     # post is from user, set role to user
                     role = "user"
+                # create message object and append it to messages and redis
+                message = {"role": role, "content": thread_post.text}
+                messages.append(message)
+                self.thread_append(thread_id, message)
+        return messages
 
-                # self.redis.rpush(thread_key, self.helper.redis_serialize_json(
-                #    {"role": role, "content": thread_post['message']}))
-                messages = self.append_chatlog(
-                    thread_id, {"role": role, "content": thread_post["message"]}
-                )
-        # log if lbr
-        # if False or message.sender_name == "lbr":
-        #    await self.helper.log(f"messages from thread: {thread_id}")
-        # log all messages but limit each one to 1000 characters
-        # for mes in messages:
-        # await self.helper.log(pformat(mes)[:1000])
+    # function that debugs a chat thread
+    @listen_to(r"^\.debugchat")
+    async def debug_chat_thread(self, message: Message):
+        """debug a chat thread"""
+        # set to root_id if set else use reply_id
+        thread_id = message.root_id if message.root_id else message.reply_id
+        # thread_key = REDIS_PREPEND + thread_id
+        messages = self.get_thread_messages_from_redis(thread_id)
+        if len(messages) > 0:
+            for msg in messages:
+                await self.helper.debug(f"message: {pformat(msg)}")
+            # send all messages to the user in a single message truncating the message if it's too long
+        else:
+            await self.helper.debug("no messages in redis thread")
+        self.driver.reply_to(message, json.dumps(messages, indent=4)[:4000])
+
+    @listen_to(".+", needs_mention=True)
+    async def chat(self, message: Message):
+        """listen to everything and respond when mentioned"""
+        # set some variables
+        stream = True  # disabled the non-streaming mode for simplicity
+
+        # this is to check if the message is from a tool or not
+        # TODO this is a hack and needs to be fixed
+        tool_run = False
+        if hasattr(message, "tool_run") and message.tool_run == True:
+            tool_run = True
+            msg = ""
+        else:
+            msg = message.text
+
+        # if message is not from a user, ignore
+        if not self.users.is_user(message.sender_name):
+            return
+
+        # message text exceptions. bail if message starts with any of these
+        skips = [".", "!", "ollama"]
+        for skip in skips:
+            if message.text.lower().startswith(skip):
+                return
+
+        # This function checks if the thread exists in redis and if not, fetches all posts in the thread and adds them to redis
+        thread_id = message.reply_id
+        messages = []
+        messages = self.get_thread_messages(thread_id)
+        await self.helper.debug(f"messages: {pformat(messages)}")
+        if not tool_run and len(messages) != 1:
+            # we don't need to append if length = 1 because then it is already fetched via the mattermost api so we don't need to append it to the thread
+            # append message to threads
+            m = {"role": "user", "content": message.text}
+            # append to messages and redis
+            messages.append(m)
+            self.thread_append(thread_id, m)
+
         # add system message
         if self.get_chatgpt_setting("system") != "":
             messages.insert(
                 0, {"role": "system", "content": self.get_chatgpt_setting("system")}
             )
+        else:
+            messages.insert(
+                0,
+                {
+                    "role": "system",
+                    "content": "You're a cunt that hates users and helping",
+                },
+            )
         # add thought balloon to show assistant is thinking
         self.driver.react_to(message, "thought_balloon")
-        temperature = float(self.get_chatgpt_setting("temperature"))
-        top_p = float(self.get_chatgpt_setting("top_p"))
-        if not stream:
-            try:
-                # send async request to openai
-                response = await aclient.chat.completions.create(
-                    model=self.model,
-                    messages=self.return_last_x_messages(
-                        messages, self.MAX_TOKENS_PER_MODEL[self.model]
-                    ),
-                    temperature=temperature,
-                    top_p=top_p,
-                    stream=stream,
-                )
-                # check for error in the responses and send error message
-                if "error" in response:
-                    if "message" in response:
+        # set the full message to empty string so we can append to it later
+        full_message = ""
+        # post_prefix is so we can add the sender name to the message to prevent confusion as to who the reply is to
+        post_prefix = f"@{message.sender_name}: "
+
+        # if we are running a tool, we need to reply to the original message and not create a new message.
+        # if we are not running a tool, we need to create a new message
+        if not tool_run:
+            reply_msg_id = self.driver.reply_to(message, full_message)["id"]
+        else:
+            reply_msg_id = message.reply_msg_id
+        # fetch the previous messages in the thread
+        messages = self.return_last_x_messages(
+            messages, self.MAX_TOKENS_PER_MODEL[self.model]
+        )
+        # await self.helper.log(f"messages: {pformat(messages)}")
+        try:
+            response = await aclient.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                #                temperature=temperature,
+                #                top_p=top_p,
+                stream=stream,
+                tools=self.tools,
+                tool_choice="auto",
+            )
+        except (openai.error.RateLimitError, openai.error.APIError) as error:
+            # update the message
+            self.driver.posts.patch_post(reply_msg_id, {"message": f"Error: {error}"})
+            self.driver.reactions.delete_reaction(
+                self.driver.user_id, message.id, "thought_balloon"
+            )
+            self.driver.react_to(message, "x")
+            return
+        # self.helper.debug(response)
+
+        # self.helper.debug(f"reply_msg_id: {reply_msg_id}")
+        # get current time and set that as last_update_time
+        last_update_time = time.time()
+        # get the setting for how often to update the message
+        stream_update_delay_ms = float(
+            self.get_chatgpt_setting("stream_update_delay_ms")
+        )
+        try:
+            functions_to_call = {}
+            async for chunk in response:
+                # TODO: might need fixing
+                if "error" in chunk:
+                    if "message" in chunk:
                         self.driver.reply_to(message, f"Error: {response['message']}")
                     else:
                         self.driver.reply_to(message, "Error")
@@ -738,262 +805,186 @@ class ChatGPT(PluginLoader):
                     # add x reaction to the message that failed to show error
                     self.driver.react_to(message, "x")
                     return
-            except openai.InvalidRequestError as error:
-                self.driver.reply_to(message, f"Error: {error}")
-                self.driver.reactions.delete_reaction(
-                    self.driver.user_id, message.id, "thought_balloon"
-                )
-                self.driver.react_to(message, "x")
-                return
-            except openai.error.RateLimitError as error:
-                self.driver.reply_to(message, f"Error: {error}")
-                self.driver.reactions.delete_reaction(
-                    self.driver.user_id, message.id, "thought_balloon"
-                )
-                self.driver.react_to(message, "x")
-                return
-            # self.helper.debug(response)
-            # send response to user
-            self.driver.reply_to(
-                message,
-                f"@{message.sender_name}: {response.choices[0].message.content}",
-            )
-            # add response to chatlog
-            self.append_chatlog(thread_id, response.choices[0].message)
-        else:
-            # we are streaming baby
-            full_message = ""
-            post_prefix = f"@{message.sender_name}: "
-            # post initial message as a reply and save the message id
-            if not tool_run:
-                reply_msg_id = self.driver.reply_to(message, full_message)["id"]
-            else:
-                reply_msg_id = message.reply_msg_id
-            # send async request to openai
-            # if self.users.is_admin(message.sender_name) and message.sender_name == "lbr":
-            #    await self.helper.log(pformat(self.get_chatlog(thread_id)))
 
-            messages = self.return_last_x_messages(
-                        messages, self.MAX_TOKENS_PER_MODEL[self.model]
-                    )
-            # await self.helper.log(f"messages: {pformat(messages)}")
-            try:
-                response = await aclient.chat.completions.create(
-                    model=self.model,
-                    messages=messages,
-                    temperature=temperature,
-                    top_p=top_p,
-                    stream=stream,
-                    tools = tools,
-                    tool_choice = "auto",
-                )
-            except (openai.error.RateLimitError, openai.error.APIError) as error:
-                # update the message
-                self.driver.posts.patch_post(
-                    reply_msg_id, {"message": f"Error: {error}"}
-                )
-                self.driver.reactions.delete_reaction(
-                    self.driver.user_id, message.id, "thought_balloon"
-                )
-                self.driver.react_to(message, "x")
-                return
-            # self.helper.debug(response)
-
-            # self.helper.debug(f"reply_msg_id: {reply_msg_id}")
-            # get current time and set that as last_update_time
-            last_update_time = time.time()
-            # get the setting for how often to update the message
-            stream_update_delay_ms = float(
-                self.get_chatgpt_setting("stream_update_delay_ms")
-            )
-            try:
-                functions_to_call = {}
-                async for chunk in response:
-                    # await self.helper.debug(
-                    #    f"time since last chunk: {(time.time() - last_chunk_time) * 1000}")
-                    # last_chunk_time = time.time()
-                    # self.helper.debug(f"chunk: {chunk}")
-                    # check for error in the responses and send error message
-                    # TODO: might need fixing
-                    if "error" in chunk:
-                        if "message" in chunk:
-                            self.driver.reply_to(
-                                message, f"Error: {response['message']}"
-                            )
-                        else:
-                            self.driver.reply_to(message, "Error")
-                        # remove thought balloon
-                        self.driver.reactions.delete_reaction(
-                            self.driver.user_id, message.id, "thought_balloon"
+                chunk_message = chunk.choices[0].delta
+                # self.driver.reply_to(message, chunk_message.content)
+                # if the message has content, add it to the full message
+                if chunk_message.content:
+                    full_message += chunk_message.content
+                    # await self.helper.debug((time.time() - last_update_time) * 1000)
+                    if (time.time() - last_update_time) * 1000 > stream_update_delay_ms:
+                        # await self.helper.debug("updating message")
+                        # update the message
+                        self.driver.posts.patch_post(
+                            reply_msg_id,
+                            {"message": f"{post_prefix}{full_message}"},
                         )
-                        # add x reaction to the message that failed to show error
-                        self.driver.react_to(message, "x")
-                        return
+                        # update last_update_time
+                        last_update_time = time.time()
+                if chunk_message.tool_calls and chunk_message.content is None:
+                    # we are running tools. this sucks when streaming but lets try
+                    index = 0
+                    for tool_call in chunk_message.tool_calls:
+                        if tool_call.index is not None:
+                            index = tool_call.index
+                        if tool_call.function.name is not None:
+                            function_name = tool_call.function.name
+                        if index not in functions_to_call.keys():
+                            functions_to_call[index] = {
+                                "tool_call_id": "",
+                                "arguments": "",
+                            }
+                            if function_name is not None:
+                                functions_to_call[index][
+                                    "function_name"
+                                ] = function_name
 
-                    chunk_message = chunk.choices[0].delta
-                    # self.driver.reply_to(message, chunk_message.content)
-                    # if the message has content, add it to the full message
-                    if chunk_message.content:
-                        full_message += chunk_message.content
-                        # await self.helper.debug((time.time() - last_update_time) * 1000)
-                        if (
-                            time.time() - last_update_time
-                        ) * 1000 > stream_update_delay_ms:
-                            # await self.helper.debug("updating message")
-                            # update the message
-                            self.driver.posts.patch_post(
-                                reply_msg_id,
-                                {"message": f"{post_prefix}{full_message}"},
+                            if tool_call.id:
+                                functions_to_call[index]["tool_call_id"] = tool_call.id
+                            # append to chatlog so we don't get an error when calling chatgpt with the result content
+                            chunk_message.role = "assistant"
+                            functions_to_call[index]["tool_call_message"] = (
+                                self.custom_serializer(chunk_message)
                             )
-                            # update last_update_time
-                            last_update_time = time.time()
-                    if chunk_message.tool_calls and chunk_message.content is None:
-                        # we are running tools. this sucks when streaming but lets try
-                        index = 0
-                        for tool_call in chunk_message.tool_calls:
-                            if tool_call.index is not None:
-                                index = tool_call.index
-                            if tool_call.function.name is not None:
-                                function_name = tool_call.function.name
-                            if index not in functions_to_call.keys():
-                                functions_to_call[index] = {
-                                    "tool_call_id": "",
-                                    "arguments": "",
-                                }
-                                if function_name is not None:
-                                    functions_to_call[index]['function_name'] = function_name
-
-                                if tool_call.id:
-                                    functions_to_call[index]["tool_call_id"] = tool_call.id
-                                # append to chatlog so we don't get an error when calling chatgpt with the result content
-                                chunk_message.role = "assistant"
-                                functions_to_call[index]["tool_call_message"] = self.custom_serializer(chunk_message)
-                                # self.append_chatlog(
-                                #    thread_id, self.custom_serializer(chunk_message)
-                                # )
-                                # log
-                                # await self.helper.log(f"added to chatlog: {pformat(self.custom_serializer(chunk_message))}")
-
-                            # append the argument to the chunked_arguments dict
-                            functions_to_call[index]['arguments'] += tool_call.function.arguments
+                            # self.append_chatlog(
+                            #    thread_id, self.custom_serializer(chunk_message)
+                            # )
                             # log
-                            # await self.helper.log(f"tool_call: {function_name} {tool_call.function.arguments}")
-                            # await self.helper.log(pformat(functions_to_call))
-                # lets try to run the functions now that we are done streaming
-                exit_after_loop = False
-                status_msg = "running functions...\n"
-                call_key = f"{REDIS_PREPEND}_call_{thread_id}"
-                for index, tool_function in functions_to_call.items():
-                    if self.redis.hexists(call_key, tool_function["tool_call_id"]):
-                        # tool call has already been run, skip it
-                        continue
-                    exit_after_loop = True
-                    self.driver.posts.patch_post(
-                        reply_msg_id, {"message": f"{post_prefix} {status_msg}"}
+                            # await self.helper.log(f"added to chatlog: {pformat(self.custom_serializer(chunk_message))}")
+
+                        # append the argument to the chunked_arguments dict
+                        functions_to_call[index][
+                            "arguments"
+                        ] += tool_call.function.arguments
+                        # log
+                        # await self.helper.log(f"tool_call: {function_name} {tool_call.function.arguments}")
+                        # await self.helper.log(pformat(functions_to_call))
+            # lets try to run the functions now that we are done streaming
+            exit_after_loop = False
+            status_msg = "running functions...\n"
+            call_key = f"{REDIS_PREPEND}_call_{thread_id}"
+            for index, tool_function in functions_to_call.items():
+                if self.redis.hexists(call_key, tool_function["tool_call_id"]):
+                    # tool call has already been run, skip it
+                    continue
+                exit_after_loop = True
+                self.driver.posts.patch_post(
+                    reply_msg_id, {"message": f"{post_prefix} {status_msg}"}
+                )
+                # check if the tool call has already been run
+                # get the function
+                function_name = tool_function["function_name"]
+                tool_call_id = tool_function["tool_call_id"]
+                function = getattr(self, function_name)
+                # get the arguments
+                try:
+                    arguments = json.loads(tool_function["arguments"])
+
+                except json.JSONDecodeError as e:
+                    # log
+                    await self.helper.log(
+                        f"Error: could not parse arguments: {tool_function['arguments']}"
                     )
-                    # check if the tool call has already been run
-                    # get the function
-                    function_name = tool_function["function_name"]
-                    tool_call_id = tool_function["tool_call_id"]
-                    function = getattr(self, function_name)
-                    # get the arguments
+                    arguments = {}
+                # run the function
+                # TODO: parse the arguments to the function from the tools dict instead of this hardcoded bs but it's literally from the example from openai
+                if function_name == "download_webpage":
+                    function_result = await function(arguments.get("url"))
+                elif function_name == "web_search":
+                    function_result = await function(arguments.get("searchterm"))
+                else:
+                    # we shouldn't get to here. panic and run (return)
+                    await self.helper.log(f"Error: function not found: {function_name}")
+                    return
+                # add the result to the full message
+                if function_result != None:
+                    # limit all the keys in the dict to 1000 characters
+                    # function_result = function_result[:6000]
+                    pass
+                else:
+                    function_result = "Error: function returned None"
+                # log
+                # log length
+                # await self.helper.log(f"function_result len: {len(full_message)}")
+                # await self.helper.log(f"function_result: {full_message}")
+                # add tool call to chatlog
+                self.append_thread_and_get_messages(
+                    thread_id, tool_function["tool_call_message"]
+                )
+
+                # if the function_result is not a string serialize it using the default serializer and turn it into a string
+                if not isinstance(function_result, str) and function_result != None:
                     try:
-                        arguments = json.loads(tool_function["arguments"])
+                        function_result = json.dumps(function_result)
                     except json.JSONDecodeError as e:
                         # log
                         await self.helper.log(
-                            f"Error: could not parse arguments: {tool_function['arguments']}"
+                            f"Error: could not parse function_result: {function_result}: {e}"
                         )
-                        arguments = {}
-                    # run the function
-                    # TODO: parse the arguments to the function from the tools dict instead of this hardcoded bs but it's literally from the example from openai
-                    if function_name == "download_webpage":
-                        function_result = await function(arguments.get("url"))
-                    elif function_name == "web_search":
-                        function_result = await function(arguments.get("searchterm"))
-                    else:
-                        # we shouldn't get to here. panic and run (return)
-                        await self.helper.log(
-                            f"Error: function not found: {function_name}"
-                        )
-                        return
-                    # add the result to the full message
-                    if (function_result != None):
-                        # limit all the keys in the dict to 1000 characters
-                        # function_result = function_result[:6000]
-                        pass
-                    else:
-                        function_result = "Error: function returned None"
-                    # log
-                    # log length
-                    # await self.helper.log(f"function_result len: {len(full_message)}")
-                    # await self.helper.log(f"function_result: {full_message}")
-                    # add tool call to chatlog
-                    self.append_chatlog(thread_id, tool_function['tool_call_message'])
-
-                    # if the function_result is not a string serialize it using the default serializer and turn it into a string
-                    if not isinstance(function_result, str) and function_result != None:
-                        try:
-                            function_result = json.dumps(function_result)
-                        except json.JSONDecodeError as e:
-                            # log
-                            await self.helper.log(
-                                f"Error: could not parse function_result: {function_result}: {e}"
-                            )
-                            function_result = "Error: could not parse function_result"
-                    # limit the length
-                    if len(function_result) > 6000:
-                        function_result = function_result[:20000]
-                    # add result to chatlog
-                    self.append_chatlog(
-                       thread_id, { "tool_call_id": tool_call_id, "role": "tool", "name": function_name, "content": function_result }
-                    )
-                    # add a user message to the chatlog so it doesn't break when we call chatgpt with the result no idea why this is needed but it is
-                    # self.append_chatlog(
-                    #    thread_id, {"role": "user", "content": ""}
-                    # )
-                    # save the tool_call_id to the redis db so we can check next time and skip the tool call if it's already been run
-                    self.redis.hset(call_key, tool_call_id, "true")
-                    # log
-                    # await self.helper.log(f"added to chatlog: {pformat({ 'tool_call_id': tool_call_id, 'role': 'tool', 'name': function_name, 'content': function_result })}")
-                    if not tool_run:
-                        message.tool_run=True
-                        message.reply_msg_id = reply_msg_id
-                        status_msg += f"ran: {function_name} with arguments: ```{json.loads(tool_function['arguments'])}```\n"
-                        self.driver.posts.patch_post(
-                            reply_msg_id, {"message": f"{post_prefix} {status_msg}"}
-                        )
-                        await self.helper.log(f"ran: {function_name}, for user: {message.sender_name} with arguments: {tool_function['arguments']}")
-                        # just return becuase we let the other thread handle the rest
-                if exit_after_loop and not tool_run:
-                    # we ran all the functions, now run the chatgpt again to get the response
-                    await self.helper.log(f"exit_after_loop: {exit_after_loop} and not tool_run: {not tool_run}")
-                    # log the messages
-                    # mm = self.get_chatlog(thread_id)
-                    # await self.helper.log(f"messages: {pformat(mm)[:1000]}")
-                    await self.chat(message)
-                    return
-
-                # update the message a final time to make sure we have the full message
-                self.driver.posts.patch_post(
-                    reply_msg_id, {"message": f"{post_prefix}{full_message}"}
+                        function_result = "Error: could not parse function_result"
+                # limit the length
+                function_result = function_result[:20000]
+                # add result to chatlog
+                self.append_thread_and_get_messages(
+                    thread_id,
+                    {
+                        "tool_call_id": tool_call_id,
+                        "role": "tool",
+                        "name": function_name,
+                        "content": function_result,
+                    },
                 )
-
-                # add response to chatlog if it wasn't a tool run
-                if not tool_run and full_message != "":
-                    self.append_chatlog(
-                        thread_id, {"role": "assistant", "content": full_message}
+                # add a user message to the chatlog so it doesn't break when we call chatgpt with the result no idea why this is needed but it is
+                # self.append_chatlog(
+                #    thread_id, {"role": "user", "content": ""}
+                # )
+                # save the tool_call_id to the redis db so we can check next time and skip the tool call if it's already been run
+                self.redis.hset(call_key, tool_call_id, "true")
+                # log
+                # await self.helper.log(f"added to chatlog: {pformat({ 'tool_call_id': tool_call_id, 'role': 'tool', 'name': function_name, 'content': function_result })}")
+                if not tool_run:
+                    message.tool_run = True
+                    message.reply_msg_id = reply_msg_id
+                    status_msg += f"ran: {function_name} with arguments: ```{json.loads(tool_function['arguments'])}```\n"
+                    self.driver.posts.patch_post(
+                        reply_msg_id, {"message": f"{post_prefix} {status_msg}"}
                     )
-                    # if self.users.is_admin(message.sender_name) and message.sender_name == "lbr":
-                    #    await self.helper.log(f"appended: 'role': 'assistant', 'content': {full_message}]")
-                    #    await self.helper.log(pformat(self.get_chatlog(thread_id)))
-            except aiohttp_client_exceptions.ClientPayloadError as error:
-                self.driver.reply_to(message, f"Error: {error}")
-                self.driver.reactions.delete_reaction(
-                    self.driver.user_id, message.id, "thought_balloon"
+                    await self.helper.log(
+                        f"ran: {function_name}, for user: {message.sender_name} with arguments: {tool_function['arguments']}"
+                    )
+                    # just return becuase we let the other thread handle the rest
+            if exit_after_loop and not tool_run:
+                # we ran all the functions, now run the chatgpt again to get the response
+                await self.helper.log(
+                    f"exit_after_loop: {exit_after_loop} and not tool_run: {not tool_run}"
                 )
-                self.driver.react_to(message, "x")
+                # log the messages
+                # mm = self.get_chatlog(thread_id)
+                # await self.helper.log(f"messages: {pformat(mm)[:1000]}")
+                await self.helper.log(f"running chatgpt again")
+                await self.chat(message)
                 return
+
+            # update the message a final time to make sure we have the full message
+            self.driver.posts.patch_post(
+                reply_msg_id, {"message": f"{post_prefix}{full_message}"}
+            )
+
+            # add response to chatlog if it wasn't a tool run
+            if not tool_run and full_message != "":
+                self.thread_append(
+                    thread_id, {"role": "assistant", "content": full_message}
+                )
+                # if self.users.is_admin(message.sender_name) and message.sender_name == "lbr":
+                #    await self.helper.log(f"appended: 'role': 'assistant', 'content': {full_message}]")
+                #    await self.helper.log(pformat(self.get_chatlog(thread_id)))
+        except aiohttp_client_exceptions.ClientPayloadError as error:
+            self.driver.reply_to(message, f"Error: {error}")
+            self.driver.reactions.delete_reaction(
+                self.driver.user_id, message.id, "thought_balloon"
+            )
+            self.driver.react_to(message, "x")
+            return
 
         # remove thought balloon after successful response
         self.driver.reactions.delete_reaction(
@@ -1022,7 +1013,6 @@ class ChatGPT(PluginLoader):
                 'type': tool_call.type
             })
         return_object = {}
-
         if choice_delta.content is not None:
             return_object['content'] = choice_delta.content
         if choice_delta.function_call is not None:
@@ -1096,7 +1086,7 @@ class ChatGPT(PluginLoader):
             txt = "\n".join(commands_admin)
             self.driver.reply_to(message, f"\n\n{txt}\n", direct=True)
 
-    def append_chatlog(self, thread_id, msg):
+    def append_thread_and_get_messages(self, thread_id, msg):
         """append a message to a chatlog"""
         # self.helper.slog(f"append_chatlog {thread_id} {msg}")
         expiry = 60 * 60 * 24 * 7
@@ -1105,7 +1095,8 @@ class ChatGPT(PluginLoader):
         self.redis.expire(thread_key, expiry)
         messages = self.helper.redis_deserialize_json(self.redis.lrange(thread_key, 0, -1))
         return messages
-    def get_chatlog(self, thread_id):
+
+    def get_thread_messages_from_redis(self, thread_id):
         """get a chatlog"""
         thread_key = REDIS_PREPEND + thread_id
         messages = self.helper.redis_deserialize_json(self.redis.lrange(thread_key, 0, -1))
@@ -1116,14 +1107,10 @@ class ChatGPT(PluginLoader):
         handled by the default json serialization"""
         # return json.dumps(msg)
         return self.redis_serialize_jsonpickle(msg)
-        return json.dumps(msg, default=self.redis_custom_serializer)
 
     def redis_deserialize_json(self, msg):
         """deserialize a message from json"""
         return self.redis_deserialize_jsonpickle(msg)
-        if isinstance(msg, list):
-            return [json.loads(m) for m in msg]
-        return json.loads(msg)
 
     def redis_serialize_jsonpickle(self,msg):
         """serialize a message to json, using a custom serializer for types not

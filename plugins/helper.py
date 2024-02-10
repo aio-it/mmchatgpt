@@ -79,15 +79,15 @@ class Helper:
         msg = f"[{callerclass}.{callerfunc}] {message}"
         log.info(f"LOG: {msg}")
         if self.log_to_channel:
-            self.driver.create_post(self.log_channel, msg)
+            self.driver.create_post(self.log_channel, msg[:4000])
     def slog(self,message: str):
         """sync log"""
         callerclass, callerfunc = self.get_caller_info()
         msg = f"[{callerclass}.{callerfunc}] {message}"
         log.info(f"LOG: {msg}")
         if self.log_to_channel:
-            self.driver.create_post(self.log_channel, msg)
-    
+            self.driver.create_post(self.log_channel, msg[:4000])
+
     async def debug(self, message: str, private: bool = False):
         """send debug message to log channel. if private is true send to all admins"""
         print(f"DEBUG: {message}")
@@ -136,3 +136,8 @@ class Helper:
             and filename.startswith("/tmp")
         ):
             os.remove(filename)
+
+    def strip_self_username(self, message: str) -> str:
+        """remove self mention from the message"""
+
+        return message.replace(f"@{self.driver.client.username}", "").strip()

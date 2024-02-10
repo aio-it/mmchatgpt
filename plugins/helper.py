@@ -11,8 +11,26 @@ import os
 from environs import Env
 env = Env()
 import logging
+
+
 # logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
+
+
+# Monkey patch message class to extend it.
+# this is so dirty, i love it.
+def message_from_thread_post(post) -> Message:
+    return Message({"data": {"post": post}})
+
+
+def is_from_self(self, driver) -> bool:
+    """check if the message is from the bot"""
+    return self.user_id == driver.user_id
+
+
+Message.create_message = staticmethod(message_from_thread_post)
+Message.is_from_self = is_from_self
+
 class Helper:
     REDIS_HOST = env.str("REDIS_HOST", "localhost")
     """helper functions"""

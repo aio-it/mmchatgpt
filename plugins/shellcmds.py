@@ -252,7 +252,9 @@ class ShellCmds(PluginLoader):
             input = ""
         else:
             command, input = command
-        if command == "help" or command not in SHELL_COMMANDS.keys():
+        if command not in SHELL_COMMANDS.keys():
+            return
+        if command == "help":
             # send a list of commands from SHELL_COMMANDS
             messagetxt = f"Allowed commands:\n"
             messagetxt += f"!help\n"

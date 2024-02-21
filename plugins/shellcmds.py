@@ -86,7 +86,8 @@ class ShellCmds(PluginLoader):
         if command in SHELL_COMMANDS:
             return SHELL_COMMANDS[command]
         else:
-            return { "error": f"invalid command. supported commands: {' '.join(list(SHELL_COMMANDS.keys()))}" }
+            return False
+            # return { "error": f"invalid command. supported commands: {' '.join(list(SHELL_COMMANDS.keys()))}" }
     def validateinput(self,input,types=["domain","ip"], allowed_args=[]):
         """function that takes a string and validates that it matches against one or more of the types given in the list"""
         bad_chars = [" ", "\n", "\t", "\r",";","#","!"]
@@ -268,6 +269,8 @@ class ShellCmds(PluginLoader):
         validators = []
         args = ""
         valid_commands = self.validatecommand(command)
+        if valid_commands == False:
+            return
         if "error" in valid_commands:
             self.driver.reply_to(message, f"Error: {valid_commands['error']}")
             await self.helper.log(f"Error: {valid_commands['error']}")

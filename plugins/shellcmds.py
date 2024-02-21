@@ -269,7 +269,7 @@ class ShellCmds(PluginLoader):
         validators = []
         args = ""
         valid_commands = self.validatecommand(command)
-        if valid_commands is False:
+        if not valid_commands:
             return
         if "error" in valid_commands:
             self.driver.reply_to(message, f"Error: {valid_commands['error']}")

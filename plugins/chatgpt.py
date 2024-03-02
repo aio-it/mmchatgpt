@@ -806,6 +806,7 @@ class ChatGPT(PluginLoader):
                     return
 
                 chunk_message = chunk.choices[0].delta
+                await self.helper.debug(chunk)
                 # self.driver.reply_to(message, chunk_message.content)
                 # if the message has content, add it to the full message
                 if chunk_message.content:
@@ -855,6 +856,16 @@ class ChatGPT(PluginLoader):
                         functions_to_call[index][
                             "arguments"
                         ] += tool_call.function.arguments
+                        # update the functions_to_call dict
+                        # functions_to_call[index]["tool_call_message"]["arguments"] = (
+                        #    json.dumps(functions_to_call[index]["arguments"])
+                        # )
+                        # await self.helper.debug(
+                        #    f"functions_to_call[index][tool_call_message][arguments]: {pformat(functions_to_call[index]['tool_call_message']['arguments'])}"
+                        # )
+                        # await self.helper.debug(
+                        #    f"functions_to_call[index][arguments]: {pformat(functions_to_call[index]['arguments'])}"
+                        # )
                         # log
                         # await self.helper.log(f"tool_call: {function_name} {tool_call.function.arguments}")
                         # await self.helper.log(pformat(functions_to_call))
@@ -948,19 +959,20 @@ class ChatGPT(PluginLoader):
                     self.driver.posts.patch_post(
                         reply_msg_id, {"message": f"{post_prefix} {status_msg}"}
                     )
-                    await self.helper.log(
+                    await self.helper.debug(
                         f"ran: {function_name}, for user: {message.sender_name} with arguments: {tool_function['arguments']}"
                     )
                     # just return becuase we let the other thread handle the rest
             if exit_after_loop and not tool_run:
                 # we ran all the functions, now run the chatgpt again to get the response
-                await self.helper.log(
+                await self.helper.debug(
                     f"exit_after_loop: {exit_after_loop} and not tool_run: {not tool_run}"
                 )
                 # log the messages
                 # mm = self.get_chatlog(thread_id)
                 # await self.helper.log(f"messages: {pformat(mm)[:1000]}")
-                await self.helper.log(f"running chatgpt again")
+                await self.helper.debug(f"running chatgpt again")
+                await self.helper.debug(message)
                 await self.chat(message)
                 return
 

@@ -73,13 +73,21 @@ class Helper:
         callerclass = stack[2][0].f_locals["self"].__class__.__name__
         callerfunc = stack[2][0].f_code.co_name
         return callerclass, callerfunc
-    async def log(self, message: str):
+
+    async def log(self, message: str, level="INFO"):
         """send message to log channel"""
         callerclass, callerfunc = self.get_caller_info()
         msg = f"[{callerclass}.{callerfunc}] {message}"
-        log.info(f"LOG: {msg}")
-        if self.log_to_channel:
+        level = level.upper()
+        if level == "INFO":
+            log.info(f"LOG: {msg}")
+        elif level == "DEBUG":
+            log.debug(f"LOG: {msg}")
+        if (
+            self.log_to_channel and level == "INFO"
+        ):  # only log to channel if level is info
             self.driver.create_post(self.log_channel, msg[:4000])
+
     def slog(self,message: str):
         """sync log"""
         callerclass, callerfunc = self.get_caller_info()
@@ -87,15 +95,11 @@ class Helper:
         log.info(f"LOG: {msg}")
         if self.log_to_channel:
             self.driver.create_post(self.log_channel, msg[:4000])
-
     async def debug(self, message: str, private: bool = False):
         """send debug message to log channel. if private is true send to all admins"""
-        print(f"DEBUG: {message}")
         log.debug(f"DEBUG: {message}")
         if self.log_to_channel and not private:
-            await self.log(f"DEBUG: {message}")
-        elif private:
-            await self.wall(f"DEBUG: {message}")
+            await self.log(f"DEBUG: {message}", level="DEBUG")
 
     def add_reaction(self, message: Message, reaction: str = "thought_balloon"):
         """set the thread to in progress by adding a reaction to the thread"""

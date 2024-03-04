@@ -42,7 +42,7 @@ bot = Bot(
         TTS(),
         ShellCmds(),
         RedisTool(),
-        Ollama(),
+        # Ollama(),
         HIPB(),
     ],
     enable_logging=True,

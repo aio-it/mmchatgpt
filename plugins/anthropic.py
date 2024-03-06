@@ -261,12 +261,12 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
     @listen_to(r"^@sonnet .*", regexp_flag=re_DOTALL)
     async def chat_sonnet(self, message: Message):
-        await self.helper.log(f"@sonnet from {message.sender_name}")
+        # await self.helper.log(f"@sonnet from {message.sender_name}")
         return await self.chat(message, "claude-3-sonnet-20240229")
 
     @listen_to(r"^@opus .*", regexp_flag=re_DOTALL)
     async def chat_opus(self, message: Message):
-        await self.helper.log(f"@opus from {message.sender_name}")
+        # await self.helper.log(f"@opus from {message.sender_name}")
         return await self.chat(message, "claude-3-opus-20240229")
 
     @listen_to(r"^@claude .*", re_DOTALL)
@@ -276,7 +276,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         if model is None:
             model = self.get_anthropic_setting("model") or self.DEFAULT_MODEL
         # if message is not from a user, ignore
-        await self.helper.log(f"chat from {message.sender_name} to {model}")
+        # await self.helper.log(f"chat from {message.sender_name} to {model}")
         if not self.users.is_user(message.sender_name):
             return
 
@@ -379,7 +379,7 @@ Exception {exception_type}: {pformat(anthropic_exception)}"
             )
             self.driver.react_to(message, "x")
             await self.helper.log(
-                f"User: {message.sender_name} used {self.model} but got an exception"
+                f"User: {message.sender_name} used {model} but got an exception"
             )
 
             # bail out of the function so we don't append to the chatlog and log the message
@@ -397,7 +397,7 @@ Exception {exception_type}: {pformat(anthropic_exception)}"
             self.driver.user_id, message.id, "thought_balloon"
         )
 
-        await self.helper.log(f"User: {message.sender_name} used {self.model}")
+        await self.helper.log(f"User: {message.sender_name} used {model}")
 
     def append_thread_and_get_messages(self, thread_id, msg):
         """append a message to a chatlog"""

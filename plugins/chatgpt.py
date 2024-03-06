@@ -788,6 +788,7 @@ class ChatGPT(PluginLoader):
         stream_update_delay_ms = float(
             self.get_chatgpt_setting("stream_update_delay_ms")
         )
+        i = 0
         try:
             functions_to_call = {}
             async for chunk in response:
@@ -811,6 +812,16 @@ class ChatGPT(PluginLoader):
                 # if the message has content, add it to the full message
                 if chunk_message.content:
                     full_message += chunk_message.content
+                    # if full message begins with ``` or any other mattermost markdown append a \
+                    # newline to the post_prefix so it renders correctly
+                    markdown = [">", "*", "_", "-", "+", "1", "~", "!", "`", "|"]
+                    if (
+                        i == 0
+                        and post_prefix[-1] != "\n"
+                        and full_message[0] in markdown
+                    ):
+                        post_prefix += "\n"
+                        i += 1
                     # await self.helper.debug((time.time() - last_update_time) * 1000)
                     if (time.time() - last_update_time) * 1000 > stream_update_delay_ms:
                         # await self.helper.debug("updating message")

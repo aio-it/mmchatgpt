@@ -329,6 +329,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         stream_update_delay_ms = float(
             self.get_anthropic_setting("stream_update_delay_ms")
         )
+        i = 0
         try:
             async with aclient.with_options(max_retries=5).messages.stream(
                 max_tokens=self.MAX_TOKENS_PER_MODEL[model],
@@ -343,6 +344,17 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
                     # if the message has content, add it to the full message
                     if text:
                         full_message += text
+                        # if full message begins with ``` or any other mattermost markdown append a \
+                        # newline to the post_prefix so it renders correctly
+                        markdown = [">", "*", "_", "-", "+", "1", "~", "!", "`", "|"]
+                        if (
+                            i == 0
+                            and post_prefix[-1] != "\n"
+                            and full_message[0] in markdown
+                        ):
+                            post_prefix += "\n"
+                            i += 1
+
                         # await self.helper.debug((time.time() - last_update_time) * 1000)
                         if (
                             time.time() - last_update_time
@@ -383,8 +395,10 @@ Exception {exception_type}: {pformat(anthropic_exception)}"
                 f"User: {message.sender_name} used {model} but got an exception"
             )
 
-            # bail out of the function so we don't append to the chatlog and log the message
+            # bail out of the function so we don't append to
+            # the chatlog
             return
+
         # update the message a final time to make sure we have the full message
         self.driver.posts.patch_post(
             reply_msg_id, {"message": f"{post_prefix}{full_message}"}

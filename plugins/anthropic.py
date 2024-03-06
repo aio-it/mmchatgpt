@@ -260,7 +260,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         self.driver.reply_to(message, json.dumps(messages, indent=4)[:4000])
 
     @listen_to(r"^@sonnet .*", regexp_flag=re_DOTALL)
-    async def chat_opus(self, message: Message):
+    async def chat_sonnet(self, message: Message):
         return await self.chat(message, "claude-3-sonnet-20240229")
 
     @listen_to(r"^@opus .*", regexp_flag=re_DOTALL)
@@ -272,7 +272,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         """listen to everything and respond when mentioned"""
         # no model is set, use default model
         if model is None:
-            model = self.model
+            model = self.get_anthropic_setting("model") or self.DEFAULT_MODEL
         # if message is not from a user, ignore
         if not self.users.is_user(message.sender_name):
             return
@@ -328,7 +328,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         )
         try:
             async with aclient.with_options(max_retries=5).messages.stream(
-                max_tokens=self.MAX_TOKENS_PER_MODEL[self.model],
+                max_tokens=self.MAX_TOKENS_PER_MODEL[model],
                 messages=messages,
                 system=self.get_anthropic_setting("system").replace("\n", " "),
                 model=model,

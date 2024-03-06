@@ -814,7 +814,21 @@ class ChatGPT(PluginLoader):
                     full_message += chunk_message.content
                     # if full message begins with ``` or any other mattermost markdown append a \
                     # newline to the post_prefix so it renders correctly
-                    markdown = [">", "*", "_", "-", "+", "1", "~", "!", "`", "|"]
+                    markdown = [
+                        ">",
+                        "*",
+                        "_",
+                        "-",
+                        "+",
+                        "1",
+                        "~",
+                        "!",
+                        "`",
+                        "|",
+                        "#",
+                        "@",
+                        "•",
+                    ]
                     if (
                         i == 0
                         and post_prefix[-1] != "\n"

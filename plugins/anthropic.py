@@ -346,7 +346,21 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
                         full_message += text
                         # if full message begins with ``` or any other mattermost markdown append a \
                         # newline to the post_prefix so it renders correctly
-                        markdown = [">", "*", "_", "-", "+", "1", "~", "!", "`", "|"]
+                        markdown = [
+                            ">",
+                            "*",
+                            "_",
+                            "-",
+                            "+",
+                            "1",
+                            "~",
+                            "!",
+                            "`",
+                            "|",
+                            "#",
+                            "@",
+                            "•",
+                        ]
                         if (
                             i == 0
                             and post_prefix[-1] != "\n"

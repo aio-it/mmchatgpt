@@ -335,6 +335,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
                 messages=messages,
                 system=self.get_anthropic_setting("system").replace("\n", " "),
                 model=model,
+                temperature=float(self.get_anthropic_setting("temperature")),
             ) as stream:
                 async for text in stream.text_stream:
                     # await self.helper.debug(text)

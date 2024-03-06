@@ -310,7 +310,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             self.get_anthropic_setting("stream_update_delay_ms")
         )
         try:
-            async with aclient.messages.stream(
+            async with aclient.with_options(max_retries=5).messages.stream(
                 max_tokens=self.MAX_TOKENS_PER_MODEL[self.model],
                 messages=messages,
                 system=self.get_anthropic_setting("system").replace("\n", " "),

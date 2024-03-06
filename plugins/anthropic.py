@@ -261,10 +261,12 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
     @listen_to(r"^@sonnet .*", regexp_flag=re_DOTALL)
     async def chat_sonnet(self, message: Message):
+        self.helper.debug(f"@sonnet from {message.sender_name}")
         return await self.chat(message, "claude-3-sonnet-20240229")
 
     @listen_to(r"^@opus .*", regexp_flag=re_DOTALL)
     async def chat_opus(self, message: Message):
+        self.helper.debug(f"@opus from {message.sender_name}")
         return await self.chat(message, "claude-3-opus-20240229")
 
     @listen_to(r"^@claude .*", re_DOTALL)
@@ -274,6 +276,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         if model is None:
             model = self.get_anthropic_setting("model") or self.DEFAULT_MODEL
         # if message is not from a user, ignore
+        self.helper.debug(f"chat from {message.sender_name} to {model}")
         if not self.users.is_user(message.sender_name):
             return
 

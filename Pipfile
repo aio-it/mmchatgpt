@@ -25,6 +25,7 @@ pedantic = "*"
 jsonpickle = "*"
 hibpwned = "*"
 duckduckgo-search = "*"
+anthropic = "*"
 
 [dev-packages]
 autopep8 = "*"

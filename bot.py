@@ -10,6 +10,7 @@ from plugins.tts import TTS
 from plugins.shellcmds import ShellCmds
 from plugins.redistool import RedisTool
 from plugins.ollama import Ollama
+from plugins.anthropic import Anthropic
 from plugins.hibp import HIPB
 import logging
 
@@ -38,6 +39,7 @@ bot = Bot(
         Users(),
         ChatGPT(openai_api_key, giphy_api_key=giphy_api_key),
         #        Docker(),
+        Anthropic(),
         Pushups(),
         TTS(),
         ShellCmds(),

@@ -69,8 +69,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
     def __init__(self):
         super().__init__()
-        self.name = "claude"  # Bot name
-        self.openai_api_key = env.str("ANTHROPIC_API_KEY")
+        self.names = ["@claude", "@opus", "@sonnet"]  # Bot name
         self.headers = {
             "User-Agent": self.USER_AGENT,
         }
@@ -142,7 +141,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             value = self.redis.hget(settings_key, key)
             self.driver.reply_to(message, f"Set {key} to {value}")
 
-    @listen_to(r"^\.ant get")
+    @listen_to(r"^\.ant get$")
     async def get_anthropic_all(self, message: Message):
         """get all the anthropic keys"""
         settings_key = self.SETTINGS_KEY
@@ -204,9 +203,10 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
                 # remove mentions of self
                 thread_post.text = self.helper.strip_self_username(thread_post.text)
-                # remove mentions of self from self.name
-                thread_post.text = thread_post.text.replace(f"@{self.name} ", "")
-                thread_post.text = thread_post.text.replace(f"@{self.name}", "")
+                # remove mentions of self from self.names
+                for name in self.names:
+                    thread_post.text = thread_post.text.replace(f"{name} ", "")
+                    thread_post.text = thread_post.text.replace(f"{name}", "")
 
                 # if post is from self, set role to assistant
                 if thread_post.is_from_self(self.driver):
@@ -259,9 +259,20 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             await self.helper.debug("no messages in redis thread")
         self.driver.reply_to(message, json.dumps(messages, indent=4)[:4000])
 
-    @listen_to(r"^@claude .*")
-    async def chat(self, message: Message):
+    @listen_to(r"^@sonnet .*", regexp_flag=re_DOTALL)
+    async def chat_opus(self, message: Message):
+        return await self.chat(message, "claude-3-sonnet-20240229")
+
+    @listen_to(r"^@opus .*", regexp_flag=re_DOTALL)
+    async def chat_opus(self, message: Message):
+        return await self.chat(message, "claude-3-opus-20240229")
+
+    @listen_to(r"^@claude .*", re_DOTALL)
+    async def chat(self, message: Message, model: str = None):
         """listen to everything and respond when mentioned"""
+        # no model is set, use default model
+        if model is None:
+            model = self.model
         # if message is not from a user, ignore
         if not self.users.is_user(message.sender_name):
             return
@@ -277,6 +288,12 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         messages = []
         messages = self.get_thread_messages(thread_id)
         if len(messages) != 1:
+            # remove mentions of self
+            message.text = self.helper.strip_self_username(message.text)
+            # remove mentions of self from self.names
+            for name in self.names:
+                message.text = message.text.replace(f"{name} ", "")
+                message.text = message.text.replace(f"{name}", "")
             # we don't need to append if length = 1 because then it is already
             # fetched via the mattermost api so we don't need to append it to the thread
             # append message to threads
@@ -314,7 +331,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
                 max_tokens=self.MAX_TOKENS_PER_MODEL[self.model],
                 messages=messages,
                 system=self.get_anthropic_setting("system").replace("\n", " "),
-                model=self.model,
+                model=model,
             ) as stream:
                 async for text in stream.text_stream:
                     # await self.helper.debug(text)

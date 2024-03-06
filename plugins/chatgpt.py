@@ -713,7 +713,7 @@ class ChatGPT(PluginLoader):
             return
 
         # message text exceptions. bail if message starts with any of these
-        skips = [".", "!", "ollama"]
+        skips = [".", "!", "ollama", "@claude"]
         for skip in skips:
             if message.text.lower().startswith(skip):
                 return

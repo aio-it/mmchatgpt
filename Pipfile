@@ -24,7 +24,7 @@ beautifulsoup4 = "*"
 pedantic = "*"
 jsonpickle = "*"
 hibpwned = "*"
-duckduckgo-search = "*"
+duckduckgo-search = "==4.4"
 anthropic = "*"
 
 [dev-packages]

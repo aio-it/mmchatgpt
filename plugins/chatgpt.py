@@ -712,14 +712,6 @@ class ChatGPT(PluginLoader):
         if model is None:
             model = self.model
         stream = True  # disabled the non-streaming mode for simplicity
-        if message.text.startswith("@gpt") and message.is_direct_message:
-            # we are dual triggered due to how mentioned works bail
-            self.driver.reply_to(
-                message,
-                "don't use @gpt in direct messages just send a message without mentioning @gpt",
-            )
-            await self.helper.log("bailing due to dual trigger")
-            return
         # this is to check if the message is from a tool or not
         # TODO this is a hack and needs to be fixed
         tool_run = False
@@ -1072,6 +1064,10 @@ class ChatGPT(PluginLoader):
     @listen_to(r".+", needs_mention=True)
     async def chat_gpt4_mention(self, message: Message):
         """listen to everything and respond when mentioned"""
+        # if direct and starting with names bail
+        for name in self.names:
+            if message.text.startswith(name):
+                return
         if "4" not in self.model:
             await self.chat(message, "gpt-4-turbo-preview")
         else:

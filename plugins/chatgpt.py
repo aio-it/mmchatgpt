@@ -42,7 +42,7 @@ class ChatGPT(PluginLoader):
     # MODEL = "gpt-3.5-turbo-0301"
     DEFAULT_MODEL = "gpt-4-turbo-preview"
     ALLOWED_MODELS = [
-        "gpt-3.5-turbo-0301",
+        "gpt-3.5-turbo-0125",
         "gpt-3.5-turbo",
         "gpt-4",
         "gpt-4-32k",
@@ -169,7 +169,7 @@ class ChatGPT(PluginLoader):
 
         return list(reversed(limited_messages))
 
-    @listen_to(r"^\.model set ([a-zA-Z0-9_-]+)")
+    @listen_to(r"^\.gpt model set ([a-zA-Z0-9_-]+)")
     async def model_set(self, message: Message, model: str):
         """set the model"""
         if self.users.is_admin(message.sender_name):
@@ -182,43 +182,11 @@ class ChatGPT(PluginLoader):
                     message, f"Model not allowed. Allowed models: {self.ALLOWED_MODELS}"
                 )
 
-    @listen_to(r"^\.model get")
+    @listen_to(r"^\.gpt model get")
     async def model_get(self, message: Message):
         """get the model"""
         if self.users.is_admin(message.sender_name):
             self.driver.reply_to(message, f"Model: {self.model}")
-
-    @listen_to(r"^\.s2t ([\s\S]*)")
-    async def string_to_tokens_bot(self, message, string):
-        """convert a string to tokens"""
-        tokens = self.string_to_tokens(string, model=self.model)
-        # string_from_tokens = self.tokens_to_string(tokens, model=self.model)
-        tokens_to_list_of_bytestrings = self.tokens_to_list_of_strings(tokens)
-        tokens_to_list_of_strings = [
-            bytestring.decode("utf-8") for bytestring in tokens_to_list_of_bytestrings
-        ]
-        text = [
-            f"string length: {len(string)}",
-            f"token count: {len(tokens)}",
-            f"token strings: {tokens_to_list_of_strings}",
-            f"tokens raw: {tokens}",
-        ]
-        self.driver.reply_to(message, "\n".join(text))
-
-    def tokens_to_list_of_strings(self, tokens):
-        """convert a list of tokens to a list of strings"""
-        encoding = tiktoken.encoding_for_model(self.model)
-        return [encoding.decode_single_token_bytes(token) for token in tokens]
-
-    def string_to_tokens(self, string, model):
-        """function that converts a string to tokens using tiktoken module from openai"""
-        enc = tiktoken.encoding_for_model(model)
-        return enc.encode(string)
-
-    def tokens_to_string(self, tokens, model):
-        """function that converts a string to tokens using tiktoken module from openai"""
-        dec = tiktoken.encoding_for_model(model)
-        return dec.decode(tokens)
 
     @listen_to(r"^\.(?:mk)?i[mn]g$")
     async def img_help(self, message: Message):
@@ -426,7 +394,7 @@ class ChatGPT(PluginLoader):
             except TooManyRequests:
                 self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
 
-    @listen_to(r"^\.set chatgpt ([a-zA-Z0-9_-]+) (.*)")
+    @listen_to(r"^\.gpt set ([a-zA-Z0-9_-]+) (.*)")
     async def set_chatgpt(self, message: Message, key: str, value: str):
         """set the chatgpt key"""
         settings_key = self.SETTINGS_KEY
@@ -435,7 +403,7 @@ class ChatGPT(PluginLoader):
             self.redis.hset(settings_key, key, value)
             self.driver.reply_to(message, f"Set {key} to {value}")
 
-    @listen_to(r"^\.reset chatgpt ([a-zA-Z0-9_-]+)")
+    @listen_to(r"^\.gpt reset ([a-zA-Z0-9_-]+)")
     async def reset_chatgpt(self, message: Message, key: str):
         """reset the chatgpt key"""
         settings_key = self.SETTINGS_KEY
@@ -446,7 +414,7 @@ class ChatGPT(PluginLoader):
             self.redis.hdel(settings_key, key)
             self.driver.reply_to(message, f"Reset {key} to {value}")
 
-    @listen_to(r"^\.get chatgpt ([a-zA-Z0-9_-])")
+    @listen_to(r"^\.gpt get ([a-zA-Z0-9_-])")
     async def get_chatgpt(self, message: Message, key: str):
         """get the chatgpt key"""
         settings_key = self.SETTINGS_KEY
@@ -455,7 +423,7 @@ class ChatGPT(PluginLoader):
             value = self.redis.hget(settings_key, key)
             self.driver.reply_to(message, f"Set {key} to {value}")
 
-    @listen_to(r"^\.get chatgpt")
+    @listen_to(r"^\.gpt get")
     async def get_chatgpt_all(self, message: Message):
         """get all the chatgpt keys"""
         settings_key = self.SETTINGS_KEY
@@ -554,13 +522,6 @@ class ChatGPT(PluginLoader):
         except Exception as e:
             await self.helper.log(f"Error: {e}")
             return f"Error: {e}"
-    #
-    @listen_to(r"^\.testvalidate ([a-z]+) (.+)")
-    async def testvalidate(self, message: Message, type: str, value: str):
-        """test the validate function"""
-        if self.users.is_admin(message.sender_name):
-            result = self.helper.validate_input(value, type)
-            self.driver.reply_to(message, f"result: {result}")
 
     async def download_webpage(self, url):
         """download a webpage and return the content"""
@@ -721,7 +682,7 @@ class ChatGPT(PluginLoader):
         return messages
 
     # function that debugs a chat thread
-    @listen_to(r"^\.debugchat")
+    @listen_to(r"^\.gpt debugchat")
     async def debug_chat_thread(self, message: Message):
         """debug a chat thread"""
         # set to root_id if set else use reply_id
@@ -745,13 +706,19 @@ class ChatGPT(PluginLoader):
     #        message, f"#NOTICE\nchanged trigger from @{self.driver.username} to @gpt"
     #    )
     #    await self.chat(message)
+    @listen_to(r"@gpt3[ \n]+.+", regexp_flag=re_DOTALL)
+    async def chat_gpt(self, message: Message):
+        """listen to everything and respond when mentioned"""
+        await self.chat(message, "gpt-3.5-turbo")
 
     @listen_to(".+", needs_mention=True)
     @listen_to(r"@gpt[ \n]+.+", regexp_flag=re_DOTALL)
     @listen_to(r"@gpt4[ \n]+.+", regexp_flag=re_DOTALL)
-    async def chat(self, message: Message):
+    async def chat(self, message: Message, model: str = None):
         """listen to everything and respond when mentioned"""
         # set some variables
+        if model is None:
+            model = self.model
         stream = True  # disabled the non-streaming mode for simplicity
         if message.text.startswith("@gpt") and message.is_direct_message:
             # we are dual triggered due to how mentioned works bail
@@ -815,12 +782,12 @@ class ChatGPT(PluginLoader):
             reply_msg_id = message.reply_msg_id
         # fetch the previous messages in the thread
         messages = self.return_last_x_messages(
-            messages, self.MAX_TOKENS_PER_MODEL[self.model]
+            messages, self.MAX_TOKENS_PER_MODEL[model]
         )
         # await self.helper.log(f"messages: {pformat(messages)}")
         try:
             response = await aclient.chat.completions.create(
-                model=self.model,
+                model=model,
                 messages=messages,
                 #                temperature=temperature,
                 #                top_p=top_p,

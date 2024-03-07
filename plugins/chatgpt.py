@@ -74,7 +74,7 @@ class ChatGPT(PluginLoader):
     def __init__(self, openai_api_key=None, log_channel=None, **kwargs):
         super().__init__()
         self.name = "ChatGPT"
-        self.names = ["chatgpt", "@gpt", "@gpt4", "@gpt3"]
+        self.names = ["chatgpt", "@gpt4", "@gpt3", "@gpt"]
         if openai_api_key is None:
             raise MissingApiKey("No OPENAI API key provided")
         self.openai_api_key = openai_api_key

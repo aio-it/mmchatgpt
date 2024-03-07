@@ -74,6 +74,7 @@ class ChatGPT(PluginLoader):
     def __init__(self, openai_api_key=None, log_channel=None, **kwargs):
         super().__init__()
         self.name = "ChatGPT"
+        self.names = ["chatgpt", "@gpt", "@gpt4", "@gpt3"]
         if openai_api_key is None:
             raise MissingApiKey("No OPENAI API key provided")
         self.openai_api_key = openai_api_key
@@ -702,6 +703,10 @@ class ChatGPT(PluginLoader):
 
                 # remove mentions of self
                 thread_post.text = self.helper.strip_self_username(thread_post.text)
+                # remove mentions of self from self.names
+                for name in self.names:
+                    thread_post.text = thread_post.text.replace(f"{name} ", "")
+                    thread_post.text = thread_post.text.replace(f"{name}", "")
 
                 # if post is from self, set role to assistant
                 if thread_post.is_from_self(self.driver):
@@ -748,7 +753,9 @@ class ChatGPT(PluginLoader):
         """listen to everything and respond when mentioned"""
         # set some variables
         stream = True  # disabled the non-streaming mode for simplicity
-
+        if message.text.startswith("@gpt") and message.is_direct_message:
+            # we are dual triggered due to how mentioned works bail
+            return
         # this is to check if the message is from a tool or not
         # TODO this is a hack and needs to be fixed
         tool_run = False

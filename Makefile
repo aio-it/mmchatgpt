@@ -26,4 +26,5 @@ requirements:
 logs:
 	docker compose logs -f
 test:
-	pipenv run python -m pytest -v
+	pipenv run coverage run -m pytest tests
+	pipenv run coverage report

@@ -8,7 +8,7 @@ env = Env()
 
 import openai
 from openai import AsyncOpenAI
-import validators
+from re import DOTALL as re_DOTALL
 
 aclient = AsyncOpenAI(api_key=env.str("OPENAI_API_KEY"))
 import aiohttp.client_exceptions as aiohttp_client_exceptions
@@ -732,6 +732,12 @@ class ChatGPT(PluginLoader):
         self.driver.reply_to(message, json.dumps(messages, indent=4)[:4000])
 
     @listen_to(".+", needs_mention=True)
+    async def chat_moved(self, message: Message):
+        """listen to everything and respond when mentioned"""
+        # reply to the message with the new callsign @gpt
+        self.driver.reply_to(message, f"mention moved to @gpt {message.text}")
+
+    @listen_to(r"@gpt[ \n]+.+", regexp_flag=re_DOTALL)
     async def chat(self, message: Message):
         """listen to everything and respond when mentioned"""
         # set some variables

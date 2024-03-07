@@ -706,14 +706,14 @@ class ChatGPT(PluginLoader):
     #        message, f"#NOTICE\nchanged trigger from @{self.driver.username} to @gpt"
     #    )
     #    await self.chat(message)
-    @listen_to(r"@gpt3[ \n]+.+", regexp_flag=re_DOTALL)
-    async def chat_gpt(self, message: Message):
+    @listen_to(r"^@gpt3[ \n]+.+", regexp_flag=re_DOTALL)
+    async def chat_gpt3(self, message: Message):
         """listen to everything and respond when mentioned"""
-        await self.chat(message, "gpt-3.5-turbo")
+        await self.chat(message, model="gpt-3.5-turbo")
 
-    @listen_to(".+", needs_mention=True)
-    @listen_to(r"@gpt[ \n]+.+", regexp_flag=re_DOTALL)
-    @listen_to(r"@gpt4[ \n]+.+", regexp_flag=re_DOTALL)
+    @listen_to(r".+", needs_mention=True)
+    @listen_to(r"^@gpt[ \n]+.+", regexp_flag=re_DOTALL)
+    @listen_to(r"^@gpt4[ \n]+.+", regexp_flag=re_DOTALL)
     async def chat(self, message: Message, model: str = None):
         """listen to everything and respond when mentioned"""
         # set some variables
@@ -722,6 +722,10 @@ class ChatGPT(PluginLoader):
         stream = True  # disabled the non-streaming mode for simplicity
         if message.text.startswith("@gpt") and message.is_direct_message:
             # we are dual triggered due to how mentioned works bail
+            self.driver.reply_to(
+                message,
+                "don't use @gpt in direct messages just send a message without mentioning @gpt",
+            )
             await self.helper.log("bailing due to dual trigger")
             return
         # this is to check if the message is from a tool or not

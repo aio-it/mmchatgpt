@@ -710,6 +710,9 @@ class ChatGPT(PluginLoader):
     async def chat(self, message: Message, model: str = None):
         """listen to everything and respond when mentioned"""
         # set some variables
+        await self.helper.log(
+            f"chat: {message.text} @ {message.sender_name} {self.model} {model}"
+        )
         if model is None:
             model = self.model
         stream = True  # disabled the non-streaming mode for simplicity

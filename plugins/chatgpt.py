@@ -706,10 +706,6 @@ class ChatGPT(PluginLoader):
     #        message, f"#NOTICE\nchanged trigger from @{self.driver.username} to @gpt"
     #    )
     #    await self.chat(message)
-    @listen_to(r"^@gpt3[ \n]+.+", regexp_flag=re_DOTALL)
-    async def chat_gpt3(self, message: Message):
-        """listen to everything and respond when mentioned"""
-        await self.chat(message, model="gpt-3.5-turbo")
 
     @listen_to(r".+", needs_mention=True)
     @listen_to(r"^@gpt[ \n]+.+", regexp_flag=re_DOTALL)
@@ -1063,6 +1059,11 @@ class ChatGPT(PluginLoader):
             )
         else:
             await self.helper.log(f"User: {message.sender_name} used {self.model}")
+
+    @listen_to(r"^@gpt3[ \n]+.+", regexp_flag=re_DOTALL)
+    async def chat_gpt3(self, message: Message):
+        """listen to everything and respond when mentioned"""
+        await self.chat(message, model="gpt-3.5-turbo")
 
     def serialize_choice_delta(self, choice_delta):
         # This function will create a JSON-serializable representation of ChoiceDelta and its nested objects.

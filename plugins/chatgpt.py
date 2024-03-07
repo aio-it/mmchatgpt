@@ -722,6 +722,7 @@ class ChatGPT(PluginLoader):
         stream = True  # disabled the non-streaming mode for simplicity
         if message.text.startswith("@gpt") and message.is_direct_message:
             # we are dual triggered due to how mentioned works bail
+            await self.helper.log("bailing due to dual trigger")
             return
         # this is to check if the message is from a tool or not
         # TODO this is a hack and needs to be fixed

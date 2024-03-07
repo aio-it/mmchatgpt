@@ -1019,7 +1019,7 @@ class ChatGPT(PluginLoader):
                 # await self.helper.log(f"messages: {pformat(mm)[:1000]}")
                 await self.helper.debug(f"running chatgpt again")
                 await self.helper.debug(message)
-                await self.chat(message)
+                await self.chat(message, model)
                 return
 
             # update the message a final time to make sure we have the full message

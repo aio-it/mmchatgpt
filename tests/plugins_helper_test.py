@@ -60,3 +60,39 @@ def test_validate_input(
     ]
     result = helper_instance.validate_input(input, types=[validate_type])
     assert result == expected_result
+
+
+def test_urlencode_text(helper_instance):
+    text = "Hello, world!"
+    expected = "Hello%2C+world%21"
+    result = helper_instance.urlencode_text(text)
+    assert result == expected
+
+
+def test_redis_serialize_json(helper_instance):
+    data = {"key": "value"}
+    expected = '{"key": "value"}'
+    result = helper_instance.redis_serialize_json(data)
+    assert result == expected
+
+
+def test_redis_deserialize_json(helper_instance):
+    data = '{"key": "value"}'
+    expected = {"key": "value"}
+    result = helper_instance.redis_deserialize_json(data)
+    assert result == expected
+
+
+def test_create_tmp_filename(helper_instance):
+    import uuid
+
+    # this is only to get the length of the uuid which is used in the test
+    uuid_len = len(str(uuid.uuid4()))
+    extension = "png"
+    begin = "/tmp/"
+    end = f".{extension}"
+    result = helper_instance.create_tmp_filename(extension)
+    # the result should start with /tmp/ and end with .png
+    assert result.startswith(begin) and result.endswith(end)
+    # the length of the result should be the length of /tmp/ + the length of the uuid + the length of .png
+    assert len(result) == len(begin) + uuid_len + len(end)

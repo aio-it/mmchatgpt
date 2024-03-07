@@ -1057,7 +1057,7 @@ class ChatGPT(PluginLoader):
                 f"User: {message.sender_name} used {response['usage']['total_tokens']} tokens"
             )
         else:
-            await self.helper.log(f"User: {message.sender_name} used {self.model}")
+            await self.helper.log(f"User: {message.sender_name} used {model}")
 
     @listen_to(r"^@gpt3[ \n]+.+", regexp_flag=re_DOTALL)
     async def chat_gpt3(self, message: Message):

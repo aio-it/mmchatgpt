@@ -215,6 +215,16 @@ class Helper:
                 # loop over answers6 and answers and check if any of them are private ips
                 for answer in [answersc, answers6, answers]:
                     for rdata in answer:
+                        # if CNAME record then validate the cname
+                        if answer.rdtype == dns.rdatatype.CNAME:
+                            result = self.validate_input(
+                                str(rdata.target).rstrip("."), ["domain"], count=count
+                            )
+                            # check if dict
+                            if type(result) is dict:
+                                if "error" in result:
+                                    return {"error": f"cname: {result['error']}"}
+                            continue
                         ip = ipaddress.ip_address(rdata.address)
                         if ip.is_private:
                             return {"error": "private ip (resolved from dns)"}

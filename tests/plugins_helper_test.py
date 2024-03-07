@@ -47,17 +47,7 @@ def test_validate_input(
     mock_requests_head, helper_instance, input, expected_result, validate_type
 ):
     mock_requests_head.return_value.status_code = 200
-    valid_types = [
-        "domain",
-        "ip",
-        "ipv4",
-        "ipv6",
-        "url",
-        "asn",
-        "string",
-        "argument",
-        "port",
-    ]
+
     result = helper_instance.validate_input(input, types=[validate_type])
     assert result == expected_result
 

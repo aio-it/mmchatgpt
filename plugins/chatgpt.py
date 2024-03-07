@@ -706,7 +706,6 @@ class ChatGPT(PluginLoader):
     #        message, f"#NOTICE\nchanged trigger from @{self.driver.username} to @gpt"
     #    )
     #    await self.chat(message)
-    @listen_to(r".+", needs_mention=True)
     async def chat(self, message: Message, model: str = None):
         """listen to everything and respond when mentioned"""
         # set some variables
@@ -1072,6 +1071,8 @@ class ChatGPT(PluginLoader):
             await self.chat(message, "gpt-4-turbo-preview")
         else:
             await self.chat(message)
+
+    @listen_to(r".+", needs_mention=True)
     async def chat_gpt4_mention(self, message: Message):
         """listen to everything and respond when mentioned"""
         if "4" not in self.model:

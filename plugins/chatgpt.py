@@ -553,18 +553,56 @@ class ChatGPT(PluginLoader):
         except Exception as e:
             await self.helper.log(f"Error: {e}")
             return f"Error: {e}"
+    #
+    @listen_to(r"^\.testvalidate ([a-z]+) (.+)")
+    async def testvalidate(self, message: Message, type: str, value: str):
+        """test the validate function"""
+        if self.users.is_admin(message.sender_name):
+            result = self.helper.validate_input(value, type)
+            self.driver.reply_to(message, f"result: {result}")
 
     async def download_webpage(self, url):
         """download a webpage and return the content"""
         self.exit_after_loop = False
         await self.helper.log(f"downloading webpage: {url}")
-        # verify url is valid using validators
-        if not validators.url(url):
-            self.helper.log(f"Error: invalid url {url}")
-            return f"Error: invalid url {url}"
+        validate_result = self.helper.validate_input(url, "url")
+        if validate_result != True:
+            await self.helper.log(f"Error: {validate_result}")
+            return validate_result
 
+        max_content_size = 10 * 1024 * 1024  # 10 MB
         # follow redirects
-        response = requests.get(url, headers=self.headers, timeout=10, allow_redirects=True)
+        response = requests.get(
+            url,
+            headers=self.headers,
+            timeout=10,
+            verify=True,
+            allow_redirects=True,
+            stream=True,
+        )
+        # check the content length before downloading
+        content_length = response.headers.get("Content-Length")
+        if content_length and int(content_length) > max_content_size:
+            await self.helper.log(
+                f"Error: content size exceeds the maximum limit ({max_content_size} bytes)"
+            )
+            return f"Error: content size exceeds the maximum limit ({max_content_size} bytes)"
+
+        # download the content in chunks
+        content = b""
+        total_bytes_read = 0
+        chunk_size = 1024  # adjust the chunk size as needed
+        for chunk in response.iter_content(chunk_size=chunk_size):
+            content += chunk
+            total_bytes_read += len(chunk)
+            if total_bytes_read > max_content_size:
+                await self.helper.log(
+                    f"Error: content size exceeds the maximum limit ({max_content_size} bytes)"
+                )
+                return f"Error: content size exceeds the maximum limit ({max_content_size} bytes)"
+        # decode the content
+        response_text = content.decode("utf-8")
+
         blacklisted_tags = ["script", "style", "head", "title", "noscript"]
         # debug response
         # await self.helper.debug(f"response: {pformat(response.text[:500])}")
@@ -579,7 +617,7 @@ class ChatGPT(PluginLoader):
                     # extract all text from the webpage
                     import bs4
 
-                    soup = bs4.BeautifulSoup(response.text, "html.parser")
+                    soup = bs4.BeautifulSoup(response_text, "html.parser")
                     # check if the soup could parse anything
                     try:
                         if soup.find():
@@ -614,13 +652,13 @@ class ChatGPT(PluginLoader):
 
                 elif "xml" in content_type or "json" in content_type:
                     # xml or json
-                    return response.text
+                    return response_text
                 else:
                     # unknown content type
                     await self.helper.log(
-                        f"Error: unknown content type {content_type} for {url} (status code {response.status_code}) returned: {response.text[:500]}"
+                        f"Error: unknown content type {content_type} for {url} (status code {response.status_code}) returned: {response_text[:500]}"
                     )
-                    return f"Error: unknown content type {content_type} for {url} (status code {response.status_code}) returned: {response.text}"
+                    return f"Error: unknown content type {content_type} for {url} (status code {response.status_code}) returned: {response_text}"
             else:
                 await self.helper.log(
                     f"Error: could not download webpage (status code {response.status_code})"

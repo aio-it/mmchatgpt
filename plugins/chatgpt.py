@@ -1072,7 +1072,8 @@ class ChatGPT(PluginLoader):
         """listen to everything and respond when mentioned"""
         if "4" not in self.model:
             await self.chat(message, "gpt-4-turbo-preview")
-        await self.chat(message, self.model)
+        else:
+            await self.chat(message)
 
     def serialize_choice_delta(self, choice_delta):
         # This function will create a JSON-serializable representation of ChoiceDelta and its nested objects.

@@ -731,16 +731,19 @@ class ChatGPT(PluginLoader):
             await self.helper.debug("no messages in redis thread")
         self.driver.reply_to(message, json.dumps(messages, indent=4)[:4000])
 
-    @listen_to(".+", needs_mention=True)
-    async def chat_moved(self, message: Message):
-        """listen to everything and respond when mentioned"""
-        # reply to the message with the new callsign @gpt
-        self.driver.reply_to(
-            message, f"#NOTICE:\nchanged trigger from @{self.driver.username} to @gpt"
-        )
-        await self.chat(message)
+    # soon to be deprecated
+    # @listen_to(".+", needs_mention=True)
+    # async def chat_moved(self, message: Message):
+    #    """listen to everything and respond when mentioned"""
+    #    # reply to the message with the new callsign @gpt
+    #    self.driver.reply_to(
+    #        message, f"#NOTICE\nchanged trigger from @{self.driver.username} to @gpt"
+    #    )
+    #    await self.chat(message)
 
+    @listen_to(".+", needs_mention=True)
     @listen_to(r"@gpt[ \n]+.+", regexp_flag=re_DOTALL)
+    @listen_to(r"@gpt4[ \n]+.+", regexp_flag=re_DOTALL)
     async def chat(self, message: Message):
         """listen to everything and respond when mentioned"""
         # set some variables

@@ -707,9 +707,6 @@ class ChatGPT(PluginLoader):
     #    )
     #    await self.chat(message)
 
-    @listen_to(r".+", needs_mention=True)
-    @listen_to(r"^@gpt[ \n]+.+", regexp_flag=re_DOTALL)
-    @listen_to(r"^@gpt4[ \n]+.+", regexp_flag=re_DOTALL)
     async def chat(self, message: Message, model: str = None):
         """listen to everything and respond when mentioned"""
         # set some variables
@@ -1063,7 +1060,16 @@ class ChatGPT(PluginLoader):
     @listen_to(r"^@gpt3[ \n]+.+", regexp_flag=re_DOTALL)
     async def chat_gpt3(self, message: Message):
         """listen to everything and respond when mentioned"""
-        await self.chat(message, model="gpt-3.5-turbo")
+        await self.chat(message, "gpt-3.5-turbo")
+
+    @listen_to(r".+", needs_mention=True)
+    @listen_to(r"^@gpt[ \n]+.+", regexp_flag=re_DOTALL)
+    @listen_to(r"^@gpt4[ \n]+.+", regexp_flag=re_DOTALL)
+    async def chat_gpt4(self, message: Message):
+        """listen to everything and respond when mentioned"""
+        if "4" not in self.model:
+            await self.chat(message, "gpt-4-turbo-preview")
+        await self.chat(message, self.model)
 
     def serialize_choice_delta(self, choice_delta):
         # This function will create a JSON-serializable representation of ChoiceDelta and its nested objects.

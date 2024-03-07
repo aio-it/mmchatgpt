@@ -735,7 +735,9 @@ class ChatGPT(PluginLoader):
     async def chat_moved(self, message: Message):
         """listen to everything and respond when mentioned"""
         # reply to the message with the new callsign @gpt
-        self.driver.reply_to(message, f"mention moved to @gpt {message.text}")
+        self.driver.reply_to(
+            message, f"changed trigger from @{self.driver.username} to @gpt"
+        )
 
     @listen_to(r"@gpt[ \n]+.+", regexp_flag=re_DOTALL)
     async def chat(self, message: Message):

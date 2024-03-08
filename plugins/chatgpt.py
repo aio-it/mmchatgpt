@@ -305,15 +305,16 @@ class ChatGPT(PluginLoader):
                 # example response:
                 # Error code: 400 - {'error': {'code': 'content_policy_violation', 'message': 'Your request was rejected as a result of our safety system. Your prompt may contain text that is not allowed by our safety system.', 'param': None, 'type': 'invalid_request_error'}}
                 # parse the error message and return it to the user
-                for letter in error.message:
-                    if letter == "{":
-                        error_message = error.message[error.message.index(letter) :]
-                        error_message = json.loads(
-                            error_message.replace("'", '"').replace("None", "null")
-                        )
-                        self.driver.reply_to(
-                            message, f"Error: {error_message['error']['message']}"
-                        )
+                if "{" in error.message:
+                    error_message = error.message[error.message.index("{") :]
+                    error_message = json.loads(
+                        error_message.replace("'", '"').replace("None", "null")
+                    )
+                    self.driver.reply_to(
+                        message, f"Error: {error_message['error']['message']}"
+                    )
+                else:
+                    self.driver.reply_to(message, f"Error: {error.message}")
                 # self.driver.reply_to(message, f"Error: {pformat(error.message)}")
                 # self.driver.reply_to(message, f"Error: {pformat(error)}")
             # except:  # pylint: disable=bare-except

@@ -308,7 +308,9 @@ class ChatGPT(PluginLoader):
                 for letter in error.message:
                     if letter == "{":
                         error_message = error.message[error.message.index(letter) :]
-                        error_message = json.loads(error_message.replace("'", '"'))
+                        error_message = json.loads(
+                            error_message.replace("'", '"').replace("None", "null")
+                        )
                         self.driver.reply_to(
                             message, f"Error: {error_message['error']['message']}"
                         )

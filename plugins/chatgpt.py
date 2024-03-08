@@ -78,10 +78,6 @@ class ChatGPT(PluginLoader):
         if openai_api_key is None:
             raise MissingApiKey("No OPENAI API key provided")
         self.openai_api_key = openai_api_key
-        if "giphy_api_key" in kwargs:
-            self.giphy_api_key = kwargs["giphy_api_key"]
-        else:
-            self.giphy_api_key = None
 
     def initialize(
         self,

@@ -301,7 +301,7 @@ class ChatGPT(PluginLoader):
             except openai.BadRequestError as error:
                 self.helper.remove_reaction(message, "frame_with_picture")
                 self.helper.add_reaction(message, "pig")
-                self.driver.reply_to(message, f"Error: {error.message}")
+                # self.driver.reply_to(message, f"Error: {error.message}")
                 # example response:
                 # Error code: 400 - {'error': {'code': 'content_policy_violation', 'message': 'Your request was rejected as a result of our safety system. Your prompt may contain text that is not allowed by our safety system.', 'param': None, 'type': 'invalid_request_error'}}
                 # parse the error message and return it to the user

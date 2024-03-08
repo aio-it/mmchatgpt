@@ -12,7 +12,7 @@ from re import DOTALL as re_DOTALL
 
 aclient = AsyncOpenAI(api_key=env.str("OPENAI_API_KEY"))
 import aiohttp.client_exceptions as aiohttp_client_exceptions
-import tiktoken
+
 import base64
 from plugins.base import PluginLoader
 
@@ -323,93 +323,6 @@ class ChatGPT(PluginLoader):
                 # self.driver.reply_to(message, f"Error: {pformat(error)}")
             # except:  # pylint: disable=bare-except
             #    self.driver.reply_to(message, "Error: OpenAI API error")
-
-    @listen_to(r"^\.gif ([\s\S]*)")
-    async def gif(self, message: Message, text: str):
-        """fetch gif from giphy api"""
-        if self.giphy_api_key is None:
-            return
-        if self.users.is_user(message.sender_name):
-            url = "https://api.giphy.com/v1/gifs/search"
-            params = {
-                "api_key": self.giphy_api_key,
-                "q": text,
-                "limit": 1,
-                "offset": 0,
-                "rating": "g",
-                "lang": "en",
-            }
-            try:
-                with RateLimit(
-                    resource="gif",
-                    client=message.sender_name,
-                    max_requests=1,
-                    expire=5,
-                    redis_pool=self.redis_pool,
-                ):
-                    self.helper.add_reaction(message, "frame_with_picture")
-                    # get the gif from giphy api
-                    response = requests.get(url, params=params)
-                    # get the url from the response
-                    gif_url = response.json()["data"][0]["images"]["original"]["url"]
-                    # download the gif using the url
-                    filename = self.helper.download_file_to_tmp(gif_url, "gif")
-                    # format the gif_url as mattermost markdown
-                    # gif_url_txt = f"![gif]({gif_url})"
-                    gif_url_txt = ""
-                    self.helper.remove_reaction(message, "frame_with_picture")
-                    self.driver.reply_to(message, gif_url_txt, file_paths=[filename])
-                    # delete the gif file
-                    self.helper.delete_downloaded_file(filename)
-                    await self.helper.log(f"{message.sender_name} used .gif with {text}")
-            except TooManyRequests:
-                self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
-            except:  # pylint: disable=bare-except
-                self.driver.reply_to(message, "Error: Giphy API error")
-
-    @listen_to(r"^\.calc$")
-    async def calc_help(self, message: Message):
-        """calc help"""
-        if self.users.is_user(message.sender_name):
-            # print help message
-            messagetxt = (
-                f".calc <expression> - use mathjs api to calculate expression\n"
-            )
-            messagetxt += f"example: .calc 2+2\n"
-            messagetxt += f"syntax: https://mathjs.org/docs/expressions/syntax.html\n"
-            self.driver.reply_to(message, messagetxt)
-
-    @listen_to(r"^\.calc ?([\s\S]+)")
-    async def calc(self, message: Message, text: str):
-        """use math module to calc"""
-        if self.users.is_user(message.sender_name):
-            # convert newline to ;
-            text = text.replace("\n", ";")
-            try:
-                with RateLimit(
-                    resource="calc",
-                    client=message.sender_name,
-                    max_requests=1,
-                    expire=5,
-                    redis_pool=self.redis_pool,
-                ):
-                    self.helper.add_reaction(message, "abacus")
-                    # replace newlines with spaces
-                    text = text.replace("\n", " ")
-                    # urlencode the text
-                    urlencoded_text = self.helper.urlencode_text(text)
-                    # get the result from mathjs api https://api.mathjs.org/v4/?expr=<text>
-                    response = requests.get(
-                        f"https://api.mathjs.org/v4/?expr={urlencoded_text}"
-                    )
-                    # format the result in mattermost markdown
-                    msg_txt = f"query: {text}\n"
-                    msg_txt += f"result: {response.text}"
-                    self.helper.remove_reaction(message, "abacus")
-                    self.driver.reply_to(message, msg_txt)
-                    await self.helper.log(f"{message.sender_name} used .calc with {text}")
-            except TooManyRequests:
-                self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
 
     @listen_to(r"^\.gpt set ([a-zA-Z0-9_-]+) (.*)")
     async def set_chatgpt(self, message: Message, key: str, value: str):
@@ -1130,7 +1043,6 @@ class ChatGPT(PluginLoader):
             "**.tts <text>** - text to speech using pyttsx3; returns an audio file",
             "**.pushups** - pushups help",
             "**.gif <text>** - text to gif using GIPHY; returns a gif",
-            "**.calc <expression>** - calculate an expression using mathjs(lol) api returns the result",
             "**.decode <encoding> <text>** - decode text using an encoding",
             "**.encode <encoding> <text>** - encode text using an encoding",
             "**.docker help** - returns a list of docker commands",

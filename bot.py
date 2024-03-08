@@ -12,6 +12,8 @@ from plugins.redistool import RedisTool
 from plugins.ollama import Ollama
 from plugins.anthropic import Anthropic
 from plugins.hibp import HIPB
+from plugins.calc import Calc
+from plugins.giphy import Giphy
 import logging
 
 env = Env()
@@ -46,6 +48,8 @@ bot = Bot(
         RedisTool(),
         # Ollama(),
         HIPB(),
+        Calc(),
+        Giphy(),
     ],
     enable_logging=True,
 )

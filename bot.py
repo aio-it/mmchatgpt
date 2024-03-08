@@ -18,8 +18,6 @@ import logging
 
 env = Env()
 log_channel = env.str("MM_BOT_LOG_CHANNEL")
-openai_api_key = env.str("OPENAI_API_KEY")
-giphy_api_key=env.str("GIPHY_API_KEY") or None
 debug = env.bool("DEBUG", False)
 if debug:
     logging.basicConfig(level=logging.DEBUG)
@@ -39,7 +37,7 @@ bot = Bot(
     # Add your own plugins here.
     plugins=[
         Users(),
-        ChatGPT(openai_api_key, giphy_api_key=giphy_api_key),
+        ChatGPT(),
         #        Docker(),
         Anthropic(),
         Pushups(),

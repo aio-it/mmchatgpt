@@ -307,12 +307,16 @@ class ChatGPT(PluginLoader):
                 # parse the error message and return it to the user
                 if "{" in error.message:
                     error_message = error.message[error.message.index("{") :]
-                    error_message = json.loads(
-                        error_message.replace("'", '"').replace("None", "null")
-                    )
-                    self.driver.reply_to(
-                        message, f"Error: {error_message['error']['message']}"
-                    )
+                    try:
+                        error_message = json.loads(
+                            error_message.replace("'", '"').replace("None", "null")
+                        )
+                        self.driver.reply_to(
+                            message, f"Error: {error_message['error']['message']}"
+                        )
+                    except json.JSONDecodeError:
+                        self.driver.reply_to(message, f"Error: {error.message}")
+                        return
                 else:
                     self.driver.reply_to(message, f"Error: {error.message}")
                 # self.driver.reply_to(message, f"Error: {pformat(error.message)}")

@@ -302,6 +302,16 @@ class ChatGPT(PluginLoader):
                 self.helper.remove_reaction(message, "frame_with_picture")
                 self.helper.add_reaction(message, "pig")
                 self.driver.reply_to(message, f"Error: {error.message}")
+                # example response:
+                # Error code: 400 - {'error': {'code': 'content_policy_violation', 'message': 'Your request was rejected as a result of our safety system. Your prompt may contain text that is not allowed by our safety system.', 'param': None, 'type': 'invalid_request_error'}}
+                # parse the error message and return it to the user
+                for letter in error.message:
+                    if letter == "{":
+                        error_message = error.message[error.message.index(letter) :]
+                        error_message = json.loads(error_message)
+                        self.driver.reply_to(
+                            message, f"Error: {error_message['error']['message']}"
+                        )
                 # self.driver.reply_to(message, f"Error: {pformat(error.message)}")
                 # self.driver.reply_to(message, f"Error: {pformat(error)}")
             # except:  # pylint: disable=bare-except
@@ -1040,13 +1050,7 @@ class ChatGPT(PluginLoader):
             self.driver.user_id, message.id, "thought_balloon"
         )
 
-        if not stream:
-            # log usage for user
-            await self.helper.log(
-                f"User: {message.sender_name} used {response['usage']['total_tokens']} tokens"
-            )
-        else:
-            await self.helper.log(f"User: {message.sender_name} used {model}")
+        await self.helper.log(f"User: {message.sender_name} used {model}")
 
     @listen_to(r"^@gpt3[ \n]+.+", regexp_flag=re_DOTALL)
     async def chat_gpt3(self, message: Message):

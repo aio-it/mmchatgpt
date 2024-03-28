@@ -26,6 +26,7 @@ jsonpickle = "*"
 hibpwned = "*"
 duckduckgo-search = "*"
 anthropic = "*"
+ntplib = "*"
 
 [dev-packages]
 autopep8 = "*"

@@ -14,6 +14,7 @@ from plugins.anthropic import Anthropic
 from plugins.hibp import HIPB
 from plugins.calc import Calc
 from plugins.giphy import Giphy
+from plugins.ntp import Ntp
 import logging
 
 env = Env()
@@ -48,6 +49,7 @@ bot = Bot(
         HIPB(),
         Calc(),
         Giphy(),
+        Ntp(),
     ],
     enable_logging=True,
 )

@@ -153,3 +153,47 @@ class Ntp(PluginLoader):
             self.driver.reply_to(message, f"hostname: {server}, ips: {servers}")
         except Exception as e:  # pylint: disable=broad-except
             self.driver.reply_to(message, f"error: {str(e)}")
+
+    @listen_to(r"^\.ntpoffsethelper ([\s\S]*) ([\s\S]*)")
+    async def ntp_offset_helper(
+        self, message: Message, current_offset: str, server: str
+    ):
+        """function that takes the input offset and then \
+        does 5 ntp lookups to the server offset and \
+        return the new offset to get closer to 0 \
+        """
+        try:
+            offset_val = float(current_offset)
+        except ValueError:
+            self.driver.reply_to(message, "error: offset must be a number")
+            return
+        servers = socket.gethostbyname_ex(server)
+        servers = servers[2]
+        offsets = {}
+        i = 0
+        import time
+
+        self.driver.reply_to(message, f"hostname: {server}, ips: {servers}")
+        self.driver.reply_to(
+            message,
+            f"getting new offset for {current_offset} while connecting to {server} 5 times",
+        )
+        while i < 5:
+            responses = self.get_ntp_response_from_all(server)
+            for s, response in responses:
+                if not isinstance(response, ntplib.NTPStats) and "error" in response:
+                    self.driver.reply_to(message, response["error"])
+                    continue
+                if s not in offsets:
+                    offsets[s] = []
+                offsets[s].append(response.offset)
+            # calculate the new offset
+            time.sleep(2)
+            i += 1
+        new_offset = {}
+        for s, offset_val in offsets.items():
+            new_offset[s] = sum(offset_val) / len(offset_val)
+            self.driver.reply_to(
+                message,
+                f"server: {s}, new offset (average): {new_offset[s]} min: {min(offset_val)} max: {max(offset_val)}",
+            )

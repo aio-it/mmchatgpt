@@ -172,7 +172,12 @@ class Ntp(PluginLoader):
         offsets = {}
         i = 0
         import time
-
+        times = int(times)
+        # limit the times to 1-30
+        if times < 1:
+            times = 1
+        elif times > 30:
+            times = 30
         self.driver.reply_to(message, f"hostname: {server}, ips: {servers}")
         self.driver.reply_to(
             message,

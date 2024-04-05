@@ -163,7 +163,7 @@ class Ntp(PluginLoader):
         return the new offset to get closer to 0 \
         """
         try:
-            offset_val = float(current_offset)
+            current_offset = float(current_offset)
         except ValueError:
             self.driver.reply_to(message, "error: offset must be a number")
             return

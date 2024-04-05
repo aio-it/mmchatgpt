@@ -171,7 +171,8 @@ class Ntp(PluginLoader):
         servers = servers[2]
         offsets = {}
         i = 0
-        import time
+        import asyncio
+
         times = int(times)
         # limit the times to 1-30
         if times < 1:
@@ -193,7 +194,7 @@ class Ntp(PluginLoader):
                     offsets[s] = []
                 offsets[s].append(response.offset)
             # calculate the new offset
-            time.sleep(2)
+            await asyncio.sleep(2)
             i += 1
         for s, offset_val in offsets.items():
             new_offset = current_offset - (sum(offset_val) / len(offset_val))

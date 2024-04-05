@@ -181,7 +181,7 @@ class Ntp(PluginLoader):
         self.driver.reply_to(message, f"hostname: {server}, ips: {servers}")
         self.driver.reply_to(
             message,
-            f"getting new offset for {current_offset} while connecting to {server} {times} times",
+            f"getting new offset for {current_offset} while connecting to {server} {times} times will take {times * 2} seconds",
         )
         while i < times:
             responses = self.get_ntp_response_from_all(server)
@@ -202,5 +202,5 @@ class Ntp(PluginLoader):
             diff = current_offset - new_offset
             self.driver.reply_to(
                 message,
-                f"server: {s}\nvalues:\n{offset_val_str}\nmean: {mean}\nmin: {min(offset_val):.5f}\nmax: {max(offset_val):.5f}\ndiff: {diff:.5f}\nnew offset: {new_offset:.5f}",
+                f"server: {s}\nvalues:\n{offset_val_str}\nmean: {mean}\nmin: {min(offset_val):.5f}\nmax: {max(offset_val):.5f}\ndiff: {diff:.5f}\nold offset: {current_offset:.5f}\nnew offset: {new_offset:.5f}",
             )

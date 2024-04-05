@@ -197,7 +197,7 @@ class Ntp(PluginLoader):
             i += 1
         for s, offset_val in offsets.items():
             new_offset = current_offset - (sum(offset_val) / len(offset_val))
-            offset_val_str = "\n\t".join([f"{x:.5f}" for x in offset_val])
+            offset_val_str = "\n".join([f"{x:.5f}" for x in offset_val])
             mean = sum(offset_val) / len(offset_val)
             diff = current_offset - new_offset[s]
             self.driver.reply_to(

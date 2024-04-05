@@ -183,7 +183,7 @@ class Ntp(PluginLoader):
             message,
             f"getting new offset for {current_offset} while connecting to {server} {times} times",
         )
-        while i < 5:
+        while i < times:
             responses = self.get_ntp_response_from_all(server)
             for s, response in responses:
                 if not isinstance(response, ntplib.NTPStats) and "error" in response:

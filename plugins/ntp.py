@@ -201,5 +201,5 @@ class Ntp(PluginLoader):
             diff = current_offset - new_offset[s]
             self.driver.reply_to(
                 message,
-                f"server: {s}, new offset (average): {new_offset[s]:.5f} min: {min(offset_val):.5f} max: {max(offset_val):.5f} diff: {diff:.5f}",
+                f"server: {s}\nmean: {offset_val}\nmin: {min(offset_val):.5f}\nmax: {max(offset_val):.5f}\ndiff: {diff:.5f}\nnew offset: {new_offset[s]:.5f}",
             )

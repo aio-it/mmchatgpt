@@ -199,7 +199,7 @@ class Ntp(PluginLoader):
             new_offset = current_offset - (sum(offset_val) / len(offset_val))
             offset_val_str = "\n".join([f"{x:.5f}" for x in offset_val])
             mean = sum(offset_val) / len(offset_val)
-            diff = current_offset - new_offset[s]
+            diff = current_offset - new_offset
             self.driver.reply_to(
                 message,
                 f"server: {s}\nvalues:\n{offset_val_str}\nmean: {mean}\nmin: {min(offset_val):.5f}\nmax: {max(offset_val):.5f}\ndiff: {diff:.5f}\nnew offset: {new_offset:.5f}",

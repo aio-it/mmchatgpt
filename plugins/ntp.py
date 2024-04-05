@@ -195,11 +195,12 @@ class Ntp(PluginLoader):
             # calculate the new offset
             time.sleep(2)
             i += 1
-        new_offset = {}
         for s, offset_val in offsets.items():
-            new_offset[s] = current_offset - (sum(offset_val) / len(offset_val))
+            new_offset = current_offset - (sum(offset_val) / len(offset_val))
+            offset_val_str = "\n\t".join([f"{x:.5f}" for x in offset_val])
+            mean = sum(offset_val) / len(offset_val)
             diff = current_offset - new_offset[s]
             self.driver.reply_to(
                 message,
-                f"server: {s}\nmean: {offset_val}\nmin: {min(offset_val):.5f}\nmax: {max(offset_val):.5f}\ndiff: {diff:.5f}\nnew offset: {new_offset[s]:.5f}",
+                f"server: {s}\nvalues:\n{offset_val_str}\nmean: {mean}\nmin: {min(offset_val):.5f}\nmax: {max(offset_val):.5f}\ndiff: {diff:.5f}\nnew offset: {new_offset:.5f}",
             )

@@ -154,9 +154,9 @@ class Ntp(PluginLoader):
         except Exception as e:  # pylint: disable=broad-except
             self.driver.reply_to(message, f"error: {str(e)}")
 
-    @listen_to(r"^\.ntpoffsethelper ([\s\S]*) ([\s\S]*)")
+    @listen_to(r"^\.ntpoffsethelper ([\s\S]*) ([\s\S]*) ([\s\S]*)")
     async def ntp_offset_helper(
-        self, message: Message, current_offset: str, server: str
+        self, message: Message, current_offset: float, server: str, times: int
     ):
         """function that takes the input offset and then \
         does 5 ntp lookups to the server offset and \
@@ -176,7 +176,7 @@ class Ntp(PluginLoader):
         self.driver.reply_to(message, f"hostname: {server}, ips: {servers}")
         self.driver.reply_to(
             message,
-            f"getting new offset for {current_offset} while connecting to {server} 5 times",
+            f"getting new offset for {current_offset} while connecting to {server} {times} times",
         )
         while i < 5:
             responses = self.get_ntp_response_from_all(server)

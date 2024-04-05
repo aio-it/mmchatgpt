@@ -19,21 +19,23 @@ class Ntp(PluginLoader):
     ):
         super().initialize(driver, plugin_manager, settings)
 
-    def auto_format_time(self, time_in_seconds: float):
+    def auto_format_time(self, value_in_seconds: float):
         # Convert to milliseconds (1 second = 1000 milliseconds)
-        value_in_milliseconds = time_in_seconds * 1000.0
+        value_in_milliseconds = value_in_seconds * 1000.0
         # Convert to microseconds (1 second = 1,000,000 microseconds)
-        value_in_microseconds = time_in_seconds * 1000000.0
+        value_in_microseconds = value_in_seconds * 1000000.0
         # Convert to nanoseconds (1 second = 1,000,000,000 nanoseconds)
-        value_in_nanoseconds = time_in_seconds * 1000000000.0
+        value_in_nanoseconds = value_in_seconds * 1000000000.0
 
         # Automatically choose the appropriate format based on the magnitude
-        if abs(value_in_nanoseconds) < 1000.0:
-            return f"{value_in_nanoseconds:.2f} ns"
+        if abs(value_in_seconds) >= 1.0:
+            return f"{value_in_seconds:.4f} s"
+        elif abs(value_in_nanoseconds) < 1000.0:
+            return f"{value_in_nanoseconds:.4f} ns"
         elif abs(value_in_microseconds) < 1000.0:
-            return f"{value_in_microseconds:.2f} μs"
+            return f"{value_in_microseconds:.4f} μs"
         else:
-            return f"{value_in_milliseconds:.2f} ms"
+            return f"{value_in_milliseconds:.4f} ms"
 
     def get_ntp_response(self, server):
         c = ntplib.NTPClient()

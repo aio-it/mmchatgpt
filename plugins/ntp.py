@@ -19,6 +19,22 @@ class Ntp(PluginLoader):
     ):
         super().initialize(driver, plugin_manager, settings)
 
+    def auto_format_time(self, time_in_seconds: float):
+        # Convert to milliseconds (1 second = 1000 milliseconds)
+        value_in_milliseconds = time_in_seconds * 1000.0
+        # Convert to microseconds (1 second = 1,000,000 microseconds)
+        value_in_microseconds = time_in_seconds * 1000000.0
+        # Convert to nanoseconds (1 second = 1,000,000,000 nanoseconds)
+        value_in_nanoseconds = time_in_seconds * 1000000000.0
+
+        # Automatically choose the appropriate format based on the magnitude
+        if abs(value_in_nanoseconds) < 1000.0:
+            return f"{value_in_nanoseconds:.2f} ns"
+        elif abs(value_in_microseconds) < 1000.0:
+            return f"{value_in_microseconds:.2f} μs"
+        else:
+            return f"{value_in_milliseconds:.2f} ms"
+
     def get_ntp_response(self, server):
         c = ntplib.NTPClient()
         try:
@@ -65,8 +81,8 @@ class Ntp(PluginLoader):
                     f"""\
                     my time: {my_time}
                     ntp time: {tx_time}
-                    ntp offset: {offset}
-                    ntp delay: {delay}
+                    ntp offset: {self.auto_format_time(offset)}
+                    ntp delay: {self.auto_format_time(delay)}
                     stratum: {stratum}
                     mode: {mode}
                     leap: {leap}
@@ -109,12 +125,12 @@ class Ntp(PluginLoader):
                 message,
                 dedent(
                     f"""\
-                    ntp1 offset: {offset1}
-                    ntp2 offset: {offset2}
-                    offset diff: {offset1 - offset2}
-                    ntp1 delay: {delay1}
-                    ntp2 delay: {delay2}
-                    delay diff: {delay1 - delay2}
+                    ntp1 offset: {self.auto_format_time(offset1)}
+                    ntp2 offset: {self.auto_format_time(offset2)}
+                    offset diff: {self.auto_format_time(offset1 - offset2)}
+                    ntp1 delay: {self.auto_format_time(delay1)}
+                    ntp2 delay: {self.auto_format_time(delay2)}
+                    delay diff: {self.auto_format_time(delay1 - delay2)}
                     ntp1 stratum: {stratum1}
                     ntp2 stratum: {stratum2}
                     ntp1 ref id: {ref_id_str1}

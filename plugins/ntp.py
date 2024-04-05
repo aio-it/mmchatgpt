@@ -192,7 +192,7 @@ class Ntp(PluginLoader):
             i += 1
         new_offset = {}
         for s, offset_val in offsets.items():
-            new_offset[s] = sum(offset_val) / len(offset_val)
+            new_offset[s] = current_offset - (sum(offset_val) / len(offset_val))
             self.driver.reply_to(
                 message,
                 f"server: {s}, new offset (average): {new_offset[s]} min: {min(offset_val)} max: {max(offset_val)}",

@@ -1,7 +1,6 @@
-version: '3'
-
 volumes:
   redis-data:
+  app-data:
 
 services:
   bot:
@@ -13,6 +12,9 @@ services:
     command: ['python', 'bot.py']
     env_file:
       - .env
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - app-data:/app-data
   redis:
     image: redis
     volumes:

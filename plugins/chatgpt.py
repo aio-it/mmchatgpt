@@ -23,7 +23,10 @@ from mmpy_bot.settings import Settings
 from mmpy_bot.wrappers import Message
 from redis_rate_limit import RateLimit, TooManyRequests
 from pprint import pformat
+import aiodocker
 
+import sys
+import os
 MODEL = "gpt-4-1106-preview"
 REDIS_PREPEND = "thread_"
 
@@ -68,6 +71,7 @@ class ChatGPT(PluginLoader):
         "moderation": "false",
         "stream": "true",
         "stream_update_delay_ms": 200,
+        "scary_tool": "false",
     }
     SETTINGS_KEY = "chatgpt_settings"
 
@@ -137,6 +141,34 @@ class ChatGPT(PluginLoader):
                 },
             },
         ]
+        # check settings for scary_tool
+        scary_tool_env = env.bool("SCARY_TOOL", False)
+        scary_tool_setting_enabled = self.get_chatgpt_setting("scary_tool") in ["true", "True","1",1]
+        scary_tool_enabled = False
+        # check if we have docker installed and and there is a /var/run/docker.sock file
+        if scary_tool_env and scary_tool_setting_enabled and sys.platform == "linux" and os.path.exists("/var/run/docker.sock"):
+            scary_tool_enabled = True
+            self.helper.slog("Docker is installed and /var/run/docker.sock exists")
+        scary_tool = {
+            "type": "function",
+            "function": {
+                "name": "execute_python_in_sandbox",
+                "description": "takes python code from the user or a tool and executes it in a sandboxed environment",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "code": {
+                            "type": "string",
+                            "description": "the code to execute",
+                        }
+                    },
+                    "required": ["code"],
+                },
+            },
+        }
+        if scary_tool_enabled:
+            self.tools.append(scary_tool)
+
 
     def return_last_x_messages(self, messages, max_length_in_tokens):
         """return last x messages from list of messages limited by max_length_in_tokens"""
@@ -347,7 +379,7 @@ class ChatGPT(PluginLoader):
             value = self.redis.hget(settings_key, key)
             self.driver.reply_to(message, f"Set {key} to {value}")
 
-    @listen_to(r"^\.gpt get")
+    @listen_to(r"^\.gpt get$")
     async def get_chatgpt_all(self, message: Message):
         """get all the chatgpt keys"""
         settings_key = self.SETTINGS_KEY
@@ -446,6 +478,72 @@ class ChatGPT(PluginLoader):
         except Exception as e:
             await self.helper.log(f"Error: {e}")
             return f"Error: {e}"
+    async def execute_python_in_sandbox(self, code):
+        """execute python code in a sandbox using a docker container using aiodocker"""
+        # check if scary_tool is enabled
+        scary_tool_setting_enabled = self.get_chatgpt_setting("scary_tool") in ["true", "True","1",1]
+        scary_tool_env = env.bool("SCARY_TOOL", False)
+        if not scary_tool_setting_enabled or not scary_tool_env:
+            return "Error: scary_tool is not enabled"
+        image = "python:3.10"
+        # generate a temporary script filename in /tmp
+        
+        script_filename = self.helper.create_tmp_filename("py")
+        # trim /tmp from the filename
+        script_filename = script_filename[5:]
+        script_filename = f"/app-data/{script_filename}"
+        await self.helper.log(f"script_filename: {script_filename}")
+        with open(script_filename, "w") as script_file:
+            script_file.write(code)
+        # verify the file was written
+        if not os.path.exists(script_filename):
+            return "Error: could not write script file"
+        else:
+            with open(script_filename, "r") as script_file:
+                script = script_file.read()
+                await self.helper.log(f"script: {script}")
+
+        
+        config = {
+            "Image": image,
+            # Wrap the multiline code in an exec() call with triple quotes to preserve structure.
+            #"Cmd": ["python", f"{script_filename}"],
+            "Cmd": ["ls", "-lashrR", "/app-data"],
+            "AttachStdout": True,
+            "AttachStderr": True,
+            "Mounts": [
+                {
+                    "Target": "/app-data",
+                    "Source": "app-data",
+                    "Type": "volume",
+                }
+            ],
+            #"HostConfig": {},
+            "OpenStdin": False,
+        }
+        
+        try:
+            async with aiodocker.Docker() as docker:
+                await docker.images.pull(image)
+                container = await docker.containers.create(config=config)
+                # inspect the container
+                await container.start()
+                # wait for the container to finish
+                container_info = await container.inspect()
+                await self.helper.log(f"container_info: {container_info}")
+
+                await container.wait()
+                # get the logs from the container
+                logs = await container.log(stdout=True, stderr=True)
+                # delete the container
+                await container.delete(force=True)
+                
+                return "output: " + "\n".join(logs)
+        except Exception as e:
+            return f"Error: {e}"
+        finally:
+            # remove the script file
+            os.remove(script_filename)
 
     async def download_webpage(self, url):
         """download a webpage and return the content"""
@@ -864,6 +962,8 @@ class ChatGPT(PluginLoader):
                     function_result = await function(arguments.get("url"))
                 elif function_name == "web_search":
                     function_result = await function(arguments.get("searchterm"))
+                elif function_name == "execute_python_in_sandbox":
+                    function_result = await function(arguments.get("code"))
                 else:
                     # we shouldn't get to here. panic and run (return)
                     await self.helper.log(f"Error: function not found: {function_name}")

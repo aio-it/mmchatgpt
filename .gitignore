@@ -1,1 +1,4 @@
-.env
+.env*
+.coverage
+monitor.py
+mmpy_bot

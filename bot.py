@@ -2,10 +2,29 @@
 """chatgpt mattermost bot"""
 from environs import Env
 from mmpy_bot import Bot, Settings
-from chatgpt import ChatGPT
+from plugins.chatgpt import ChatGPT
+from plugins.docker import Docker
+from plugins.pushups import Pushups
+from plugins.users import Users
+from plugins.tts import TTS
+from plugins.shellcmds import ShellCmds
+from plugins.redistool import RedisTool
+from plugins.ollama import Ollama
+from plugins.anthropic import Anthropic
+from plugins.hibp import HIPB
+from plugins.calc import Calc
+from plugins.giphy import Giphy
+from plugins.ntp import Ntp
+import logging
+
 env = Env()
 log_channel = env.str("MM_BOT_LOG_CHANNEL")
-openai_api_key = env.str("OPENAI_API_KEY")
+debug = env.bool("DEBUG", False)
+if debug:
+    logging.basicConfig(level=logging.DEBUG)
+else:
+    logging.basicConfig(level=logging.INFO)
+
 bot = Bot(
     settings=Settings(
         MATTERMOST_URL=env.str("MM_URL"),
@@ -14,8 +33,24 @@ bot = Bot(
         BOT_TOKEN=env.str("MM_BOT_TOKEN"),
         BOT_TEAM=env.str("MM_BOT_TEAM"),
         SSL_VERIFY=env.bool("MM_SSL_VERIFY", True),
+        DEBUG=debug,
     ),  # Either specify your settings here or as environment variables.
     # Add your own plugins here.
-    plugins=[ChatGPT(openai_api_key, log_channel)],
+    plugins=[
+        Users(),
+        ChatGPT(),
+        #        Docker(),
+        Anthropic(),
+        Pushups(),
+        TTS(),
+        ShellCmds(),
+        RedisTool(),
+        # Ollama(),
+        HIPB(),
+        Calc(),
+        Giphy(),
+        Ntp(),
+    ],
+    enable_logging=True,
 )
 bot.run()

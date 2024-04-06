@@ -2,3 +2,4 @@
 .coverage
 monitor.py
 mmpy_bot
+.pytest_cache

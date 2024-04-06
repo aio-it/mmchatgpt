@@ -27,6 +27,7 @@ hibpwned = "*"
 duckduckgo-search = "*"
 anthropic = "*"
 ntplib = "*"
+coverage = "*"
 
 [dev-packages]
 autopep8 = "*"

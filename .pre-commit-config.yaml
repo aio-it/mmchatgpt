@@ -1,0 +1,69 @@
+---
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+#      - id: end-of-file-fixer
+      - id: fix-byte-order-marker
+      - id: check-symlinks
+      - id: check-docstring-first
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: trailing-whitespace
+      - id: double-quote-string-fixer
+      - id: forbid-new-submodules
+      - id: mixed-line-ending
+  - repo: https://github.com/pycqa/isort
+    # Formants, sorts and reorganizes imports
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args:
+          - "--profile"
+          - "black"
+          - "--filter-files"
+  - repo: https://github.com/psf/black
+    # Code style formatting
+    rev: 24.3.0
+    hooks:
+      - id: black
+        exclude: (.*/)*snapshots/
+  - repo: https://github.com/PyCQA/flake8
+    # Checks the code for PEP8 violations and common pitfals
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        exclude: (.*/)*snapshots/
+  # Ruff is a "fastar than flake8" linter/formatter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.5
+    hooks:
+      # Run the linter.
+      - id: ruff
+  - repo: https://github.com/mattseymour/pre-commit-pytype
+    rev: '2023.5.8'
+    hooks:
+      - id: pytype
+        # Don't run pytype in an isolated venv or it will fail on imports
+        language: system
+        args:
+          - "-j"
+          - "auto"
+  - repo: https://github.com/myint/docformatter
+    # Formats docstrings following PEP 257
+    rev: v1.7.5
+    hooks:
+      - id: docformatter
+        args:
+          - "--in-place"
+          - "--wrap-summaries"
+          - "88"
+          - "--wrap-descriptions"
+          - "88"
+  - repo: https://github.com/pycqa/doc8
+    # sphinx rst style checker
+    rev: v1.1.1
+    hooks:
+      - id: doc8

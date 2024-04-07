@@ -1,21 +1,22 @@
 #!/usr/bin/env python
-"""chatgpt mattermost bot"""
-from environs import Env
-from mmpy_bot import Bot, Settings
-from plugins.chatgpt import ChatGPT
-from plugins.docker import Docker
-from plugins.pushups import Pushups
-from plugins.users import Users
-from plugins.tts import TTS
-from plugins.shellcmds import ShellCmds
-from plugins.redistool import RedisTool
-from plugins.ollama import Ollama
-from plugins.anthropic import Anthropic
-from plugins.hibp import HIPB
-from plugins.calc import Calc
-from plugins.giphy import Giphy
-from plugins.ntp import Ntp
+"""Chatgpt mattermost bot."""
+
 import logging
+
+from environs import Env
+
+from mmpy_bot import Bot, Settings
+from plugins.anthropic import Anthropic
+from plugins.calc import Calc
+from plugins.chatgpt import ChatGPT
+from plugins.giphy import Giphy
+from plugins.hibp import HIPB
+from plugins.ntp import Ntp
+from plugins.pushups import Pushups
+from plugins.redistool import RedisTool
+from plugins.shellcmds import ShellCmds
+from plugins.tts import TTS
+from plugins.users import Users
 
 env = Env()
 log_channel = env.str("MM_BOT_LOG_CHANNEL")

@@ -1,11 +1,12 @@
-from mmpy_bot.function import listen_to
-from mmpy_bot.wrappers import Message
+import requests
+from redis_rate_limit import RateLimit, TooManyRequests
+
 from mmpy_bot.driver import Driver
+from mmpy_bot.function import listen_to
 from mmpy_bot.plugins.base import PluginManager
 from mmpy_bot.settings import Settings
+from mmpy_bot.wrappers import Message
 from plugins.base import PluginLoader
-from redis_rate_limit import RateLimit, TooManyRequests
-import requests
 
 
 class Calc(PluginLoader):
@@ -19,19 +20,17 @@ class Calc(PluginLoader):
 
     @listen_to(r"^\.calc$")
     async def calc_help(self, message: Message):
-        """calc help"""
+        """Calc help."""
         if self.users.is_user(message.sender_name):
             # print help message
-            messagetxt = (
-                f".calc <expression> - use mathjs api to calculate expression\n"
-            )
-            messagetxt += f"example: .calc 2+2\n"
-            messagetxt += f"syntax: https://mathjs.org/docs/expressions/syntax.html\n"
+            messagetxt = ".calc <expression> - use mathjs api to calculate expression\n"
+            messagetxt += "example: .calc 2+2\n"
+            messagetxt += "syntax: https://mathjs.org/docs/expressions/syntax.html\n"
             self.driver.reply_to(message, messagetxt)
 
     @listen_to(r"^\.calc ?([\s\S]+)")
     async def calc(self, message: Message, text: str):
-        """use math module to calc"""
+        """Use math module to calc."""
         if self.users.is_user(message.sender_name):
             # convert newline to ;
             text = text.replace("\n", ";")

@@ -1,22 +1,27 @@
-from mmpy_bot.function import listen_to
-from mmpy_bot.wrappers import Message
-from mmpy_bot.driver import Driver
-from mmpy_bot.plugins.base import PluginManager
-from mmpy_bot.settings import Settings
-from plugins.base import PluginLoader
-import time
 import json
+import time
+from pprint import pformat
+
 import aiohttp
 import aiohttp.client_exceptions as aiohttp_client_exceptions
-from pprint import pformat
 from environs import Env
+
+from mmpy_bot.driver import Driver
+from mmpy_bot.function import listen_to
+from mmpy_bot.plugins.base import PluginManager
+from mmpy_bot.settings import Settings
+from mmpy_bot.wrappers import Message
+from plugins.base import PluginLoader
+
 env = Env()
 
 REDIS_PREPEND = "ollama_"
+
+
 class Ollama(PluginLoader):
     REDIS_PREFIX = "ollama_"
     DEFAULT_MODEL = "mistral"
-    URL = env.str("OLLAMA_URL","http://localhost:11434/api")
+    URL = env.str("OLLAMA_URL", "http://localhost:11434/api")
     CHAT_ENDPOINT = "/chat"
     PULL_ENDPOINT = "/pull"
     SHOW_ENDPOINT = "/show"
@@ -24,9 +29,13 @@ class Ollama(PluginLoader):
     DEFAULT_STREAM = True
     DEFAULT_SYSTEM_MESSAGE = ""
     DEFAULT_STREAM_DELAY = 100
+
     def __init__(self):
         super().__init__()
-    def initialize(self, driver: Driver, plugin_manager: PluginManager, settings: Settings):
+
+    def initialize(
+        self, driver: Driver, plugin_manager: PluginManager, settings: Settings
+    ):
         super().initialize(driver, plugin_manager, settings)
         self.name = "ollama"
         if self.redis.get(self.REDIS_PREFIX + "model") is None:
@@ -38,25 +47,35 @@ class Ollama(PluginLoader):
             )
         self.stream = self.redis.get(self.REDIS_PREFIX + "stream")
         if self.redis.get(self.REDIS_PREFIX + "system_message") is None:
-            self.redis.set(self.REDIS_PREFIX + "system_message", self.DEFAULT_SYSTEM_MESSAGE)
+            self.redis.set(
+                self.REDIS_PREFIX + "system_message", self.DEFAULT_SYSTEM_MESSAGE
+            )
         self.system_message = self.redis.get(self.REDIS_PREFIX + "system_message")
         if self.redis.get(self.REDIS_PREFIX + "stream_delay") is None:
-            self.redis.set(self.REDIS_PREFIX + "stream_delay", self.DEFAULT_STREAM_DELAY)
+            self.redis.set(
+                self.REDIS_PREFIX + "stream_delay", self.DEFAULT_STREAM_DELAY
+            )
         self.stream_delay = self.redis.get(self.REDIS_PREFIX + "stream_delay")
         self.helper.slog(f"model: {self.model}")
         self.helper.slog(f"stream: {self.stream}")
         self.helper.slog(f"system_message: {self.system_message}")
         self.helper.slog(f"stream_delay: {self.stream_delay}ms")
+
     @listen_to(r"^\.ollama help")
     async def ollama_help(self, message: Message):
         if self.users.is_admin(message.sender_name):
-            self.driver.reply_to(message, f"commands: model set/get/show/pull/list, stream enable/disable, stream delay get/set, system_message set/get")
+            self.driver.reply_to(
+                message,
+                "commands: model set/get/show/pull/list, stream enable/disable, stream delay get/set, system_message set/get",
+            )
+
     @listen_to(r"^\.ollama stream disable")
     async def ollama_stream_disable(self, message: Message):
         if self.users.is_admin(message.sender_name):
             self.redis.set(self.REDIS_PREFIX + "stream", 0)
             self.stream = 0
-            self.driver.reply_to(message, f"streaming disabled")
+            self.driver.reply_to(message, "streaming disabled")
+
     @listen_to(r"^\.ollama stream enable")
     async def ollama_stream_enable(self, message: Message):
         if self.users.is_admin(message.sender_name):
@@ -64,12 +83,14 @@ class Ollama(PluginLoader):
             self.stream = 1
             delay = self.redis.get(self.REDIS_PREFIX + "stream_delay")
             self.driver.reply_to(message, f"streaming enabled. delay: {delay}ms")
+
     @listen_to(r"^\.ollama stream delay set ([\s\S]*)")
     async def ollama_stream_delay_set(self, message: Message, delay: str):
         if self.users.is_admin(message.sender_name):
             self.redis.set(self.REDIS_PREFIX + "stream_delay", delay)
             self.stream_delay = delay
             self.driver.reply_to(message, f"stream delay set to: {delay}ms")
+
     @listen_to(r"^\.ollama model show ([\s\S]*)")
     async def ollama_model_show(self, message: Message, model: str):
         if self.users.is_admin(message.sender_name):
@@ -78,14 +99,17 @@ class Ollama(PluginLoader):
                     "name": model,
                 }
                 async with aiohttp.ClientSession() as session:
-                    async with session.post(self.URL + self.SHOW_ENDPOINT, json=data) as response:
+                    async with session.post(
+                        self.URL + self.SHOW_ENDPOINT, json=data
+                    ) as response:
                         obj = await response.json(content_type=None)
                         modeltxt = f"model info:\n{pformat(obj)}"
                         self.driver.reply_to(message, modeltxt)
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 self.helper.add_reaction(message, "x")
-    @listen_to (r"^\.ollama model list")
+
+    @listen_to(r"^\.ollama model list")
     async def ollama_model_list(self, message: Message):
         if self.users.is_admin(message.sender_name):
             try:
@@ -103,18 +127,18 @@ class Ollama(PluginLoader):
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 self.helper.add_reaction(message, "x")
+
     @listen_to(r"^\.ollama model pull ([\s\S]*)")
     async def ollama_model_pull(self, message: Message, model: str):
         if self.users.is_admin(message.sender_name):
             self.driver.reply_to(message, f"pulling {model}")
-            data = {
-            "name": model,
-            "stream": False
-            }
+            data = {"name": model, "stream": False}
             try:
-                timeout = aiohttp.ClientTimeout(total=60*60*24*7)
+                timeout = aiohttp.ClientTimeout(total=60 * 60 * 24 * 7)
                 async with aiohttp.ClientSession(timeout=timeout) as session:
-                    async with session.post(self.URL + self.PULL_ENDPOINT, json=data) as response:
+                    async with session.post(
+                        self.URL + self.PULL_ENDPOINT, json=data
+                    ) as response:
                         async for chunk in response.content.iter_any():
                             chunk = chunk.decode("utf-8")
                             # chunk contains one or more json objects, separated by newlines
@@ -125,7 +149,9 @@ class Ollama(PluginLoader):
                                     continue
                                 obj = json.loads(obj)
                                 if "status" in obj:
-                                    self.driver.reply_to(message, f"{pformat(obj['status'])}")
+                                    self.driver.reply_to(
+                                        message, f"{pformat(obj['status'])}"
+                                    )
                         self.driver.reply_to(message, f"pulled {model}")
 
             except Exception as error:
@@ -138,43 +164,57 @@ class Ollama(PluginLoader):
             self.redis.set(self.REDIS_PREFIX + "model", model)
             self.model = model
             self.driver.reply_to(message, f"model set to: {model}")
+
     @listen_to(r"^\.ollama model get")
     async def ollama_model_get(self, message: Message):
         if self.users.is_admin(message.sender_name):
-            self.driver.reply_to(message, f"model: {self.redis.get(self.REDIS_PREFIX + 'model')}")
-    def get_system_message(self,model):
-        """get system message for model"""
+            self.driver.reply_to(
+                message, f"model: {self.redis.get(self.REDIS_PREFIX + 'model')}"
+            )
+
+    def get_system_message(self, model):
+        """Get system message for model."""
         # if : is in model, get system message for model
         if ":" in model:
             model = model.split(":")[0]
         message = self.redis.get(f"{self.REDIS_PREFIX}_{model}_system_message")
         return "" if message is None else message
-    def set_system_message(self,model,system_message):
-        """set system message for model"""
+
+    def set_system_message(self, model, system_message):
+        """Set system message for model."""
         # if : is in model, set system message for model
         if ":" in model:
             model = model.split(":")[0]
         self.redis.set(f"{self.REDIS_PREFIX}_{model}_system_message", system_message)
+
     @listen_to(r"^\.ollama system_message set ([\s\S]*) ([\s\S]*)")
-    async def ollama_system_message_set(self, message: Message, model: str, system_message: str):
+    async def ollama_system_message_set(
+        self, message: Message, model: str, system_message: str
+    ):
         # if : is in model, set system message for model
         if ":" in model:
             model = model.split(":")[0]
         if self.users.is_admin(message.sender_name):
-            self.set_system_message(model,system_message)
-            self.driver.reply_to(message, f"system_message for {model} set to: {system_message}")
+            self.set_system_message(model, system_message)
+            self.driver.reply_to(
+                message, f"system_message for {model} set to: {system_message}"
+            )
+
     @listen_to(r"^\.ollama system_message get ([\s\S]*)")
     async def ollama_system_message_get(self, message: Message, model: str):
         # if : is in model, get system message for model
         if ":" in model:
             model = model.split(":")[0]
         if self.users.is_admin(message.sender_name):
-            self.driver.reply_to(message, f"system_message for {model}: {self.get_system_message(model)}")
+            self.driver.reply_to(
+                message, f"system_message for {model}: {self.get_system_message(model)}"
+            )
+
     @listen_to("^bitch please")
     @listen_to("^sudo")
     @listen_to("^ollama")
     async def ollama_chat(self, message: Message):
-        """listen to everything and respond when mentioned"""
+        """Listen to everything and respond when mentioned."""
         # self.driver.reply_to(message, "Hej")
         if not self.users.is_user(message.sender_name):
             return
@@ -208,7 +248,7 @@ class Ollama(PluginLoader):
                     "@" + self.driver.client.username + " ", ""
                 )
                 thread_post["message"] = thread_post["message"].replace(
-                    self.name+" ", ""
+                    self.name + " ", ""
                 )
                 # if post is from self, set role to assistant
                 if self.driver.client.userid == thread_post["user_id"]:
@@ -221,9 +261,7 @@ class Ollama(PluginLoader):
                     #    {"role": role, "content": thread_post['message']}))
                     msg = {"role": role, "content": thread_post["message"]}
                 if cache_thread:
-                    messages = self.append_chatlog(
-                        thread_id, msg
-                    )
+                    messages = self.append_chatlog(thread_id, msg)
                 else:
                     messages.append(msg)
 
@@ -236,16 +274,14 @@ class Ollama(PluginLoader):
         self.driver.react_to(message, "thought_balloon")
         if not stream:
             try:
-                data = {
-                    "model": self.model,
-                    "messages": messages,
-                    "stream": False
-                }
-                timeout = aiohttp.ClientTimeout(total=60*60*24*7)
+                data = {"model": self.model, "messages": messages, "stream": False}
+                timeout = aiohttp.ClientTimeout(total=60 * 60 * 24 * 7)
                 async with aiohttp.ClientSession(timeout=timeout) as session:
-                    async with session.post(self.URL + self.CHAT_ENDPOINT, json=data) as response:
+                    async with session.post(
+                        self.URL + self.CHAT_ENDPOINT, json=data
+                    ) as response:
                         response = await response.json(content_type=None)
-            except error:
+            except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 self.driver.reactions.delete_reaction(
                     self.driver.user_id, message.id, "thought_balloon"
@@ -255,33 +291,33 @@ class Ollama(PluginLoader):
             # self.helper.debug(response)
             # send response to user
             if "message" in response:
-
                 self.driver.reply_to(
                     message,
                     f"({self.model}) @{message.sender_name}: {response['message']['content']}",
                 )
                 # add response to chatlog
                 if cache_thread:
-                    self.append_chatlog(thread_id, response['message']['content'])
+                    self.append_chatlog(thread_id, response["message"]["content"])
                 else:
-                    messages.append(response['message']['content'])
+                    messages.append(response["message"]["content"])
         else:
             # we are streaming baby
             full_message = ""
             post_prefix = f"({self.model}) @{message.sender_name}: "
             # post initial message as a reply and save the message id
-            reply_msg_id = self.driver.reply_to(message, f"{self.model} working...")["id"]
+            reply_msg_id = self.driver.reply_to(message, f"{self.model} working...")[
+                "id"
+            ]
             # send async request to openai
             last_update_time = time.time()
             stream_update_delay_ms = float(100)
             try:
-                data = {
-                  "model": self.model,
-                  "messages": messages
-                }
-                timeout = aiohttp.ClientTimeout(total=60*60*24*7)
+                data = {"model": self.model, "messages": messages}
+                timeout = aiohttp.ClientTimeout(total=60 * 60 * 24 * 7)
                 async with aiohttp.ClientSession(timeout=timeout) as session:
-                    async with session.post(self.URL + self.CHAT_ENDPOINT, json=data) as response:
+                    async with session.post(
+                        self.URL + self.CHAT_ENDPOINT, json=data
+                    ) as response:
                         # await self.helper.log(f"response: {response}")
                         async for chunks in response.content.iter_any():
                             chunks = chunks.decode("utf-8")
@@ -299,16 +335,18 @@ class Ollama(PluginLoader):
                                 except json.JSONDecodeError as error:
                                     self.driver.reply_to(message, f"Error: {error}")
                                     self.driver.reactions.delete_reaction(
-                                        self.driver.user_id, message.id, "thought_balloon"
+                                        self.driver.user_id,
+                                        message.id,
+                                        "thought_balloon",
                                     )
                                     self.driver.react_to(message, "x")
                                     return
                                 # extract the message
-                                chunk_message = chunk['message']
+                                chunk_message = chunk["message"]
                                 # self.driver.reply_to(message, chunk_message.content)
                                 # if the message has content, add it to the full message
                                 if "content" in chunk_message:
-                                    full_message += chunk_message['content']
+                                    full_message += chunk_message["content"]
                                     # await self.helper.debug((time.time() - last_update_time) * 1000)
                                     if (
                                         time.time() - last_update_time
@@ -322,7 +360,10 @@ class Ollama(PluginLoader):
                                         # update last_update_time
                                         last_update_time = time.time()
 
-            except (aiohttp_client_exceptions.ClientConnectorError, aiohttp_client_exceptions.ClientOSError) as error:
+            except (
+                aiohttp_client_exceptions.ClientConnectorError,
+                aiohttp_client_exceptions.ClientOSError,
+            ) as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 self.driver.reactions.delete_reaction(
                     self.driver.user_id, message.id, "thought_balloon"
@@ -347,25 +388,29 @@ class Ollama(PluginLoader):
         await self.helper.log(f"User: {message.sender_name} used {self.model}")
 
     def append_chatlog(self, thread_id, msg):
-        """append a message to a chatlog"""
+        """Append a message to a chatlog."""
         expiry = 60 * 60 * 24 * 7
         thread_key = REDIS_PREPEND + thread_id
         self.redis.rpush(thread_key, self.helper.redis_serialize_json(msg))
         self.redis.expire(thread_key, expiry)
-        messages = self.helper.redis_deserialize_json(self.redis.lrange(thread_key, 0, -1))
+        messages = self.helper.redis_deserialize_json(
+            self.redis.lrange(thread_key, 0, -1)
+        )
         return messages
 
     def redis_serialize_json(self, msg):
-        """serialize a message to json"""
+        """Serialize a message to json."""
         return json.dumps(msg)
 
     def redis_deserialize_json(self, msg):
-        """deserialize a message from json"""
+        """Deserialize a message from json."""
         if isinstance(msg, list):
             return [json.loads(m) for m in msg]
         return json.loads(msg)
+
     def return_last_x_messages(self, messages, max_length_in_tokens):
-        """return last x messages from list of messages limited by max_length_in_tokens"""
+        """Return last x messages from list of messages limited by
+        max_length_in_tokens."""
         limited_messages = []
         current_length_in_tokens = 0
 

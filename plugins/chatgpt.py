@@ -1,32 +1,30 @@
-"""ChatGPT plugin for mmpy_bot"""
-
-import requests
-import time
-import json
-from environs import Env
-env = Env()
-
-import openai
-from openai import AsyncOpenAI
-from re import DOTALL as re_DOTALL
-
-aclient = AsyncOpenAI(api_key=env.str("OPENAI_API_KEY"))
-import aiohttp.client_exceptions as aiohttp_client_exceptions
+"""ChatGPT plugin for mmpy_bot."""
 
 import base64
-from plugins.base import PluginLoader
+import json
+import os
+import sys
+import time
+from pprint import pformat
+from re import DOTALL as re_DOTALL
+
+import aiodocker
+import aiohttp.client_exceptions as aiohttp_client_exceptions
+import openai
+import requests
+from environs import Env
+from openai import AsyncOpenAI
+from redis_rate_limit import RateLimit, TooManyRequests
 
 from mmpy_bot.driver import Driver
 from mmpy_bot.function import listen_to
-from mmpy_bot.plugins.base import Plugin, PluginManager
+from mmpy_bot.plugins.base import PluginManager
 from mmpy_bot.settings import Settings
 from mmpy_bot.wrappers import Message
-from redis_rate_limit import RateLimit, TooManyRequests
-from pprint import pformat
-import aiodocker
+from plugins.base import PluginLoader
 
-import sys
-import os
+env = Env()
+aclient = AsyncOpenAI(api_key=env.str("OPENAI_API_KEY"))
 MODEL = "gpt-4-1106-preview"
 REDIS_PREPEND = "thread_"
 
@@ -36,11 +34,12 @@ REDIS_PREPEND = "thread_"
 
 
 class MissingApiKey(Exception):
-    """Missing API key exception"""
+    """Missing API key exception."""
 
 
 class ChatGPT(PluginLoader):
-    """mmypy chatgpt plugin"""
+    """Mmypy chatgpt plugin."""
+
     USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     # MODEL = "gpt-3.5-turbo-0301"
     DEFAULT_MODEL = "gpt-4-turbo-preview"
@@ -143,10 +142,20 @@ class ChatGPT(PluginLoader):
         ]
         # check settings for scary_tool
         scary_tool_env = env.bool("SCARY_TOOL", False)
-        scary_tool_setting_enabled = self.get_chatgpt_setting("scary_tool") in ["true", "True","1",1]
+        scary_tool_setting_enabled = self.get_chatgpt_setting("scary_tool") in [
+            "true",
+            "True",
+            "1",
+            1,
+        ]
         scary_tool_enabled = False
         # check if we have docker installed and and there is a /var/run/docker.sock file
-        if scary_tool_env and scary_tool_setting_enabled and sys.platform == "linux" and os.path.exists("/var/run/docker.sock"):
+        if (
+            scary_tool_env
+            and scary_tool_setting_enabled
+            and sys.platform == "linux"
+            and os.path.exists("/var/run/docker.sock")
+        ):
             scary_tool_enabled = True
             self.helper.slog("Docker is installed and /var/run/docker.sock exists")
         scary_tool = {
@@ -169,9 +178,9 @@ class ChatGPT(PluginLoader):
         if scary_tool_enabled:
             self.tools.append(scary_tool)
 
-
     def return_last_x_messages(self, messages, max_length_in_tokens):
-        """return last x messages from list of messages limited by max_length_in_tokens"""
+        """Return last x messages from list of messages limited by
+        max_length_in_tokens."""
         # fuck this bs
         return messages
         limited_messages = []
@@ -197,7 +206,7 @@ class ChatGPT(PluginLoader):
 
     @listen_to(r"^\.gpt model set ([a-zA-Z0-9_-]+)")
     async def model_set(self, message: Message, model: str):
-        """set the model"""
+        """Set the model."""
         if self.users.is_admin(message.sender_name):
             if model in self.ALLOWED_MODELS:
                 self.redis.hset(self.SETTINGS_KEY, "model", model)
@@ -210,7 +219,7 @@ class ChatGPT(PluginLoader):
 
     @listen_to(r"^\.gpt model get")
     async def model_get(self, message: Message):
-        """get the model"""
+        """Get the model."""
         if self.users.is_admin(message.sender_name):
             self.driver.reply_to(message, f"Model: {self.model}")
 
@@ -220,7 +229,7 @@ class ChatGPT(PluginLoader):
 
     @listen_to(r"^\.(?:mk)?i[mn]g ([\s\S]*)")
     async def img(self, message: Message, text: str):
-        """use the openai module to get and image from text"""
+        """Use the openai module to get and image from text."""
         # check if the text is help
         if text == "help" or text == "-h" or text == "--help":
             options_msg = ".img [options...] <prompt> - use dall-e-3 to generate an image from your prompt"
@@ -352,7 +361,7 @@ class ChatGPT(PluginLoader):
 
     @listen_to(r"^\.gpt set ([a-zA-Z0-9_-]+) (.*)")
     async def set_chatgpt(self, message: Message, key: str, value: str):
-        """set the chatgpt key"""
+        """Set the chatgpt key."""
         settings_key = self.SETTINGS_KEY
         await self.helper.debug(f"set_chatgpt {key} {value}")
         if self.users.is_admin(message.sender_name):
@@ -361,7 +370,7 @@ class ChatGPT(PluginLoader):
 
     @listen_to(r"^\.gpt reset ([a-zA-Z0-9_-]+)")
     async def reset_chatgpt(self, message: Message, key: str):
-        """reset the chatgpt key"""
+        """Reset the chatgpt key."""
         settings_key = self.SETTINGS_KEY
         if self.users.is_admin(message.sender_name) and key in self.ChatGPT_DEFAULTS:
             value = self.ChatGPT_DEFAULTS[key]
@@ -372,7 +381,7 @@ class ChatGPT(PluginLoader):
 
     @listen_to(r"^\.gpt get ([a-zA-Z0-9_-])")
     async def get_chatgpt(self, message: Message, key: str):
-        """get the chatgpt key"""
+        """Get the chatgpt key."""
         settings_key = self.SETTINGS_KEY
         await self.helper.debug(f"get_chatgpt {key}")
         if self.users.is_admin(message.sender_name):
@@ -381,7 +390,7 @@ class ChatGPT(PluginLoader):
 
     @listen_to(r"^\.gpt get$")
     async def get_chatgpt_all(self, message: Message):
-        """get all the chatgpt keys"""
+        """Get all the chatgpt keys."""
         settings_key = self.SETTINGS_KEY
         await self.helper.debug("get_chatgpt_all")
         if self.users.is_admin(message.sender_name):
@@ -395,7 +404,7 @@ class ChatGPT(PluginLoader):
                     self.redis.hdel(settings_key, key)
 
     def get_chatgpt_setting(self, key: str):
-        """get the chatgpt key setting"""
+        """Get the chatgpt key setting."""
         settings_key = self.SETTINGS_KEY
         value = self.redis.hget(settings_key, key)
         if value is None and key in self.ChatGPT_DEFAULTS:
@@ -404,7 +413,8 @@ class ChatGPT(PluginLoader):
 
     @listen_to(r"^\.vision (.+)")
     async def parseimage(self, message: Message, msg: str):
-        """check if post contains an image upload in the message.body.post.file_ids and parse it"""
+        """Check if post contains an image upload in the message.body.post.file_ids and
+        parse it."""
         if self.users.is_user(message.sender_name):
             data = message.body["data"]
             post = data["post"]
@@ -468,9 +478,10 @@ class ChatGPT(PluginLoader):
                     await self.helper.log(f"{message.sender_name} used .vision")
 
     async def web_search(self, searchterm):
-        """search the web using duckduckgo"""
+        """Search the web using duckduckgo."""
         self.exit_after_loop = False
         from duckduckgo_search import AsyncDDGS
+
         try:
             async with AsyncDDGS(headers=self.headers) as ddgs:
                 results = await ddgs.text(searchterm, max_results=5)
@@ -478,16 +489,22 @@ class ChatGPT(PluginLoader):
         except Exception as e:
             await self.helper.log(f"Error: {e}")
             return f"Error: {e}"
+
     async def execute_python_in_sandbox(self, code):
-        """execute python code in a sandbox using a docker container using aiodocker"""
+        """Execute python code in a sandbox using a docker container using aiodocker."""
         # check if scary_tool is enabled
-        scary_tool_setting_enabled = self.get_chatgpt_setting("scary_tool") in ["true", "True","1",1]
+        scary_tool_setting_enabled = self.get_chatgpt_setting("scary_tool") in [
+            "true",
+            "True",
+            "1",
+            1,
+        ]
         scary_tool_env = env.bool("SCARY_TOOL", False)
         if not scary_tool_setting_enabled or not scary_tool_env:
             return "Error: scary_tool is not enabled"
         image = "python:3.10"
         # generate a temporary script filename in /tmp
-        
+
         script_filename = self.helper.create_tmp_filename("py")
         # trim /tmp from the filename
         script_filename = script_filename[5:]
@@ -503,11 +520,10 @@ class ChatGPT(PluginLoader):
                 script = script_file.read()
                 await self.helper.log(f"script: {script}")
 
-        
         config = {
             "Image": image,
             # Wrap the multiline code in an exec() call with triple quotes to preserve structure.
-            #"Cmd": ["python", f"{script_filename}"],
+            # "Cmd": ["python", f"{script_filename}"],
             "Cmd": ["ls", "-lashrR", "/app-data"],
             "AttachStdout": True,
             "AttachStderr": True,
@@ -518,10 +534,10 @@ class ChatGPT(PluginLoader):
                     "Type": "volume",
                 }
             ],
-            #"HostConfig": {},
+            # "HostConfig": {},
             "OpenStdin": False,
         }
-        
+
         try:
             async with aiodocker.Docker() as docker:
                 await docker.images.pull(image)
@@ -537,7 +553,7 @@ class ChatGPT(PluginLoader):
                 logs = await container.log(stdout=True, stderr=True)
                 # delete the container
                 await container.delete(force=True)
-                
+
                 return "output: " + "\n".join(logs)
         except Exception as e:
             return f"Error: {e}"
@@ -546,11 +562,11 @@ class ChatGPT(PluginLoader):
             os.remove(script_filename)
 
     async def download_webpage(self, url):
-        """download a webpage and return the content"""
+        """Download a webpage and return the content."""
         self.exit_after_loop = False
         await self.helper.log(f"downloading webpage: {url}")
         validate_result = self.helper.validate_input(url, "url")
-        if validate_result != True:
+        if not validate_result:
             await self.helper.log(f"Error: {validate_result}")
             return validate_result
 
@@ -661,7 +677,7 @@ class ChatGPT(PluginLoader):
                 f"Error: could not download webpage (RequestException) {e}"
             )
             return "Error: could not download webpage (RequestException) " + str(e)
-        except Exception as e: # pylint: disable=bare-except
+        except Exception as e:  # pylint: disable=bare-except
             await self.helper.log(f"Error: could not download webpage (Exception) {e}")
             return "Error: could not download webpage (Exception) " + str(e)
 
@@ -670,7 +686,7 @@ class ChatGPT(PluginLoader):
         self.redis.rpush(thread_key, self.helper.redis_serialize_json(message))
 
     def get_thread_messages(self, thread_id: str, force_fetch: bool = False):
-        """get the message thread from the thread_id"""
+        """Get the message thread from the thread_id."""
         messages = []
         thread_key = REDIS_PREPEND + thread_id
         if not force_fetch and self.redis.exists(thread_key):
@@ -706,7 +722,7 @@ class ChatGPT(PluginLoader):
     # function that debugs a chat thread
     @listen_to(r"^\.gpt debugchat")
     async def debug_chat_thread(self, message: Message):
-        """debug a chat thread"""
+        """Debug a chat thread."""
         # set to root_id if set else use reply_id
         thread_id = message.root_id if message.root_id else message.reply_id
         # thread_key = REDIS_PREPEND + thread_id
@@ -729,7 +745,7 @@ class ChatGPT(PluginLoader):
     #    )
     #    await self.chat(message)
     async def chat(self, message: Message, model: str = None):
-        """listen to everything and respond when mentioned"""
+        """Listen to everything and respond when mentioned."""
         # set some variables
         if model is None:
             model = self.model
@@ -737,11 +753,8 @@ class ChatGPT(PluginLoader):
         # this is to check if the message is from a tool or not
         # TODO this is a hack and needs to be fixed
         tool_run = False
-        if hasattr(message, "tool_run") and message.tool_run == True:
+        if hasattr(message, "tool_run") and message.tool_run:
             tool_run = True
-            msg = ""
-        else:
-            msg = message.text
 
         # if message is not from a user, ignore
         if not self.users.is_user(message.sender_name):
@@ -895,9 +908,9 @@ class ChatGPT(PluginLoader):
                                 "arguments": "",
                             }
                             if function_name is not None:
-                                functions_to_call[index][
-                                    "function_name"
-                                ] = function_name
+                                functions_to_call[index]["function_name"] = (
+                                    function_name
+                                )
 
                             if tool_call.id:
                                 functions_to_call[index]["tool_call_id"] = tool_call.id
@@ -913,9 +926,9 @@ class ChatGPT(PluginLoader):
                             # await self.helper.log(f"added to chatlog: {pformat(self.custom_serializer(chunk_message))}")
 
                         # append the argument to the chunked_arguments dict
-                        functions_to_call[index][
-                            "arguments"
-                        ] += tool_call.function.arguments
+                        functions_to_call[index]["arguments"] += (
+                            tool_call.function.arguments
+                        )
                         # update the functions_to_call dict
                         # functions_to_call[index]["tool_call_message"]["arguments"] = (
                         #    json.dumps(functions_to_call[index]["arguments"])
@@ -950,7 +963,7 @@ class ChatGPT(PluginLoader):
                 try:
                     arguments = json.loads(tool_function["arguments"])
 
-                except json.JSONDecodeError as e:
+                except json.JSONDecodeError:
                     # log
                     await self.helper.log(
                         f"Error: could not parse arguments: {tool_function['arguments']}"
@@ -969,7 +982,7 @@ class ChatGPT(PluginLoader):
                     await self.helper.log(f"Error: function not found: {function_name}")
                     return
                 # add the result to the full message
-                if function_result != None:
+                if function_result is not None:
                     # limit all the keys in the dict to 1000 characters
                     # function_result = function_result[:6000]
                     pass
@@ -985,7 +998,7 @@ class ChatGPT(PluginLoader):
                 )
 
                 # if the function_result is not a string serialize it using the default serializer and turn it into a string
-                if not isinstance(function_result, str) and function_result != None:
+                if not isinstance(function_result, str) and function_result is not None:
                     try:
                         function_result = json.dumps(function_result)
                     except json.JSONDecodeError as e:
@@ -1033,7 +1046,7 @@ class ChatGPT(PluginLoader):
                 # log the messages
                 # mm = self.get_chatlog(thread_id)
                 # await self.helper.log(f"messages: {pformat(mm)[:1000]}")
-                await self.helper.debug(f"running chatgpt again")
+                await self.helper.debug("running chatgpt again")
                 await self.helper.debug(message)
                 await self.chat(message, model)
                 return
@@ -1068,12 +1081,12 @@ class ChatGPT(PluginLoader):
 
     @listen_to(r"^@gpt3[ \n]+.+", regexp_flag=re_DOTALL)
     async def chat_gpt3(self, message: Message):
-        """listen to everything and respond when mentioned"""
+        """Listen to everything and respond when mentioned."""
         await self.chat(message, model="gpt-3.5-turbo")
 
     @listen_to(r"^@gpt4{0,1}[ \n]+.+", regexp_flag=re_DOTALL)
     async def chat_gpt4(self, message: Message):
-        """listen to everything and respond when mentioned"""
+        """Listen to everything and respond when mentioned."""
         if "4" not in self.model:
             await self.chat(message, "gpt-4-turbo-preview")
         else:
@@ -1081,7 +1094,7 @@ class ChatGPT(PluginLoader):
 
     @listen_to(r".+", needs_mention=True)
     async def chat_gpt4_mention(self, message: Message):
-        """listen to everything and respond when mentioned"""
+        """Listen to everything and respond when mentioned."""
         # if direct and starting with names bail
         for name in self.names:
             if message.text.startswith(name):
@@ -1095,36 +1108,40 @@ class ChatGPT(PluginLoader):
         # This function will create a JSON-serializable representation of ChoiceDelta and its nested objects.
         tool_calls = []
         for tool_call in choice_delta.tool_calls:
-            tool_calls.append({
-                'index': tool_call.index,
-                'id': tool_call.id,
-                'function': {
-                    'arguments': tool_call.function.arguments,
-                    'name': tool_call.function.name
-                },
-                'type': tool_call.type
-            })
+            tool_calls.append(
+                {
+                    "index": tool_call.index,
+                    "id": tool_call.id,
+                    "function": {
+                        "arguments": tool_call.function.arguments,
+                        "name": tool_call.function.name,
+                    },
+                    "type": tool_call.type,
+                }
+            )
         return_object = {}
         if choice_delta.content is not None:
-            return_object['content'] = choice_delta.content
+            return_object["content"] = choice_delta.content
         if choice_delta.function_call is not None:
-            return_object['function_call'] = choice_delta.function_call
+            return_object["function_call"] = choice_delta.function_call
         if choice_delta.role is not None:
-            return_object['role'] = choice_delta.role
+            return_object["role"] = choice_delta.role
         if tool_calls:
-            return_object['tool_calls'] = tool_calls
+            return_object["tool_calls"] = tool_calls
 
         return return_object
 
     def custom_serializer(self, obj):
         # This function is a custom serializer for objects that are not JSON serializable by default.
-        if obj.__class__.__name__ == 'ChoiceDelta':
+        if obj.__class__.__name__ == "ChoiceDelta":
             return self.serialize_choice_delta(obj)
-        raise TypeError(f'Object of type {obj.__class__.__name__} is not JSON serializable')
+        raise TypeError(
+            f"Object of type {obj.__class__.__name__} is not JSON serializable"
+        )
 
     @listen_to(r"^\.help")
     async def help_function(self, message):
-        """help function that returns a list of commands"""
+        """Help function that returns a list of commands."""
         commands = [
             "### Commands:",
             "---",
@@ -1178,40 +1195,46 @@ class ChatGPT(PluginLoader):
             self.driver.reply_to(message, f"\n\n{txt}\n", direct=True)
 
     def append_thread_and_get_messages(self, thread_id, msg):
-        """append a message to a chatlog"""
+        """Append a message to a chatlog."""
         # self.helper.slog(f"append_chatlog {thread_id} {msg}")
         expiry = 60 * 60 * 24 * 7
         thread_key = REDIS_PREPEND + thread_id
         self.redis.rpush(thread_key, self.redis_serialize_json(msg))
         self.redis.expire(thread_key, expiry)
-        messages = self.helper.redis_deserialize_json(self.redis.lrange(thread_key, 0, -1))
+        messages = self.helper.redis_deserialize_json(
+            self.redis.lrange(thread_key, 0, -1)
+        )
         return messages
 
     def get_thread_messages_from_redis(self, thread_id):
-        """get a chatlog"""
+        """Get a chatlog."""
         thread_key = REDIS_PREPEND + thread_id
-        messages = self.helper.redis_deserialize_json(self.redis.lrange(thread_key, 0, -1))
+        messages = self.helper.redis_deserialize_json(
+            self.redis.lrange(thread_key, 0, -1)
+        )
         return messages
 
-    def redis_serialize_json(self,msg):
-        """serialize a message to json, using a custom serializer for types not
-        handled by the default json serialization"""
+    def redis_serialize_json(self, msg):
+        """Serialize a message to json, using a custom serializer for types not handled
+        by the default json serialization."""
         # return json.dumps(msg)
         return self.redis_serialize_jsonpickle(msg)
 
     def redis_deserialize_json(self, msg):
-        """deserialize a message from json"""
+        """Deserialize a message from json."""
         return self.redis_deserialize_jsonpickle(msg)
 
-    def redis_serialize_jsonpickle(self,msg):
-        """serialize a message to json, using a custom serializer for types not
-        handled by the default json serialization"""
+    def redis_serialize_jsonpickle(self, msg):
+        """Serialize a message to json, using a custom serializer for types not handled
+        by the default json serialization."""
         import jsonpickle
+
         return jsonpickle.encode(msg, unpicklable=False)
 
     def redis_deserialize_jsonpickle(self, msg):
-        """deserialize a message from json"""
+        """Deserialize a message from json."""
         import jsonpickle
+
         if isinstance(msg, list):
             return [jsonpickle.decode(m) for m in msg]
         return jsonpickle.decode(msg)

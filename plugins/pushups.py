@@ -1,16 +1,18 @@
+import datetime
+
+from environs import Env
+
 from mmpy_bot.function import listen_to
 from mmpy_bot.wrappers import Message
 from plugins.base import PluginLoader
-from environs import Env
-import datetime
 
 env = Env()
 
-class Pushups(PluginLoader):
 
+class Pushups(PluginLoader):
     @listen_to(r"^\.pushups reset ([a-zA-Z0-9_-]+)")
     async def pushups_reset(self, message: Message, user):
-        """pushups reset for user"""
+        """Pushups reset for user."""
         if self.helper.is_admin(message.sender_name):
             # reset pushups for user
             for key in self.redis.scan_iter(f"pushupsdaily:{user}:*"):
@@ -23,7 +25,7 @@ class Pushups(PluginLoader):
 
     @listen_to("^\.pushups reset$")
     async def pushups_reset_self(self, message: Message):
-        """pushups reset for self"""
+        """Pushups reset for self."""
         if self.users.is_user(message.sender_name):
             # reset pushups for self
             for key in self.redis.scan_iter(f"pushupsdaily:{message.sender_name}:*"):
@@ -35,7 +37,7 @@ class Pushups(PluginLoader):
             await self.helper.log(messagetxt)
 
     async def pushups_return_score_string(self, user):
-        """return score string for user"""
+        """Return score string for user."""
         # get total pushups
         total = 0
         for key in self.redis.scan_iter(f"pushupsdaily:{user}:*"):
@@ -48,7 +50,7 @@ class Pushups(PluginLoader):
 
     @listen_to(r"^\.pushups sub ([0-9]+)")  # pushups
     async def pushups_sub(self, message: Message, pushups_sub):
-        """pushups substract"""
+        """Pushups substract."""
         if self.users.is_user(message.sender_name):
             # check if we are substracting more than we have
             today = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -64,7 +66,7 @@ class Pushups(PluginLoader):
             messagetxt = f"{message.sender_name} substracted {pushups_sub} pushups\n"
             await self.helper.log(messagetxt)
             # store pushups in redis per day
-            self.redis.decr(key, pushups_sub)
+            self.redis.decr(today_key, pushups_sub)
             pushups_today = self.redis.get(today_key)
             messagetxt += (
                 f"{message.sender_name} has done {pushups_today} pushups today\n"
@@ -79,7 +81,7 @@ class Pushups(PluginLoader):
     @listen_to(r"^\.pushups ([-+]?[0-9]+)")  # pushups
     @listen_to(r"^\.pushups add ([-+]?[0-9]+)")  # pushups
     async def pushups_add(self, message: Message, pushups_add):
-        """pushups"""
+        """pushups."""
         if self.users.is_user(message.sender_name):
             # check if pushups more than 1000
             pushups_add = int(pushups_add)
@@ -119,7 +121,7 @@ class Pushups(PluginLoader):
 
     @listen_to(r"^\.pushups scores$")
     async def pushups_scores(self, message: Message):
-        """pushups scores for all users"""
+        """Pushups scores for all users."""
         if self.users.is_user(message.sender_name):
             # get pushups in redis per user
             keys = self.redis.keys("pushupstotal:*")
@@ -132,7 +134,7 @@ class Pushups(PluginLoader):
 
     @listen_to(r"^\.pushups score$")
     async def pushups_score(self, message: Message):
-        """pushups score"""
+        """Pushups score."""
         if self.users.is_user(message.sender_name):
             # get pushups for last 7 days and print them and a sum of those 7 days and a total
             messagetxt = ""
@@ -158,27 +160,28 @@ class Pushups(PluginLoader):
                 total += int(self.redis.get(key))
             messagetxt += f":weight_lifter: Alltime Total: {total}\n"
             self.driver.reply_to(message, messagetxt)
+
     @listen_to(r"^\.pushups$")
     @listen_to(r"^\.pushups help$")
     async def pushups_helps(self, message: Message):
-        """pushups scores for all users"""
+        """Pushups scores for all users."""
         if self.users.is_user(message.sender_name):
             # print help message
-            messagetxt = f".pushups <number> - add pushups for own user\n"
-            messagetxt += f".pushups add <number> - add pushups for own user\n"
-            messagetxt += f".pushups sub <number> - substract pushups for own user for today and total\n"
-            messagetxt += f".pushups top5 - top 5 pushups scores\n"
-            messagetxt += f".pushups scores - scores for all users\n"
-            messagetxt += f".pushups score - score for own user\n"
-            messagetxt += f".pushups reset - reset pushups for self\n"
+            messagetxt = ".pushups <number> - add pushups for own user\n"
+            messagetxt += ".pushups add <number> - add pushups for own user\n"
+            messagetxt += ".pushups sub <number> - substract pushups for own user for today and total\n"
+            messagetxt += ".pushups top5 - top 5 pushups scores\n"
+            messagetxt += ".pushups scores - scores for all users\n"
+            messagetxt += ".pushups score - score for own user\n"
+            messagetxt += ".pushups reset - reset pushups for self\n"
             messagetxt += (
-                f".pushups reset <user> - reset pushups for user (admin-only)\n"
+                ".pushups reset <user> - reset pushups for user (admin-only)\n"
             )
             self.driver.reply_to(message, messagetxt)
 
     @listen_to(r"^\.pushups top([1-9][0-9]*)")
     async def pushups_top(self, message: Message, topcount):
-        """pushups scores for all users"""
+        """Pushups scores for all users."""
         # TODO: add streaks
         if self.users.is_user(message.sender_name):
             topcount = int(topcount)

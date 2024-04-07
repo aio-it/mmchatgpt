@@ -1,27 +1,26 @@
-"""ChatGPT plugin for mmpy_bot"""
+"""ChatGPT plugin for mmpy_bot."""
 
-import time
 import json
-from re import DOTALL as re_DOTALL
+import time
 from pprint import pformat
-import jsonpickle
+from re import DOTALL as re_DOTALL
 
-from environs import Env
+import jsonpickle
 from anthropic import (
+    APIConnectionError,
+    APIError,
+    APIStatusError,
+    APITimeoutError,
     AsyncAnthropic,
     BadRequestError,
-    APIStatusError,
-    APIError,
-    APIConnectionError,
-    APITimeoutError,
 )
+from environs import Env
 
 from mmpy_bot.driver import Driver
 from mmpy_bot.function import listen_to
 from mmpy_bot.plugins.base import PluginManager
 from mmpy_bot.settings import Settings
 from mmpy_bot.wrappers import Message
-
 from plugins.base import PluginLoader
 
 env = Env()
@@ -40,11 +39,11 @@ REDIS_PREPEND = "anthropic_thread_"
 
 
 class MissingApiKey(Exception):
-    """Missing API key exception"""
+    """Missing API key exception."""
 
 
 class Anthropic(PluginLoader):
-    """mmypy anthropic plugin"""
+    """Mmypy anthropic plugin."""
 
     USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) \
 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -95,7 +94,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
     @listen_to(r"^\.ant model set ([a-zA-Z0-9_-]+)")
     async def model_set(self, message: Message, model: str):
-        """set the model"""
+        """Set the model."""
         if self.users.is_admin(message.sender_name):
             if model in self.ALLOWED_MODELS:
                 self.redis.hset(self.SETTINGS_KEY, "model", model)
@@ -108,13 +107,13 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
     @listen_to(r"^\.ant model get")
     async def model_get(self, message: Message):
-        """get the model"""
+        """Get the model."""
         if self.users.is_admin(message.sender_name):
             self.driver.reply_to(message, f"Model: {self.model}")
 
     @listen_to(r"^\.ant set ([a-zA-Z0-9_-]+) (.*)", regexp_flag=re_DOTALL)
     async def set_anthropic(self, message: Message, key: str, value: str):
-        """set the anthropic key"""
+        """Set the anthropic key."""
         settings_key = self.SETTINGS_KEY
         await self.helper.debug(f"set_anthropic {key} {value}")
         if self.users.is_admin(message.sender_name):
@@ -123,7 +122,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
     @listen_to(r"^\.ant reset ([a-zA-Z0-9_-]+)")
     async def reset_anthropic(self, message: Message, key: str):
-        """reset the anthropic key"""
+        """Reset the anthropic key."""
         settings_key = self.SETTINGS_KEY
         if self.users.is_admin(message.sender_name) and key in self.ANTHROPIC_DEFAULTS:
             value = self.ANTHROPIC_DEFAULTS[key]
@@ -134,7 +133,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
     @listen_to(r"^\.ant get ([a-zA-Z0-9_-])")
     async def get_anthropic(self, message: Message, key: str):
-        """get the anthropic key"""
+        """Get the anthropic key."""
         settings_key = self.SETTINGS_KEY
         await self.helper.debug(f"get_anthropic {key}")
         if self.users.is_admin(message.sender_name):
@@ -143,7 +142,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
     @listen_to(r"^\.ant get$")
     async def get_anthropic_all(self, message: Message):
-        """get all the anthropic keys"""
+        """Get all the anthropic keys."""
         settings_key = self.SETTINGS_KEY
         await self.helper.debug("get_anthropic_all")
         if self.users.is_admin(message.sender_name):
@@ -158,7 +157,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
     @listen_to(r"^\.ant help")
     async def help(self, message: Message):
-        """help message"""
+        """Help message."""
         self.driver.reply_to(
             message,
             """```
@@ -173,7 +172,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         )
 
     def get_anthropic_setting(self, key: str):
-        """get the anthropic key setting"""
+        """Get the anthropic key setting."""
         settings_key = self.SETTINGS_KEY
         value = self.redis.hget(settings_key, key)
         if value is None and key in self.ANTHROPIC_DEFAULTS:
@@ -181,12 +180,12 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         return value
 
     def thread_append(self, thread_id, message) -> None:
-        """append a message to a chatlog"""
+        """Append a message to a chatlog."""
         thread_key = REDIS_PREPEND + thread_id
         self.redis.rpush(thread_key, self.helper.redis_serialize_json(message))
 
     def get_thread_messages(self, thread_id: str, force_fetch: bool = False):
-        """get the message thread from the thread_id"""
+        """Get the message thread from the thread_id."""
         messages = []
         thread_key = REDIS_PREPEND + thread_id
         if not force_fetch and self.redis.exists(thread_key):
@@ -245,7 +244,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     # function that debugs a chat thread
     @listen_to(r"^\.ant debugchat")
     async def debug_chat_thread(self, message: Message):
-        """debug a chat thread"""
+        """Debug a chat thread."""
         # set to root_id if set else use reply_id
         thread_id = message.root_id if message.root_id else message.reply_id
         # thread_key = REDIS_PREPEND + thread_id
@@ -271,7 +270,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
     @listen_to(r"^@claude .*", re_DOTALL)
     async def chat(self, message: Message, model: str = None):
-        """listen to everything and respond when mentioned"""
+        """Listen to everything and respond when mentioned."""
         # no model is set, use default model
         if model is None:
             model = self.get_anthropic_setting("model") or self.DEFAULT_MODEL
@@ -429,7 +428,7 @@ Exception {exception_type}: {pformat(anthropic_exception)}"
         await self.helper.log(f"User: {message.sender_name} used {model}")
 
     def append_thread_and_get_messages(self, thread_id, msg):
-        """append a message to a chatlog"""
+        """Append a message to a chatlog."""
         # self.helper.slog(f"append_chatlog {thread_id} {msg}")
         expiry = 60 * 60 * 24 * 7
         thread_key = REDIS_PREPEND + thread_id
@@ -441,7 +440,7 @@ Exception {exception_type}: {pformat(anthropic_exception)}"
         return messages
 
     def get_thread_messages_from_redis(self, thread_id):
-        """get a chatlog"""
+        """Get a chatlog."""
         thread_key = REDIS_PREPEND + thread_id
         messages = self.helper.redis_deserialize_json(
             self.redis.lrange(thread_key, 0, -1)
@@ -450,14 +449,14 @@ Exception {exception_type}: {pformat(anthropic_exception)}"
 
     @staticmethod
     def redis_serialize_json(msg):
-        """serialize a message to json, using a custom serializer for types not
-        handled by the default json serialization"""
+        """Serialize a message to json, using a custom serializer for types not handled
+        by the default json serialization."""
         # return json.dumps(msg)
         return jsonpickle.encode(msg, unpicklable=False)
 
     @staticmethod
     def redis_deserialize_json(msg):
-        """deserialize a message from json"""
+        """Deserialize a message from json."""
         if isinstance(msg, list):
             return [jsonpickle.decode(m) for m in msg]
         return jsonpickle.decode(msg)

@@ -1,14 +1,11 @@
+import asyncio
+import shlex
+import subprocess
+
 from mmpy_bot.function import listen_to
 from mmpy_bot.wrappers import Message
 from plugins.base import PluginLoader
-import validators
-import re
-import dns.resolver
-import ipaddress
-import urllib.parse
-import subprocess
-import shlex
-import asyncio
+
 SHELL_COMMANDS = {
     "ping": {"validators": ["ipv4", "domain"], "command": "ping", "args": "-c 4 -W 1"},
     "ping6": {
@@ -79,22 +76,24 @@ SHELL_COMMANDS = {
     },
 }
 
-class ShellCmds(PluginLoader):
 
+class ShellCmds(PluginLoader):
     def validatecommand(self, command):
-        """check if commands is in a list of commands allowed"""
+        """Check if commands is in a list of commands allowed."""
         if command in SHELL_COMMANDS:
             return SHELL_COMMANDS[command]
         else:
             return False
             # return { "error": f"invalid command. supported commands: {' '.join(list(SHELL_COMMANDS.keys()))}" }
-    def validateinput(self,input,types=["domain","ip"], allowed_args=[]):
-        """function that takes a string and validates that it matches against one or more of the types given in the list"""
+
+    def validateinput(self, input, types=["domain", "ip"], allowed_args=[]):
+        """Function that takes a string and validates that it matches against one or
+        more of the types given in the list."""
         self.helper.validate_input(input, types, allowed_args)
 
     @listen_to(r"^!(.*)")
-    async def run_command(self,message: Message, command):
-        """ runs a command after validating the command and the input"""
+    async def run_command(self, message: Message, command):
+        """Runs a command after validating the command and the input."""
         # check if user is user (lol)
         if not self.users.is_user(message.sender_name):
             self.driver.reply_to(message, f"Error: {message.sender_name} is not a user")
@@ -111,14 +110,17 @@ class ShellCmds(PluginLoader):
             return
         if command == "help":
             # send a list of commands from SHELL_COMMANDS
-            messagetxt = f"Allowed commands:\n"
-            messagetxt += f"!help\n"
+            messagetxt = "Allowed commands:\n"
+            messagetxt += "!help\n"
             for command in SHELL_COMMANDS.keys():
                 argstxt = ""
                 valtxt = ""
                 if "allowed_args" in SHELL_COMMANDS[command]:
                     argstxt = f"[{' / '.join(SHELL_COMMANDS[command]['allowed_args'])}]"
-                if "validators" in SHELL_COMMANDS[command] and len(SHELL_COMMANDS[command]['validators']) > 0:
+                if (
+                    "validators" in SHELL_COMMANDS[command]
+                    and len(SHELL_COMMANDS[command]["validators"]) > 0
+                ):
                     valtxt = f"<{' / '.join(SHELL_COMMANDS[command]['validators'])}>"
                 messagetxt += f"!{command} {argstxt} {valtxt}\n"
             self.driver.reply_to(message, messagetxt)
@@ -145,22 +147,32 @@ class ShellCmds(PluginLoader):
             if input != "":
                 inputs = input.split(" ")
                 for word in inputs:
-                    valid_input = self.validateinput(word,validators,allowed_args)
+                    valid_input = self.validateinput(word, validators, allowed_args)
                     # check if dict
-                    if type(valid_input) is dict:
+                    if isinstance(valid_input, dict):
                         if "error" in valid_input:
-                            self.driver.reply_to(message, f"Error: {valid_input['error']}")
+                            self.driver.reply_to(
+                                message, f"Error: {valid_input['error']}"
+                            )
                             await self.helper.log(f"Error: {valid_input['error']}")
                             return False
                     if valid_input is False:
-                        self.driver.reply_to(message, f"Error: {word} is not a valid input to {command}")
-                        await self.helper.log(f"Error: {word} is not a valid input to {command}")
+                        self.driver.reply_to(
+                            message, f"Error: {word} is not a valid input to {command}"
+                        )
+                        await self.helper.log(
+                            f"Error: {word} is not a valid input to {command}"
+                        )
                         return False
                     # run command
             self.helper.add_reaction(message, "hourglass")
-            await self.helper.log(f"{message.sender_name} is running command: {command} {args} {input}")
+            await self.helper.log(
+                f"{message.sender_name} is running command: {command} {args} {input}"
+            )
             cmd = shlex.split(f"{command} {args} {input}")
-            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            process = subprocess.Popen(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
             timeout = False
             try:
                 output, error = process.communicate(timeout=10)
@@ -173,18 +185,23 @@ class ShellCmds(PluginLoader):
                     output = output.decode("utf-8")
                 if error:
                     error = error.decode("utf-8")
-                timeout=True
+                timeout = True
             self.helper.remove_reaction(message, "hourglass")
-            self.driver.reply_to(message, f"{command} {args} {input}\nResult:\n```\n{output}\n```")
+            self.driver.reply_to(
+                message, f"{command} {args} {input}\nResult:\n```\n{output}\n```"
+            )
             if error:
                 self.driver.reply_to(message, f"Error:\n```\n{error}\n```")
             if timeout:
-                self.driver.reply_to(message, f"Timed out: 10 seconds")
-            await self.helper.log(f"{message.sender_name} ran command: {command} {args} {input}")
+                self.driver.reply_to(message, "Timed out: 10 seconds")
+            await self.helper.log(
+                f"{message.sender_name} ran command: {command} {args} {input}"
+            )
 
     @listen_to(r"^\.exec (.*)")
     async def admin_exec_function(self, message, code):
-        """exec function that allows admins to run arbitrary python code and return the result to the chat"""
+        """Exec function that allows admins to run arbitrary python code and return the
+        result to the chat."""
         reply = ""
         if self.users.is_admin(message.sender_name):
             try:
@@ -196,17 +213,16 @@ class ShellCmds(PluginLoader):
 
     @listen_to(r"^\.shell (.*)")
     async def admin_shell_function(self, message, code):
-        """shell function that allows admins to run arbitrary shell commands and return the result to the chat"""
+        """Shell function that allows admins to run arbitrary shell commands and return
+        the result to the chat."""
         reply = ""
         shellescaped_code = shlex.quote(code)
-        shell_part = f"docker run lbr/ubuntu:utils /bin/bash -c "
-        shellcode = (
-            f'docker run lbr/ubuntu:utils /bin/bash -c "{shellescaped_code}"'
-        )
+        shell_part = "docker run lbr/ubuntu:utils /bin/bash -c "
+        shellcode = f'docker run lbr/ubuntu:utils /bin/bash -c "{shellescaped_code}"'
         command = f"{shell_part} {shellcode}"
         command_parts = shlex.split(command)
         c = command_parts[0]
-        c_rest = command_parts[1:]
+        # c_rest = command_parts[1:]
         if self.users.is_admin(message.sender_name):
             try:
                 self.driver.react_to(message, "runner")
@@ -232,19 +248,23 @@ class ShellCmds(PluginLoader):
             self.driver.reactions.delete_reaction(
                 self.driver.user_id, message.id, "runner"
             )
+
     # restart bot
     @listen_to(r"^\.restart$")
     async def restart(self, message: Message):
-        """restarts the bot"""
+        """Restarts the bot."""
         if self.users.is_admin(message.sender_name):
             await self.helper.log(f"{message.sender_name} is restarting the bot")
             self.driver.reply_to(message, "Restarting...")
             import sys
+
             sys.exit(1)
+
     # eval function that allows admins to run arbitrary python code and return the result to the chat
     @listen_to(r"^\.eval (.*)")
     async def admin_eval_function(self, message, code):
-        """eval function that allows admins to run arbitrary python code and return the result to the chat"""
+        """Eval function that allows admins to run arbitrary python code and return the
+        result to the chat."""
         reply = ""
         if self.users.is_admin(message.sender_name):
             try:
@@ -256,7 +276,7 @@ class ShellCmds(PluginLoader):
 
     @listen_to(r"^.(de|en)code ([a-zA-Z0-9]+) (.*)")
     async def decode(self, message: Message, method: str, encoding: str, text: str):
-        """decode text using a model"""
+        """Decode text using a model."""
         supported_encodings = ["base64", "b64", "url"]
         encode = True if method == "en" else False
         decode = True if method == "de" else False
@@ -264,10 +284,10 @@ class ShellCmds(PluginLoader):
             if text == "" or encoding == "" or encoding == "help":
                 # print help message
                 messagetxt = (
-                    f".encode <encoding> <text> - encode text using an encoding\n"
+                    ".encode <encoding> <text> - encode text using an encoding\n"
                 )
                 messagetxt += (
-                    f".decode <encoding> <text> - decode text using an encoding\n"
+                    ".decode <encoding> <text> - decode text using an encoding\n"
                 )
                 messagetxt += f"Supported encodings: {' '.join(supported_encodings)}\n"
                 self.driver.reply_to(message, messagetxt)

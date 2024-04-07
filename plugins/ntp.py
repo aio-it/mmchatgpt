@@ -1,13 +1,15 @@
-from mmpy_bot.function import listen_to
-from mmpy_bot.wrappers import Message
+import socket
+from textwrap import dedent
+from time import ctime
+
+import ntplib
+
 from mmpy_bot.driver import Driver
+from mmpy_bot.function import listen_to
 from mmpy_bot.plugins.base import PluginManager
 from mmpy_bot.settings import Settings
+from mmpy_bot.wrappers import Message
 from plugins.base import PluginLoader
-import ntplib
-from time import ctime
-from textwrap import dedent
-import socket
 
 
 class Ntp(PluginLoader):
@@ -59,7 +61,7 @@ class Ntp(PluginLoader):
 
     @listen_to(r"^\.ntptest ([\s\S]*)")
     async def ntp_test(self, message: Message, server: str):
-        """function to test ntp server"""
+        """Function to test ntp server."""
         self.driver.reply_to(
             message,
             f"hostname: {server}, ips: {', '.join(socket.gethostbyname_ex(server)[2])}",
@@ -96,7 +98,7 @@ class Ntp(PluginLoader):
 
     @listen_to(r"^\.ntpcompare ([\s\S]*) ([\s\S]*)")
     async def ntp_compare(self, message: Message, server1: str, server2: str):
-        """function to compare ntp servers"""
+        """Function to compare ntp servers."""
         self.driver.reply_to(
             message,
             f"ntp1 hostname: {server1}, ips: {', '.join(socket.gethostbyname_ex(server1)[2])}",
@@ -145,7 +147,7 @@ class Ntp(PluginLoader):
 
     @listen_to(r"^\.ntplookup ([\s\S]*)")
     async def ntp_lookup(self, message: Message, server: str):
-        """function to get all ntp servers from a dns record"""
+        """Function to get all ntp servers from a dns record."""
         try:
             servers = socket.gethostbyname_ex(server)
             servers = servers[2]
@@ -158,10 +160,8 @@ class Ntp(PluginLoader):
     async def ntp_offset_helper(
         self, message: Message, current_offset: float, server: str, times: int
     ):
-        """function that takes the input offset and then \
-        does 5 ntp lookups to the server offset and \
-        return the new offset to get closer to 0 \
-        """
+        """Function that takes the input offset and then does 5 ntp lookups to the
+        server offset and return the new offset to get closer to 0."""
         try:
             current_offset = float(current_offset)
         except ValueError:

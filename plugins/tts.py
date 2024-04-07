@@ -1,17 +1,18 @@
+import asyncio
+from typing import List, Tuple
+
+import pyttsx3
+from redis_rate_limit import RateLimit, TooManyRequests
+
 from mmpy_bot.function import listen_to
 from mmpy_bot.wrappers import Message
 from plugins.base import PluginLoader
-from typing import Tuple, List
-import pyttsx3
-import asyncio
-from redis_rate_limit import RateLimit, TooManyRequests
 
 
 class TTS(PluginLoader):
-
     @listen_to(r"^\.drtts ([\s\S]*)")
     async def drtts(self, message: Message, text: str):
-        """use the dr tts website to get an audio clip from text"""
+        """Use the dr tts website to get an audio clip from text."""
         if self.users.is_user(message.sender_name):
             try:
                 with RateLimit(
@@ -53,6 +54,7 @@ class TTS(PluginLoader):
         rate = engine.getProperty("rate")
         volume = engine.getProperty("volume")
         return voices, rate, volume
+
     # Broken fix maybe?
     # @listen_to(r"^\.tts ([\s\S]*)")
     async def tts(self, message: Message, text: str):

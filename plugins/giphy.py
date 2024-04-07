@@ -1,12 +1,13 @@
-from mmpy_bot.function import listen_to
-from mmpy_bot.wrappers import Message
-from mmpy_bot.driver import Driver
-from mmpy_bot.plugins.base import PluginManager
-from mmpy_bot.settings import Settings
-from plugins.base import PluginLoader
-from redis_rate_limit import RateLimit, TooManyRequests
 import requests
 from environs import Env
+from redis_rate_limit import RateLimit, TooManyRequests
+
+from mmpy_bot.driver import Driver
+from mmpy_bot.function import listen_to
+from mmpy_bot.plugins.base import PluginManager
+from mmpy_bot.settings import Settings
+from mmpy_bot.wrappers import Message
+from plugins.base import PluginLoader
 
 env = Env()
 
@@ -23,7 +24,7 @@ class Giphy(PluginLoader):
 
     @listen_to(r"^\.gif ([\s\S]*)")
     async def gif(self, message: Message, text: str):
-        """fetch gif from giphy api"""
+        """Fetch gif from giphy api."""
         if self.giphy_api_key is None:
             return
         if self.users.is_user(message.sender_name):

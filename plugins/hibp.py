@@ -1,14 +1,16 @@
-from mmpy_bot.function import listen_to
-from mmpy_bot.wrappers import Message
-from mmpy_bot.driver import Driver
-from mmpy_bot.plugins.base import PluginManager
-from mmpy_bot.settings import Settings
-from plugins.base import PluginLoader
-import hibpwned
 import re
+
+import hibpwned
 
 # load env
 from environs import Env
+
+from mmpy_bot.driver import Driver
+from mmpy_bot.function import listen_to
+from mmpy_bot.plugins.base import PluginManager
+from mmpy_bot.settings import Settings
+from mmpy_bot.wrappers import Message
+from plugins.base import PluginLoader
 
 
 class HIPB(PluginLoader):
@@ -25,6 +27,7 @@ class HIPB(PluginLoader):
         if not self.api_key:
             self.helper.slog("HIBP_API_KEY not found in .env")
             self.disabled = True
+
     # TODO: add command to add a watch on a email address
     @listen_to(r"^\.hibp ([\s\S]*)")
     @listen_to(r"^\.haveibeenpwned ([\s\S]*)")

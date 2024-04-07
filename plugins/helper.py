@@ -1,23 +1,23 @@
-"""shared functions and variables for the project"""
+"""Shared functions and variables for the project."""
 
-from mmpy_bot.wrappers import Message
 import inspect
-import json
-import redis
-import urllib
-import requests
-import logging
-import uuid
-import os
-import dns.resolver
-import validators
 import ipaddress
+import json
+import logging
+import os
 import re
+import urllib
+import uuid
+
+import dns.resolver
+import redis
+import requests
+import validators
 from environs import Env
 
-env = Env()
-import logging
+from mmpy_bot.wrappers import Message
 
+env = Env()
 
 # logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ def message_from_thread_post(post) -> Message:
 
 
 def is_from_self(self, driver) -> bool:
-    """check if the message is from the bot"""
+    """Check if the message is from the bot."""
     return self.user_id == driver.user_id
 
 
@@ -40,7 +40,7 @@ Message.is_from_self = is_from_self
 
 class Helper:
     REDIS_HOST = env.str("REDIS_HOST", "localhost")
-    """helper functions"""
+    """Helper functions."""
     REDIS = redis.Redis(host=REDIS_HOST, port=6379, db=0, decode_responses=True)
 
     def __init__(self, driver, rediss=None, log_channel=None):
@@ -59,33 +59,33 @@ class Helper:
             self.log_channel = self.log_channel
 
     def redis_serialize_json(self, msg):
-        """serialize a message to json"""
+        """Serialize a message to json."""
         return json.dumps(msg)
 
     def redis_deserialize_json(self, msg):
-        """deserialize a message from json"""
+        """Deserialize a message from json."""
         if isinstance(msg, list):
             return [json.loads(m) for m in msg]
         return json.loads(msg)
 
     def print_to_console(self, message: Message):
-        """print to console"""
+        """Print to console."""
         log.info(f"INFO: {message}")
 
     async def wall(self, message):
-        """send message to all admins"""
+        """Send message to all admins."""
         for admin_uid in self.redis.smembers("admins"):
             self.driver.direct_message(receiver_id=admin_uid, message=message)
 
     def get_caller_info(self):
-        """get the caller info"""
+        """Get the caller info."""
         stack = inspect.stack()
         callerclass = stack[2][0].f_locals["self"].__class__.__name__
         callerfunc = stack[2][0].f_code.co_name
         return callerclass, callerfunc
 
     async def log(self, message: str, level="INFO"):
-        """send message to log channel"""
+        """Send message to log channel."""
         callerclass, callerfunc = self.get_caller_info()
         msg = f"[{callerclass}.{callerfunc}] {message}"
         level = level.upper()
@@ -99,7 +99,7 @@ class Helper:
             self.driver.create_post(self.log_channel, msg[:4000])
 
     def slog(self, message: str):
-        """sync log"""
+        """Sync log."""
         callerclass, callerfunc = self.get_caller_info()
         msg = f"[{callerclass}.{callerfunc}] {message}"
         log.info(f"LOG: {msg}")
@@ -107,31 +107,34 @@ class Helper:
             self.driver.create_post(self.log_channel, msg[:4000])
 
     async def debug(self, message: str, private: bool = False):
-        """send debug message to log channel. if private is true send to all admins"""
+        """Send debug message to log channel.
+
+        if private is true send to all admins
+        """
         log.debug(f"DEBUG: {message}")
         if self.log_to_channel and not private:
             await self.log(f"DEBUG: {message}", level="DEBUG")
 
     def add_reaction(self, message: Message, reaction: str = "thought_balloon"):
-        """set the thread to in progress by adding a reaction to the thread"""
+        """Set the thread to in progress by adding a reaction to the thread."""
         self.driver.react_to(message, reaction)
 
     def remove_reaction(self, message: Message, reaction: str = "thought_balloon"):
-        """set the thread to in progress by removing the reaction from the thread"""
+        """Set the thread to in progress by removing the reaction from the thread."""
         self.driver.reactions.delete_reaction(self.driver.user_id, message.id, reaction)
 
     def urlencode_text(self, text: str) -> str:
-        """urlencode the text"""
+        """Urlencode the text."""
 
         return urllib.parse.quote_plus(text)
 
     def create_tmp_filename(self, extension: str) -> str:
-        """create a tmp filename"""
+        """Create a tmp filename."""
 
         return f"/tmp/{uuid.uuid4()}.{extension}"
 
     def download_file(self, url: str, filename: str) -> str:
-        """download file from url using requests and return the filename/location"""
+        """Download file from url using requests and return the filename/location."""
 
         request = requests.get(url, allow_redirects=True)
         with open(filename, "wb") as file:
@@ -139,13 +142,13 @@ class Helper:
         return filename
 
     def download_file_to_tmp(self, url: str, extension: str) -> str:
-        """download file using requests and return the filename/location"""
+        """Download file using requests and return the filename/location."""
 
         filename = self.create_tmp_filename(extension)
         return self.download_file(url, filename)
 
     def delete_downloaded_file(self, filename: str):
-        """delete the downloaded file"""
+        """Delete the downloaded file."""
 
         if (
             os.path.exists(filename)
@@ -155,12 +158,13 @@ class Helper:
             os.remove(filename)
 
     def strip_self_username(self, message: str) -> str:
-        """remove self mention from the message"""
+        """Remove self mention from the message."""
 
         return message.replace(f"@{self.driver.client.username}", "").strip()
 
     def validate_input(self, input, types=["domain", "ip"], allowed_args=[], count=0):
-        """function that takes a string and validates that it matches against one or more of the types given in the list"""
+        """Function that takes a string and validates that it matches against one or
+        more of the types given in the list."""
         # keep a counter to prevent infinite recursion
         count += 1
         if count > 10:
@@ -177,7 +181,7 @@ class Helper:
             "argument",
             "port",
         ]
-        if types and type(types) is not list:
+        if types and not isinstance(types, list):
             types = [types]
         if len(types) == 0:
             return {"error": "no arguments allowed"}
@@ -211,7 +215,7 @@ class Helper:
                 except Exception as error:
                     return {"error": f"error resolving domain: {error}"}
                 if len(answers) == 0 and len(answers6) == 0 and len(answersc) == 0:
-                    return {"error": f"no dns records found for {domain}"}
+                    return {"error": f"no dns records found for {input}"}
                 # loop over answers6 and answers and check if any of them are private ips
                 for answer in [answersc, answers6, answers]:
                     for rdata in answer:
@@ -221,7 +225,7 @@ class Helper:
                                 str(rdata.target).rstrip("."), ["domain"], count=count
                             )
                             # check if dict
-                            if type(result) is dict:
+                            if isinstance(result, dict):
                                 if "error" in result:
                                     return {"error": f"cname: {result['error']}"}
                             continue
@@ -304,7 +308,7 @@ class Helper:
                     # call validateinput again with domain
                     result = self.validate_input(domain, ["domain"], count=count)
                     # check if dict
-                    if type(result) is dict:
+                    if isinstance(result, dict):
                         if "error" in result:
                             return {"error": f"domain: {result['error']}"}
                     response = requests.head(
@@ -321,7 +325,7 @@ class Helper:
                     for url in urls:
                         result = self.validate_input(url, ["url"], count=count)
                         # check if dict
-                        if type(result) is dict:
+                        if isinstance(result, dict):
                             if "error" in result:
                                 return {"error": f"redirect: {result['error']}"}
                 except requests.exceptions.RequestException as error:

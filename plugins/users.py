@@ -1,11 +1,14 @@
+import datetime
+
+from environs import Env
+
 from mmpy_bot.driver import Driver
 from mmpy_bot.function import listen_to
 from mmpy_bot.plugins.base import Plugin, PluginManager
 from mmpy_bot.settings import Settings
 from mmpy_bot.wrappers import Message
-import datetime
-from environs import Env
 from plugins.helper import Helper
+
 env = Env()
 
 ADMINS = []  # put admins in here to prepopulate the redis db
@@ -21,23 +24,34 @@ MM_BOT_USERS_NEEDWHITELIST = env.bool("MM_BOT_USERS_NEEDWHITELIST", NEEDWHITELIS
 
 
 class UserNotFound(Exception):
-    """user not found exception"""
+    """User not found exception."""
 
     pass
 
 
 class Users(Plugin):
-    """manage users"""
-    def __init__(self, driver: Driver = None, plugin_manager: PluginManager = None, settings: Settings = None):
-        if (driver is not None) and (plugin_manager is not None) and (settings is not None):
+    """Manage users."""
+
+    def __init__(
+        self,
+        driver: Driver = None,
+        plugin_manager: PluginManager = None,
+        settings: Settings = None,
+    ):
+        if (
+            (driver is not None)
+            and (plugin_manager is not None)
+            and (settings is not None)
+        ):
             self.initialize(driver, plugin_manager, settings)
+
     def initialize(
         self,
         driver: Driver,
         plugin_manager: PluginManager,
         settings: Settings,
     ):
-        """initialize"""
+        """initialize."""
         self.driver = driver
         self.settings = settings
         self.plugin_manager = plugin_manager
@@ -77,7 +91,7 @@ class Users(Plugin):
         self.helper.slog(f"Users: {self.redis.smembers('users')}")
 
     def on_start(self):
-        """on start"""
+        """On start."""
         # self.log("ChatGPT Bot started")
         # self.log("model: " + self.model)
         # convert all admins usernames to user ids and save to redis
@@ -107,38 +121,42 @@ class Users(Plugin):
             # replace current ban username with uid in redis
             self.redis.delete(key)
             self.redis.set(f"ban:{self.get_uid(user)}", expire)
+
     def on_stop(self):
-        """on stop"""
+        """On stop."""
         pass
+
     def is_user(self, username):
-        """check if user is user"""
+        """Check if user is user."""
         # check if user is banned
         if self.redis.exists(f"ban:{self.u2id(username)}"):
             return False
-        if NEEDWHITELIST == False:
+        if NEEDWHITELIST is False:
             return True
         return True if self.u2id(username) in self.redis.smembers("users") else False
+
     def is_admin(self, username):
-        """check if user is admin"""
+        """Check if user is admin."""
         # convert username to uid
         return True if self.u2id(username) in self.redis.smembers("admins") else False
+
     def u2id(self, username):
-        """convert username to uid"""
+        """Convert username to uid."""
         return self.get_uid(username)
 
     def id2u(self, user_id):
-        """convert uid to username"""
+        """Convert uid to username."""
         return self.get_user_by_user_id(user_id)["username"]
 
     def check_if_username_or_id(self, username_or_id):
-        """check if username or id"""
+        """Check if username or id."""
         try:
             user = self.get_user_by_username(username_or_id)["username"]
-        except:
+        except:  # pylint: disable=bare-except
             user = None
         try:
             uid = self.get_user_by_user_id(username_or_id)["id"]
-        except:
+        except:  # pylint: disable=bare-except
             uid = None
 
         if user is None and uid is None:
@@ -147,21 +165,27 @@ class Users(Plugin):
             return "user"
         if uid is not None:
             return "uid"
+
     def user_exists(self, username):
-        """check if user exists"""
+        """Check if user exists."""
         if self.check_if_username_or_id(username) == "not found":
             return False
         return True
+
     def get_user_by_username(self, username):
-        """get user from username"""
+        """Get user from username."""
         # check if user is cached in redis
         if self.redis.exists(f"user:{username}"):
-            return self.helper.redis_deserialize_json(self.redis.get(f"user:{username}"))
+            return self.helper.redis_deserialize_json(
+                self.redis.get(f"user:{username}")
+            )
         users = self.driver.users.get_users_by_usernames([username])
         if len(users) == 1:
             # cache the user in redis for 1 hour
             self.redis.set(
-                f"user:{username}", self.helper.redis_serialize_json(users[0]), ex=60 * 60
+                f"user:{username}",
+                self.helper.redis_serialize_json(users[0]),
+                ex=60 * 60,
             )
             return users[0]
         if len(users) > 1:
@@ -172,7 +196,7 @@ class Users(Plugin):
         return None
 
     def get_user_by_user_id(self, user_id):
-        """get user id from user_id"""
+        """Get user id from user_id."""
         # check if user is cached in redis
         if self.redis.exists(f"user:{user_id}"):
             return self.helper.redis_deserialize_json(self.redis.get(f"user:{user_id}"))
@@ -183,34 +207,35 @@ class Users(Plugin):
                 f"user:{user_id}", self.helper.redis_serialize_json(user), ex=60 * 60
             )
             return user
-        except:
+        except:  # pylint: disable=bare-except
             return None
+
     def get_uid(self, username, force=False):
-        """get uid from username"""
+        """Get uid from username."""
         # check if uid is cached in redis
         if not force and self.redis.exists(f"uid:{username}"):
             return self.redis.get(f"uid:{username}")
         try:
             uid = self.get_user_by_username(username)["id"]
-        except:
+        except:  # pylint: disable=bare-except
             # uid not found
             uid = None
             # throw exception if user is not found
             raise UserNotFound(f"User not found: {username}")
         # cache the uid in redis for 10 hours
-        if uid != None:
+        if uid is not None:
             self.redis.set(f"uid:{username}", uid, ex=10 * 60 * 60)
         return uid
 
     @listen_to(r"\.uid ([a-zA-Z0-9_-]+)")
     async def uid(self, message: Message, username: str):
-        """get user id from username"""
+        """Get user id from username."""
         if self.is_admin(message.sender_name):
             self.driver.reply_to(message, self.get_uid(username))
 
     @listen_to(r"^\.banlist")
     async def banlist(self, message: Message):
-        """list banned users"""
+        """List banned users."""
         if self.is_admin(message.sender_name):
             # list banned users
             bans = ""
@@ -229,7 +254,7 @@ class Users(Plugin):
             self.driver.reply_to(message, f"Bans:\n{bans}")
 
     def ban_user(self, username, days=0, hours=0, minutes=0, seconds=0):
-        """ban user"""
+        """Ban user."""
         # check if user is admin
         if self.is_admin(username):
             return False
@@ -248,13 +273,15 @@ class Users(Plugin):
             seconds += days * 24 * 60 * 60
             self.redis.set(f"ban:{uid}", seconds, ex=seconds)
             return True
+
     def nohl(self, user):
-        """prevent highlighting the user by adding a zero width space to the username after the first letter"""
-        return user[0] + "\u200B" + user[1:]
+        """Prevent highlighting the user by adding a zero width space to the username
+        after the first letter."""
+        return user[0] + "\u200b" + user[1:]
 
     @listen_to(r"^\.ban ([a-zA-Z0-9_-]+) ?([0-9]?)")
     async def ban(self, message: Message, user, days=0):
-        """ban user"""
+        """Ban user."""
         days = int(days)
         if self.is_admin(message.sender_name):
             # check if user is admin
@@ -276,7 +303,7 @@ class Users(Plugin):
 
     @listen_to(r"^\.unban ([a-zA-Z0-9_-]+)")
     async def unban(self, message: Message, user):
-        """unban user"""
+        """Unban user."""
         if self.is_admin(message.sender_name):
             # check if user exists
             if self.get_user_by_username(user) is None:
@@ -291,9 +318,10 @@ class Users(Plugin):
             self.driver.reply_to(message, f"Unbanned {user}")
             self.redis.delete(f"ban:{uid}")
             await self.log(f"{message.sender_name} unbanned {user}")
+
     @listen_to(r"^\.users remove (.+)")
     async def users_remove(self, message: Message, username: str):
-        """remove user"""
+        """Remove user."""
         if self.is_admin(message.sender_name):
             # convert username to uid
             uid = self.u2id(username)
@@ -303,7 +331,7 @@ class Users(Plugin):
 
     @listen_to(r"^\.users add (.+)")
     async def users_add(self, message: Message, username: str):
-        """add user"""
+        """Add user."""
         if self.is_admin(message.sender_name):
             # check if user exists
             if self.get_user_by_username(username) is None:
@@ -316,7 +344,7 @@ class Users(Plugin):
 
     @listen_to(r"^\.users list")
     async def users_list(self, message: Message):
-        """list the users"""
+        """List the users."""
         if self.is_admin(message.sender_name):
             # loop through all users and get their usernames
             users = ""
@@ -326,7 +354,7 @@ class Users(Plugin):
 
     @listen_to(r"^\.admins add (.*)")
     async def admins_add(self, message: Message, username: str):
-        """add admin"""
+        """Add admin."""
         if self.is_admin(message.sender_name):
             # check if user exists
             if self.get_user_by_username(username) is None:
@@ -339,18 +367,17 @@ class Users(Plugin):
 
     @listen_to(r"^\.admins remove (.*)")
     async def admins_remove(self, message: Message, username: str):
-        """remove admin"""
+        """Remove admin."""
         if self.is_admin(message.sender_name):
             self.redis.srem("admins", self.u2id(username))
             self.driver.reply_to(message, f"Removed admin: {username}")
 
     @listen_to(r"^\.admins list")
     async def admins_list(self, message: Message):
-        """list the admins"""
+        """List the admins."""
         if self.is_admin(message.sender_name):
             # get a list of all admins and convert their uids to usernames
             admins = ""
             for admin in self.redis.smembers("admins"):
                 admins += f"{self.id2u(admin)} ({admin})\n"
             self.driver.reply_to(message, f"Allowed admins:\n{admins}")
-

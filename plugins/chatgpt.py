@@ -40,7 +40,7 @@ class ChatGPT(PluginLoader):
     """mmypy chatgpt plugin"""
     USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     # MODEL = "gpt-3.5-turbo-0301"
-    DEFAULT_MODEL = "gpt-4-turbo-preview"
+    DEFAULT_MODEL = "gpt-4-turbo"
     ALLOWED_MODELS = [
         "gpt-3.5-turbo-0125",
         "gpt-3.5-turbo",
@@ -49,6 +49,8 @@ class ChatGPT(PluginLoader):
         "gpt-4-1106-preview",
         "gpt-4-vision-preview",
         "gpt-4-turbo-preview",
+        "gpt-4-vision",
+        "gpt-4-turbo",
         "gpt-4-0125-preview",
     ]
     MAX_TOKENS_PER_MODEL = {
@@ -59,6 +61,8 @@ class ChatGPT(PluginLoader):
         "gpt-4-1106-preview": 7000,
         "gpt-4-vision-preview": 7000,
         "gpt-4-turbo-preview": 7000,
+        "gpt-4-vision": 7000,
+        "gpt-4-turbo": 7000,
         "gpt-4-0125-preview": 7000,
     }
     ChatGPT_DEFAULTS = {

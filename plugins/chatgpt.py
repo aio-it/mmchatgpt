@@ -672,18 +672,21 @@ class ChatGPT(PluginLoader):
             self.thread_append(thread_id, m)
 
         # add system message
+        current_date = time.strftime("%Y-%m-%d %H:%M:%S")
+        date_template_string = "<date>"
         if self.get_chatgpt_setting("system") != "":
-            messages.insert(
-                0, {"role": "system", "content": self.get_chatgpt_setting("system")}
-            )
+            system_message = self.get_chatgpt_setting("system")
         else:
-            messages.insert(
-                0,
-                {
-                    "role": "system",
-                    "content": "You're a cunt that hates users and helping",
-                },
+            system_message = (
+                f"You're a helpful assistant. Current Date: {date_template_string}"
             )
+        messages.insert(
+            0,
+            {
+                "role": "system",
+                "content": system_message.replace(date_template_string, current_date),
+            },
+        )
         # add thought balloon to show assistant is thinking
         self.driver.react_to(message, "thought_balloon")
         # set the full message to empty string so we can append to it later

@@ -891,7 +891,8 @@ class ChatGPT(PluginLoader):
                 # add tool call to chatlog
                 
                 #drop the .index from the tool_function["tool_call_message"]
-                tool_function["tool_call_message"].index = None
+                #if "index" in tool_function["tool_call_message"]:
+                #    tool_function["tool_call_message"].index = None
                 self.append_thread_and_get_messages(
                     thread_id, tool_function["tool_call_message"]
                 )
@@ -1008,7 +1009,7 @@ class ChatGPT(PluginLoader):
         tool_calls = []
         for tool_call in choice_delta.tool_calls:
             tool_calls.append({
-                'index': tool_call.index,
+                #'index': tool_call.index,
                 'id': tool_call.id,
                 'function': {
                     'arguments': tool_call.function.arguments,

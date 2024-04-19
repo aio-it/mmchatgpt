@@ -889,6 +889,9 @@ class ChatGPT(PluginLoader):
                 # await self.helper.log(f"function_result len: {len(full_message)}")
                 # await self.helper.log(f"function_result: {full_message}")
                 # add tool call to chatlog
+                
+                #drop the .index from the tool_function["tool_call_message"]
+                tool_function["tool_call_message"].index = None
                 self.append_thread_and_get_messages(
                     thread_id, tool_function["tool_call_message"]
                 )

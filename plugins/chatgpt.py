@@ -704,13 +704,15 @@ class ChatGPT(PluginLoader):
         messages = self.return_last_x_messages(
             messages, self.MAX_TOKENS_PER_MODEL[model]
         )
+        temperature = float(self.get_chatgpt_setting("temperature"))
+        top_p = float(self.get_chatgpt_setting("top_p"))
         # await self.helper.log(f"messages: {pformat(messages)}")
         try:
             response = await aclient.chat.completions.create(
                 model=model,
                 messages=messages,
-                #                temperature=temperature,
-                #                top_p=top_p,
+                temperature=temperature,
+                top_p=top_p,
                 stream=stream,
                 tools=self.tools,
                 tool_choice="auto",

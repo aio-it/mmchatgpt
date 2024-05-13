@@ -45,6 +45,7 @@ class ChatGPT(PluginLoader):
         "gpt-3.5-turbo-0125",
         "gpt-3.5-turbo",
         "gpt-4",
+        "gpt-4o",
         "gpt-4-32k",
         "gpt-4-1106-preview",
         "gpt-4-vision-preview",
@@ -57,6 +58,7 @@ class ChatGPT(PluginLoader):
         "gpt-3.5-turbo-0301": 3000,
         "gpt-3.5-turbo": 3000,
         "gpt-4": 7000,
+        "gpt-4o": 7000,
         "gpt-4-32k": 7000,
         "gpt-4-1106-preview": 7000,
         "gpt-4-vision-preview": 7000,
@@ -142,7 +144,7 @@ class ChatGPT(PluginLoader):
             },
         ]
 
-    def return_last_x_messages(self, messages, max_length_in_tokens):
+    def return_last_x_messages(self, messages, max_length_in_tokens = 7000):
         """return last x messages from list of messages limited by max_length_in_tokens"""
         # fuck this bs
         return messages
@@ -171,13 +173,18 @@ class ChatGPT(PluginLoader):
     async def model_set(self, message: Message, model: str):
         """set the model"""
         if self.users.is_admin(message.sender_name):
+            # if model begins with gpt-
+            if model.startswith("gpt-"):
+                self.redis.hset(self.SETTINGS_KEY, "model", model)
+                self.model = model
+                self.driver.reply_to(message, f"Set model to {model}")
             if model in self.ALLOWED_MODELS:
                 self.redis.hset(self.SETTINGS_KEY, "model", model)
                 self.model = model
                 self.driver.reply_to(message, f"Set model to {model}")
             else:
                 self.driver.reply_to(
-                    message, f"Model not allowed. Allowed models: {self.ALLOWED_MODELS}"
+                    message, f"Model not allowed. Allowed models: {self.ALLOWED_MODELS} or any model starting with gpt-"
                 )
 
     @listen_to(r"^\.gpt model get")
@@ -702,7 +709,7 @@ class ChatGPT(PluginLoader):
             reply_msg_id = message.reply_msg_id
         # fetch the previous messages in the thread
         messages = self.return_last_x_messages(
-            messages, self.MAX_TOKENS_PER_MODEL[model]
+            messages
         )
         temperature = float(self.get_chatgpt_setting("temperature"))
         top_p = float(self.get_chatgpt_setting("top_p"))

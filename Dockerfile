@@ -11,6 +11,7 @@ RUN pip install -r requirements.txt --no-cache-dir
 # copy the rest of the files
 COPY . /app/
 # remove .env files
-RUN rm .env*
+RUN rm .env* || true
+RUN rm .* || true
 # run the bot
 CMD ["python", "bot.py"]

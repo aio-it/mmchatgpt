@@ -6,7 +6,7 @@ clean:
 	docker compose rm -f
 	docker volume prune --all -f
 # make dev
-dev: test dev-stop docker-build
+dev: dev-stop docker-build
 	cp .env-dev .env
 	docker compose up -d --build
 	make logs

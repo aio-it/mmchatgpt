@@ -89,7 +89,7 @@ class Users(Plugin):
             self.redis.srem("admins", admin)
             try:
                 uid=self.get_uid(admin)
-                self.redis.sadd("admins", self.get_uid(admin))
+                self.redis.sadd("admins", uid)
             except UserNotFound:
                 # user not found must be wrong. delete him.
                 self.redis.srem("admins", admin)
@@ -101,7 +101,12 @@ class Users(Plugin):
                 continue
             # replace current user username with uid in redis
             self.redis.srem("users", user)
-            self.redis.sadd("users", self.get_uid(user))
+            try:
+                uid=self.get_uid(user)
+                self.redis.sadd("users", uid)
+            except UserNotFound:
+                self.redis.srem("users", user)
+
         # convert all bans usernames to user ids and save to redis
         for key in self.redis.scan_iter("ban:*"):
             user = key.split(":")[1]

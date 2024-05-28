@@ -1,6 +1,6 @@
 services:
   bot:
-    image: lbr88/mmchatgpt:latest
+    image: ghcr.io/lbr88/mmchatgpt:latest
     restart: unless-stopped
     #build: .
     environment:

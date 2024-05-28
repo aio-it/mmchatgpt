@@ -21,11 +21,18 @@ prod-stop:
 	docker compose down
 
 VERSION := $(shell git describe --tags `git rev-list --tags --max-count=1` 2>/dev/null || git rev-parse --short HEAD)
+docker-scan:
+	docker pull aquasec/trivy:0.18.3
+	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v $(pwd)/.cache:/root/.cache/ aquasec/trivy:0.18.3 lbr88/mmchatgpt:latest
 docker-build: requirements
-	docker build -t lbr88/mmchatgpt:$(VERSION) -t lbr88/mmchatgpt:latest .
+	docker build -t docker.io/lbr88/mmchatgpt:$(VERSION) -t docker.io/lbr88/mmchatgpt:latest -t ghcr.io/aio-it/mmchatgpt:$(VERSION) -t ghcr.io/aio-it/mmchatgpt:latest .
 docker-push: docker-build
-	docker push lbr88/mmchatgpt:$(VERSION)
-	docker push lbr88/mmchatgpt:latest
+	cat .github-token | docker login ghcr.io -u lbr88 --password-stdin
+	cat .docker-token | docker login docker.io -u lbr88 --password-stdin
+	docker push docker.io/lbr88/mmchatgpt:$(VERSION)
+	docker push docker.io/lbr88/mmchatgpt:latest
+	docker push ghcr.io/aio-it/mmchatgpt:latest
+	docker push ghcr.io/aio-it/mmchatgpt:$(VERSION)
 # other
 requirements:
 	echo "Generating requirements.txt"

@@ -40,8 +40,9 @@ Message.is_from_self = is_from_self
 
 class Helper:
     REDIS_HOST = env.str("REDIS_HOST", "localhost")
+    REDIS_DB = env.int("REDIS_DB",0)
     """helper functions"""
-    REDIS = redis.Redis(host=REDIS_HOST, port=6379, db=0, decode_responses=True)
+    REDIS = redis.Redis(host=REDIS_HOST, port=6379, db=REDIS_DB, decode_responses=True)
 
     def __init__(self, driver, rediss=None, log_channel=None):
         self.driver = driver

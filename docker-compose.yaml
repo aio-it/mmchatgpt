@@ -1,24 +1,41 @@
-volumes:
-  redis-data:
-  app-data:
-
 services:
   bot:
-    build: .
+    image: lbr88/mmchatgpt:latest
+    restart: unless-stopped
+    #build: .
     environment:
       REDIS_HOST: redis
+      REDIS_DB: 0
     links:
       - redis
-    command: ['python', 'bot.py']
+    command: [ 'python', 'bot.py' ]
     env_file:
       - .env
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - app-data:/app-data
   redis:
-    image: redis
+    image: redis:7.2.5-alpine
+    restart: unless-stopped
     volumes:
       - redis-data:/data
-    command: ['redis-server', '--save', '60', '1', '--loglevel', 'warning']
+    command:
+      [
+        'redis-server',
+        '--save',
+        '60',
+        '1',
+        '--loglevel',
+        'warning'
+      ]
     expose:
       - "6379"
+  watchtower:
+    image: containrrr/watchtower:1.7.1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 30
+    restart: unless-stopped
+volumes:
+  redis-data:
+  app-data:

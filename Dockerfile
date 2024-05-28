@@ -1,4 +1,6 @@
-FROM python:3.10
+FROM python:3.11.9-slim-bookworm
+LABEL maintainer="Lars Bo Rasmussen <lrasmussen@aio-it.dk>"
+LABEL version="1.0"
 # set working directory
 WORKDIR /app
 # install dig and other utils used by shellcmds

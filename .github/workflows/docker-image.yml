@@ -33,7 +33,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -
-        ./trivy image ghcr.io/aio-it/mmchatgpt:${{ env.TAG }}
+        ./bin/trivy image ghcr.io/aio-it/mmchatgpt:${{ env.TAG }}
 
     - name: Run Trivy scan on latest tag
       env:

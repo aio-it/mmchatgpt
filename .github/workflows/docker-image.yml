@@ -39,7 +39,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        ./trivy image ghcr.io/aio-it/mmchatgpt:latest
+        ./bin/trivy image ghcr.io/aio-it/mmchatgpt:latest
 
     - name: Push the Docker image with specific tag
       run: docker push ghcr.io/aio-it/mmchatgpt:${{ env.TAG }}

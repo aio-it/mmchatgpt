@@ -8,6 +8,8 @@ services:
       REDIS_DB: 0
     links:
       - redis
+    labels:
+      com.centurylinklabs.watchtower.scope: mmchatgpt
     command: [ 'python', 'bot.py' ]
     env_file:
       - .env
@@ -34,7 +36,7 @@ services:
     image: containrrr/watchtower:1.7.1
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    command: --interval 30
+    command: --interval 30 --scope mmchatgpt
     restart: unless-stopped
 volumes:
   redis-data:

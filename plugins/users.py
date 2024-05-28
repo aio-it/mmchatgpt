@@ -87,7 +87,13 @@ class Users(Plugin):
                 continue
             # replace current admin username with uid in redis
             self.redis.srem("admins", admin)
-            self.redis.sadd("admins", self.get_uid(admin))
+            try:
+                uid=self.get_uid(admin)
+                self.redis.sadd("admins", self.get_uid(admin))
+            except UserNotFound:
+                # user not found must be wrong. delete him.
+                self.redis.srem("admins", admin)
+            
         # convert all users usernames to user ids and save to redis
         for user in self.redis.smembers("users"):
             # check if it is already a uid

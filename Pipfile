@@ -24,10 +24,11 @@ beautifulsoup4 = "*"
 pedantic = "*"
 jsonpickle = "*"
 hibpwned = "*"
-duckduckgo-search = "*"
+duckduckgo-search = ">=5.2.2,<5.3.0"
 anthropic = "*"
 ntplib = "*"
 coverage = "*"
+jira = "*"
 
 [dev-packages]
 autopep8 = "*"

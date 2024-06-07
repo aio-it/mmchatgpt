@@ -15,6 +15,7 @@ from plugins.hibp import HIPB
 from plugins.calc import Calc
 from plugins.giphy import Giphy
 from plugins.ntp import Ntp
+from plugins.jira import Jira
 import logging
 
 env = Env()
@@ -50,6 +51,7 @@ bot = Bot(
         Calc(),
         Giphy(),
         Ntp(),
+        Jira(),
     ],
     enable_logging=True,
 )

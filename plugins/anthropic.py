@@ -259,10 +259,11 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             await self.helper.debug("no messages in redis thread")
         self.driver.reply_to(message, json.dumps(messages, indent=4)[:4000])
 
+    @listen_to(r"^@s .*", regexp_flag=re_DOTALL)
     @listen_to(r"^@sonnet .*", regexp_flag=re_DOTALL)
     async def chat_sonnet(self, message: Message):
         # await self.helper.log(f"@sonnet from {message.sender_name}")
-        return await self.chat(message, "claude-3-sonnet-20240229")
+        return await self.chat(message, "claude-3-5-sonnet-20240620")
 
     @listen_to(r"^@opus .*", regexp_flag=re_DOTALL)
     async def chat_opus(self, message: Message):

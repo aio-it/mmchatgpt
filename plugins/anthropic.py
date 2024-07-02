@@ -51,11 +51,11 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     DEFAULT_MODEL = MODEL
     ALLOWED_MODELS = [
         DEFAULT_MODEL,
-        "claude-3-sonnet-20240229",
+        "claude-3-5-sonnet-20240620",
     ]
     MAX_TOKENS_PER_MODEL = {
         DEFAULT_MODEL: 4096,
-        "claude-3-sonnet-20240229": 4096,
+        "claude-3-5-sonnet-20240620": 4096,
     }
     ANTHROPIC_DEFAULTS = {
         "temperature": 1.0,

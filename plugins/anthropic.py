@@ -198,6 +198,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             user_message_content = ""
             for thread_index in thread["order"]:
                 thread_post = thread["posts"][thread_index]
+                self.helper.slog(f"Processing post: {thread_post.text[:50]}...")  # Log first 50 chars
                 # turn the thread post into a Message object
                 thread_post = Message.create_message(thread_post)
 
@@ -294,6 +295,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         if len(messages) != 1:
             # remove mentions of self
             message.text = self.helper.strip_self_username(message.text)
+            await self.helper.log(f"Retrieved {len(messages)} messages for thread {thread_id}")
             # remove mentions of self from self.names
             for name in self.names:
                 message.text = message.text.replace(f"{name} ", "")
@@ -332,6 +334,9 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         )
         i = 0
         try:
+            await self.helper.log("Messages being sent to Anthropic API:")
+            for idx, msg in enumerate(messages):
+                await self.helper.log(f"Message {idx}: Role: {msg['role']}, Content: {msg['content'][:50]}...")
             async with aclient.with_options(max_retries=5).messages.stream(
                 max_tokens=self.MAX_TOKENS_PER_MODEL[model],
                 messages=messages,

@@ -8,7 +8,7 @@ clean:
 # make dev
 dev: dev-stop docker-build
 	cp .env-dev .env
-	docker compose up -d --build
+	docker compose up -d --build --remove-orphans
 	make logs
 dev-stop:
 	docker compose down

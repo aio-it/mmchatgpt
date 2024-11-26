@@ -48,7 +48,7 @@ ntplib==0.4.0
 oauthlib==3.2.2; python_version >= '3.6'
 openai==1.32.0; python_full_version >= '3.7.1'
 orjson==3.10.3; python_version >= '3.8'
-packaging==24.0; python_version >= '3.7'
+packaging==24.1; python_version >= '3.7'
 pedantic==1.16.4; python_full_version >= '3.9.0'
 pillow==10.3.0; python_version >= '3.8'
 pycparser==2.22; python_version >= '3.8'

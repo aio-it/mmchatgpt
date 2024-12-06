@@ -102,6 +102,7 @@ class ChatGPT(PluginLoader):
         self.headers = {
             "User-Agent": self.USER_AGENT,
         }
+        self.update_allowed_models()
         print(f"Allowed models: {self.ALLOWED_MODELS}")
         # TODO: add ignore function for specific channels like town-square that is global for all users
         # chatgpt "function calling" so we define the tools here.
@@ -143,6 +144,26 @@ class ChatGPT(PluginLoader):
                 },
             },
         ]
+    def update_allowed_models(self):
+        """update allowed models"""
+        response = openai.models.list()
+        available_models = []
+        models_msg = "Available Models:\n"
+        for model in response.data:
+            available_models.append(model)
+        if len(available_models) > 0:
+            self.ALLOWED_MODELS = [model.id for model in available_models]
+        else:
+            available_models = self.ALLOWED_MODELS
+            self.helper.slog(f"Could not update allowed models. Using default models: {available_models}")
+        # sort the models on the created key
+        available_models.sort(key=lambda x: x.created, reverse=True)
+        for model in available_models:
+            # convert unix to human readable date
+            model.created = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(model.created))
+            models_msg += f"- {model.id}\n ({model.created})\n"
+        self.helper.slog(models_msg)
+        return available_models
 
     def return_last_x_messages(self, messages, max_length_in_tokens = 7000):
         """return last x messages from list of messages limited by max_length_in_tokens"""
@@ -168,13 +189,21 @@ class ChatGPT(PluginLoader):
                     break
 
         return list(reversed(limited_messages))
+    @listen_to(r"^\.gpt model available")
+    async def get_available_models(self, message: Message):
+        """get available models"""
+        available_models = self.update_allowed_models()
+        models_msg = "Available Models:\n"
+        for model in available_models:
+            models_msg += f"- {model.id} ({model.created})\n"        
+        self.driver.reply_to(message, models_msg)
 
     @listen_to(r"^\.gpt model set ([a-zA-Z0-9_-]+)")
     async def model_set(self, message: Message, model: str):
         """set the model"""
         if self.users.is_admin(message.sender_name):
             # if model begins with gpt-
-            if model.startswith("gpt-"):
+            if model.startswith("gpt") or model.startswith("o1"):
                 self.redis.hset(self.SETTINGS_KEY, "model", model)
                 self.model = model
                 self.driver.reply_to(message, f"Set model to {model}")
@@ -413,7 +442,7 @@ class ChatGPT(PluginLoader):
                 }
 
                 payload = {
-                    "model": "gpt-4-vision-preview",
+                    "model": "gpt-4o",
                     "messages": [
                         {
                             "role": "user",
@@ -449,14 +478,14 @@ class ChatGPT(PluginLoader):
     async def web_search(self, searchterm):
         """search the web using duckduckgo"""
         self.exit_after_loop = False
-        await self.helper.log(f"searching the web for: {searchterm} using backend=api")
+        await self.helper.log(f"searching the web using backend=api")
         from duckduckgo_search import DDGS
         try:
             results = DDGS().text(keywords=searchterm, backend="api", max_results=5)
             return results
         except Exception as e:
             await self.helper.log(f"Error: {e}, falling back to html backend")
-        await self.helper.log(f"searching the web for: {searchterm} using backend=html")
+        await self.helper.log(f"searching the web using backend=html")
         try:
             from duckduckgo_search import DDGS
             results = DDGS().text(keywords=searchterm, backend="html", max_results=5)
@@ -468,7 +497,7 @@ class ChatGPT(PluginLoader):
     async def download_webpage(self, url):
         """download a webpage and return the content"""
         self.exit_after_loop = False
-        await self.helper.log(f"downloading webpage: {url}")
+        await self.helper.log(f"downloading webpage")
         validate_result = self.helper.validate_input(url, "url")
         if validate_result != True:
             await self.helper.log(f"Error: {validate_result}")
@@ -688,19 +717,21 @@ class ChatGPT(PluginLoader):
         # add system message
         current_date = time.strftime("%Y-%m-%d %H:%M:%S")
         date_template_string = "<date>"
-        if self.get_chatgpt_setting("system") != "":
-            system_message = self.get_chatgpt_setting("system")
-        else:
-            system_message = (
-                f"You're a helpful assistant. Current Date: {date_template_string}"
+        # model o1-preview does not support system messages
+        if not model.startswith("o1"):
+            if self.get_chatgpt_setting("system") != "":
+                system_message = self.get_chatgpt_setting("system")
+            else:
+                system_message = (
+                    f"You're a helpful assistant. Current Date: {date_template_string}"
+                )
+            messages.insert(
+                0,
+                {
+                    "role": "system",
+                    "content": system_message.replace(date_template_string, current_date),
+                },
             )
-        messages.insert(
-            0,
-            {
-                "role": "system",
-                "content": system_message.replace(date_template_string, current_date),
-            },
-        )
         # add thought balloon to show assistant is thinking
         self.driver.react_to(message, "thought_balloon")
         # set the full message to empty string so we can append to it later
@@ -722,15 +753,18 @@ class ChatGPT(PluginLoader):
         top_p = float(self.get_chatgpt_setting("top_p"))
         # await self.helper.log(f"messages: {pformat(messages)}")
         try:
-            response = await aclient.chat.completions.create(
-                model=model,
-                messages=messages,
-                temperature=temperature,
-                top_p=top_p,
-                stream=stream,
-                tools=self.tools,
-                tool_choice="auto",
-            )
+            request_object = {
+                "model": model,
+                "messages": messages,
+                "temperature": temperature,
+                "top_p": top_p,
+                "stream": stream,
+            }
+            if not model.startswith("o1"):
+                # we are not using o1 so add the tools to the request object
+                request_object["tools"] = self.tools
+                request_object["tool_choice"] = "auto"
+            response = await aclient.chat.completions.create(**request_object)
         except (openai.error.RateLimitError, openai.error.APIError) as error:
             # update the message
             self.driver.posts.patch_post(reply_msg_id, {"message": f"Error: {error}"})
@@ -993,16 +1027,29 @@ class ChatGPT(PluginLoader):
 
         await self.helper.log(f"User: {message.sender_name} used {model}")
 
+    @listen_to(r"^@o1[ \n]+.+", regexp_flag=re_DOTALL)
+    async def chat_o1(self, message: Message):
+        """listen to everything and respond when mentioned"""
+        await self.helper.log(f"User: {message.sender_name} used o1 keyword")
+        await self.chat(message, model="o1-preview")
+
+    @listen_to(r"^@o1mini[ \n]+.+", regexp_flag=re_DOTALL)
+    async def chat_o1_mini(self, message: Message):
+        """listen to everything and respond when mentioned"""
+        await self.helper.log(f"User: {message.sender_name} used o1 keyword")
+        await self.chat(message, model="o1-mini")
+
     @listen_to(r"^@gpt3[ \n]+.+", regexp_flag=re_DOTALL)
     async def chat_gpt3(self, message: Message):
         """listen to everything and respond when mentioned"""
+        await self.helper.log(f"User: {message.sender_name} used gpt3 keyword")
         await self.chat(message, model="gpt-3.5-turbo")
 
     @listen_to(r"^@gpt4{0,1}[ \n]+.+", regexp_flag=re_DOTALL)
     async def chat_gpt4(self, message: Message):
         """listen to everything and respond when mentioned"""
         if "4" not in self.model:
-            await self.chat(message, "gpt-4-turbo-preview")
+            await self.chat(message, "gpt-4o")
         else:
             await self.chat(message)
 

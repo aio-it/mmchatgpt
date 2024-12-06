@@ -695,7 +695,9 @@ class ChatGPT(PluginLoader):
         # if message is not from a user, ignore
         if not self.users.is_user(message.sender_name):
             return
-
+        # check if the message is private and is starting with a @ so ignore
+        #if message.is_direct_message and message.text.startswith("@"):
+        #    await self.helper.log (f"ignoring private message starting with @")
         # message text exceptions. bail if message starts with any of these
         skips = [".", "!", "ollama", "@claude", "@opus", "@sonnet"]
         for skip in skips:
@@ -737,7 +739,7 @@ class ChatGPT(PluginLoader):
         # set the full message to empty string so we can append to it later
         full_message = ""
         # post_prefix is so we can add the sender name to the message to prevent confusion as to who the reply is to
-        post_prefix = f"@{message.sender_name}: "
+        post_prefix = f"({model}) @{message.sender_name}: "
 
         # if we are running a tool, we need to reply to the original message and not create a new message.
         # if we are not running a tool, we need to create a new message
@@ -998,7 +1000,6 @@ class ChatGPT(PluginLoader):
                 await self.helper.debug(message)
                 await self.chat(message, model)
                 return
-
             # update the message a final time to make sure we have the full message
             self.driver.posts.patch_post(
                 reply_msg_id, {"message": f"{post_prefix}{full_message}"}
@@ -1057,13 +1058,13 @@ class ChatGPT(PluginLoader):
     async def chat_gpt4_mention(self, message: Message):
         """listen to everything and respond when mentioned"""
         # if direct and starting with names bail
+        if message.is_direct_message and message.text.startswith("@"):
+            await self.helper.log(f"ignoring private message starting with @ from function chat_gpt4_mention")
+            return
         for name in self.names:
             if message.text.startswith(name):
                 return
-        if "4" not in self.model:
-            await self.chat(message, "gpt-4-turbo-preview")
-        else:
-            await self.chat(message)
+        await self.chat(message)
 
     def serialize_choice_delta(self, choice_delta):
         # This function will create a JSON-serializable representation of ChoiceDelta and its nested objects.

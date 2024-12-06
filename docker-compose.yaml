@@ -32,12 +32,12 @@ services:
       ]
     expose:
       - "6379"
-  #watchtower:
-  #  image: containrrr/watchtower:1.7.1
-  #  volumes:
-  #    - /var/run/docker.sock:/var/run/docker.sock
-  #  command: --interval 30 --scope mmchatgpt
-  #  restart: unless-stopped
+  watchtower:
+    image: containrrr/watchtower:1.7.1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 30 --scope mmchatgpt
+    restart: unless-stopped
 volumes:
   redis-data:
   app-data:

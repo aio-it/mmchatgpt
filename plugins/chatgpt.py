@@ -449,11 +449,18 @@ class ChatGPT(PluginLoader):
     async def web_search(self, searchterm):
         """search the web using duckduckgo"""
         self.exit_after_loop = False
-        from duckduckgo_search import AsyncDDGS
+        await self.helper.log(f"searching the web for: {searchterm} using backend=api")
+        from duckduckgo_search import DDGS
         try:
-            async with AsyncDDGS(headers=self.headers) as ddgs:
-                results = await ddgs.text(searchterm, max_results=5)
-                return results
+            results = DDGS().text(keywords=searchterm, backend="api", max_results=5)
+            return results
+        except Exception as e:
+            await self.helper.log(f"Error: {e}, falling back to html backend")
+        await self.helper.log(f"searching the web for: {searchterm} using backend=html")
+        try:
+            from duckduckgo_search import DDGS
+            results = DDGS().text(keywords=searchterm, backend="html", max_results=5)
+            return results
         except Exception as e:
             await self.helper.log(f"Error: {e}")
             return f"Error: {e}"

@@ -38,7 +38,7 @@ class MissingApiKey(Exception):
 
 class ChatGPT(PluginLoader):
     """mmypy chatgpt plugin"""
-    USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0"
     # MODEL = "gpt-3.5-turbo-0301"
     DEFAULT_MODEL = "gpt-4o"
     ALLOWED_MODELS = [
@@ -99,8 +99,17 @@ class ChatGPT(PluginLoader):
         for key, value in self.ChatGPT_DEFAULTS.items():
             if self.redis.hget(self.SETTINGS_KEY, key) is None:
                 self.redis.hset(self.SETTINGS_KEY, key, value)
+        # emulate a browser and set all the relevant headers
         self.headers = {
             "User-Agent": self.USER_AGENT,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.7,da;q=0.3",
+            "Accept-Encoding": "gzip, deflate, br",
+            "DNT": "1",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1",
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache",
         }
         self.update_allowed_models()
         print(f"Allowed models: {self.ALLOWED_MODELS}")
@@ -125,12 +134,11 @@ class ChatGPT(PluginLoader):
                         "required": ["url"],
                     },
                 },
-            },
-            {
+            },{
                 "type": "function",
                 "function": {
-                    "name": "web_search",
-                    "description": "search the web using duckduckgo needs a search term",
+                    "name": "web_search_and_download",
+                    "description": "use this function if you think that it might be benificial with additional context to the conversation. This searches the web using duckduckgo and download the webpage to get the content and return the content always show the source for any statements made about the things downloaded.",
                     "parameters": {
                         "type": "object",
                         "properties": {
@@ -142,7 +150,7 @@ class ChatGPT(PluginLoader):
                         "required": ["searchterm"],
                     },
                 },
-            },
+            }
         ]
     def update_allowed_models(self):
         """update allowed models"""
@@ -474,6 +482,28 @@ class ChatGPT(PluginLoader):
                     self.helper.remove_reaction(message, "thought_balloon")
 
                     await self.helper.log(f"{message.sender_name} used .vision")
+    async def web_search_and_download(self, searchterm):
+        """run the search and download top 5 results from duckduckgo"""
+        self.exit_after_loop = False
+        await self.helper.log(f"searching the web for {searchterm}")
+        results = await self.web_search(searchterm)
+        downloaded=[]
+        # loop through the results and download the top 5 webpages
+        for result in results:
+            await self.helper.log(f"downloading webpage {result}")
+            # download the webpage and add the content to the result object
+            content = await self.download_webpage(result.get("href"))
+            try:
+                await self.helper.log(f"webpage content: {content[:500]}")
+            except Exception as e:
+                await self.helper.log(f"Error: {e}")
+                content = None
+            if content:
+                result["content"] = content
+                downloaded.append(result)
+        await self.helper.log(f"search results: {results}")
+        # return the downloaded webpages as json
+        return json.dumps(downloaded)
 
     async def web_search(self, searchterm):
         """search the web using duckduckgo"""
@@ -497,7 +527,7 @@ class ChatGPT(PluginLoader):
     async def download_webpage(self, url):
         """download a webpage and return the content"""
         self.exit_after_loop = False
-        await self.helper.log(f"downloading webpage")
+        await self.helper.log(f"downloading webpage {url}")
         validate_result = self.helper.validate_input(url, "url")
         if validate_result != True:
             await self.helper.log(f"Error: {validate_result}")
@@ -534,12 +564,25 @@ class ChatGPT(PluginLoader):
                 )
                 return f"Error: content size exceeds the maximum limit ({max_content_size} bytes)"
         # decode the content
+        # check the encoding type so we can decode if it is compressed
+        #encoding = response.headers.get("Content-Encoding")
+        #if encoding == "gzip":
+        #    import gzip
+        #    response_text = gzip.decompress(content).decode("utf-8")
+        #elif encoding == "deflate":
+        #    import zlib
+        #    response_text = zlib.decompress(content).decode("utf-8")
+        #elif encoding == "br":
+        #    import brotli
+        #    response_text = brotli.decompress(content).decode("utf-8")
+        #else:
         response_text = content.decode("utf-8")
 
         blacklisted_tags = ["script", "style", "head", "title", "noscript"]
         # debug response
         # await self.helper.debug(f"response: {pformat(response.text[:500])}")
         # mattermost limit is 4000 characters
+        text_types = ["text/html", "application/xml", "application/json", "text/plain"]
         try:
             if response.status_code == 200:
                 # check what type of content we got
@@ -582,9 +625,8 @@ class ChatGPT(PluginLoader):
                             f"Error: could not parse webpage (Exception) {e}"
                         )
                         return f"Error: could not parse webpage (Exception) {e}"
-
-                elif "xml" in content_type or "json" in content_type:
-                    # xml or json
+                elif content_type in text_types:
+                    # text content
                     return response_text
                 else:
                     # unknown content type
@@ -922,6 +964,8 @@ class ChatGPT(PluginLoader):
                 if function_name == "download_webpage":
                     function_result = await function(arguments.get("url"))
                 elif function_name == "web_search":
+                    function_result = await function(arguments.get("searchterm"))
+                elif function_name == "web_search_and_download":
                     function_result = await function(arguments.get("searchterm"))
                 else:
                     # we shouldn't get to here. panic and run (return)

@@ -8,11 +8,11 @@ clean:
 # make dev
 dev: dev-stop docker-build
 	cp .env-dev .env
-	docker compose up -d --build --remove-orphans
+	docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d --build --remove-orphans
 	make logs
 dev-stop:
-	docker compose down
-	docker compose rm -f
+	docker compose -f docker-compose.yaml -f docker-compose.dev.yaml down
+	docker compose rm -f 
 # make prod
 prod: requirements
 	cp .env-prod .env

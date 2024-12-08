@@ -1,0 +1,7 @@
+services:
+  watchtower:
+    image: busybox
+    entrypoint: /bin/true
+    volumes: []
+    restart: "no"
+    command: []

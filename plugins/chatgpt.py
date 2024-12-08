@@ -942,10 +942,57 @@ class ChatGPT(PluginLoader):
                 # Make final call with all results
                 if tool_results:
                     messages = self.get_thread_messages(thread_id)
+                    # Ensure all messages have the required 'role' field and proper tool call structure
+                    formatted_messages = []
+                    if not model.startswith("o1"):
+                        formatted_messages.append({
+                            "role": "system",
+                            "content": system_message.replace(date_template_string, current_date),
+                        })
+
+                    # Keep track of tool calls to ensure proper pairing
+                    current_tool_call = None
+                    
+                    for msg in messages:
+                        if isinstance(msg, dict):
+                            # Handle tool calls
+                            if 'tool_calls' in msg:
+                                current_tool_call = msg
+                                formatted_messages.append({
+                                    "role": "assistant",
+                                    "content": None,
+                                    "tool_calls": msg['tool_calls']
+                                })
+                            # Handle tool responses
+                            elif msg.get('role') == 'tool':
+                                if current_tool_call:
+                                    formatted_messages.append({
+                                        "role": "tool",
+                                        "content": msg.get('content', ''),
+                                        "tool_call_id": msg.get('tool_call_id'),
+                                        "name": msg.get('name')
+                                    })
+                            # Handle regular messages
+                            elif 'role' in msg and 'content' in msg:
+                                formatted_messages.append(msg)
+                            elif 'content' in msg:
+                                formatted_messages.append({
+                                    "role": "user",
+                                    "content": msg['content']
+                                })
+                        elif isinstance(msg, str):
+                            formatted_messages.append({
+                                "role": "user",
+                                "content": msg
+                            })
+
                     try:
+                        # Debug log to see the formatted messages
+                        await self.helper.log(f"Formatted messages: {json.dumps(formatted_messages, indent=2)}")
+                        
                         final_response = await aclient.chat.completions.create(
                             model=model,
-                            messages=messages,
+                            messages=formatted_messages,
                             temperature=temperature,
                             top_p=top_p,
                             stream=stream
@@ -968,12 +1015,12 @@ class ChatGPT(PluginLoader):
 
                     except Exception as e:
                         await self.helper.log(f"Error in final response: {e}")
+                        await self.helper.log(f"Last formatted messages: {json.dumps(formatted_messages[-3:], indent=2)}")
                         self.driver.posts.patch_post(
                             reply_msg_id,
                             {"message": f"{post_prefix}Error processing tool results: {str(e)}"}
                         )
                         return
-
             elif full_message:  # No tools were called, store the regular response
                 self.thread_append(thread_id, {"role": "assistant", "content": full_message})
 

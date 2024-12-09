@@ -499,7 +499,7 @@ class ChatGPT(PluginLoader):
         await self.helper.log(f"searching the web for {searchterm}")
         results = await self.web_search(searchterm)
         downloaded=[]
-        localfiles = []
+        localfiles=[]
         i = 0
         # loop through the results and download the top 2 searches
         for result in results:
@@ -522,6 +522,9 @@ class ChatGPT(PluginLoader):
                 content = None
             if content:
                 result["content"] = content
+                downloaded.append(result)
+            else:
+                result["content"] = f"Error: could not download webpage {result.get('href')}"
                 downloaded.append(result)
         await self.helper.log(f"search results: {results}")
         # return the downloaded webpages as json

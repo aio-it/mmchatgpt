@@ -144,7 +144,12 @@ class Helper:
 
         filename = self.create_tmp_filename(extension)
         return self.download_file(url, filename)
-
+    def save_content_to_tmp_file(self, content: str, extension: str) -> str:
+        """save content to a tmp file"""    
+        filename = self.create_tmp_filename(extension)
+        with open(filename, "w") as file:
+            file.write(content)
+        return filename
     def delete_downloaded_file(self, filename: str):
         """delete the downloaded file"""
 

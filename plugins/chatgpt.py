@@ -509,7 +509,7 @@ class ChatGPT(PluginLoader):
             # try all of them in line and stop after 2. zero indexed
             if i >= 2:
                 break
-            await self.helper.log(f"downloading webpage {result}")
+            #await self.helper.log(f"downloading webpage {result}")
             try:
                 # download the webpage and add the content to the result object
                 if "href" not in result:
@@ -528,7 +528,7 @@ class ChatGPT(PluginLoader):
             else:
                 result["content"] = f"Error: could not download webpage {result.get('href')}"
                 downloaded.append(result)
-        await self.helper.log(f"search results: {results}")
+        #await self.helper.log(f"search results: {results}")
         # return the downloaded webpages as json
         return json.dumps(downloaded), localfiles
 
@@ -543,7 +543,7 @@ class ChatGPT(PluginLoader):
             filename = self.helper.save_content_to_tmp_file(json.dumps(results, indent=4), "json")
             return results, filename
         except Exception as e:
-            await self.helper.log(f"Error: {e}, falling back to html backend")
+            await self.helper.log(f"Error: falling back to html backend")
         await self.helper.log(f"searching the web using backend=html")
         try:
             from duckduckgo_search import DDGS

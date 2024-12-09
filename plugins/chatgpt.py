@@ -499,6 +499,7 @@ class ChatGPT(PluginLoader):
         await self.helper.log(f"searching the web for {searchterm}")
         results = await self.web_search(searchterm)
         downloaded=[]
+        localfiles = []
         i = 0
         # loop through the results and download the top 2 searches
         for result in results:
@@ -510,6 +511,8 @@ class ChatGPT(PluginLoader):
             try:
                 # download the webpage and add the content to the result object
                 content, localfile = await self.download_webpage(result.get("href"))
+                if localfile:
+                    localfiles.append(localfile)
                 await self.helper.log(f"webpage content: {content[:500]}")
                 i = i + 1
             except Exception as e:
@@ -520,7 +523,7 @@ class ChatGPT(PluginLoader):
                 downloaded.append(result)
         await self.helper.log(f"search results: {results}")
         # return the downloaded webpages as json
-        return json.dumps(downloaded), localfile
+        return json.dumps(downloaded), localfiles
 
     async def web_search(self, searchterm):
         """search the web using duckduckgo"""
@@ -529,17 +532,21 @@ class ChatGPT(PluginLoader):
         from duckduckgo_search import DDGS
         try:
             results = DDGS().text(keywords=searchterm, backend="api", max_results=10)
-            return results
+            # save to file
+            filename = self.helper.save_content_to_tmp_file(json.dumps(results, indent=4), "json")
+            return results, filename
         except Exception as e:
             await self.helper.log(f"Error: {e}, falling back to html backend")
         await self.helper.log(f"searching the web using backend=html")
         try:
             from duckduckgo_search import DDGS
             results = DDGS().text(keywords=searchterm, backend="html", max_results=10)
-            return results
+            # save to file
+            filename = self.helper.save_content_to_tmp_file(json.dumps(results, indent=4), "json")
+            return results, filename
         except Exception as e:
             await self.helper.log(f"Error: {e}")
-            return f"Error: {e}"
+            return f"Error: {e}", None
 
     async def download_webpage(self, url):
         """download a webpage and return the content"""
@@ -596,8 +603,8 @@ class ChatGPT(PluginLoader):
         response_text = content.decode("utf-8")
         # find the file extension from the content type
         content_types = {
-            # text types
-            "html": { "text/html": "html" },
+            # text types use txt for html since we are extracting text
+            "html": { "text/html": "txt" },
             "text": { "application/xml": "xml", "application/json": "json", "text/plain": "txt" },
             "video": { "video/mp4": "mp4", "video/webm": "webm", "video/ogg": "ogg" },
             "image": { "image/jpeg": "jpg", "image/png": "png", "image/gif": "gif", "image/svg+xml": "svg" },
@@ -998,10 +1005,19 @@ class ChatGPT(PluginLoader):
                         if filename:
                             files.append(filename)
                     elif function_name == "web_search":
-                        function_result = await function(arguments.get("searchterm"))
+                        function_result, filename = await function(arguments.get("searchterm"))
+                        if isinstance(filename, list):
+                            for file in filename:
+                                files.append(file)
+                        if isinstance(filename, str):
+                            files.append(filename)
                     elif function_name == "web_search_and_download":
                         function_result, filename = await function(arguments.get("searchterm"))
-                        if filename:
+                        # check if filenames is a list and append to files if it is a str append as is
+                        if isinstance(filename, list):
+                            for file in filename:
+                                files.append(file)
+                        if isinstance(filename, str):
                             files.append(filename)
                     else:
                         await self.helper.log(f"Unknown function: {function_name}")

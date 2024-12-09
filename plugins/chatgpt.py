@@ -226,18 +226,13 @@ class ChatGPT(PluginLoader):
     async def model_set(self, message: Message, model: str):
         """set the model"""
         if self.users.is_admin(message.sender_name):
-            # if model begins with gpt-
-            if model.startswith("gpt") or model.startswith("o1"):
-                self.redis.hset(self.SETTINGS_KEY, "model", model)
-                self.model = model
-                self.driver.reply_to(message, f"Set model to {model}")
-            elif model in self.ALLOWED_MODELS:
+            if model in self.ALLOWED_MODELS:
                 self.redis.hset(self.SETTINGS_KEY, "model", model)
                 self.model = model
                 self.driver.reply_to(message, f"Set model to {model}")
             else:
                 self.driver.reply_to(
-                    message, f"Model not allowed. Allowed models: {self.ALLOWED_MODELS} or any model starting with gpt-"
+                    message, f"Model not allowed. Allowed models: {self.ALLOWED_MODELS}"
                 )
 
     @listen_to(r"^\.gpt model get")
@@ -1035,7 +1030,7 @@ class ChatGPT(PluginLoader):
                     # append role to tool_function tool call message
                     tool_function["tool_call_message"]["role"] = "assistant"
                     # Update thread with tool call and result
-                    await self.helper.log(f"tool_result: {tool_function['tool_call_message']}")
+                    #await self.helper.log(f"tool_result: {tool_function['tool_call_message']}")
                     self.append_thread_and_get_messages(thread_id, tool_function["tool_call_message"])
                     self.append_thread_and_get_messages(thread_id, tool_result)
                     self.redis.hset(call_key, tool_call_id, "true")
@@ -1058,7 +1053,7 @@ class ChatGPT(PluginLoader):
 
                     try:
                         # Debug log to see the formatted messages
-                        await self.helper.log(f"Formatted messages: {json.dumps(formatted_messages, indent=2)}")
+                        #await self.helper.log(f"Formatted messages: {json.dumps(formatted_messages, indent=2)}")
                         
                         final_response = await aclient.chat.completions.create(
                             model=model,

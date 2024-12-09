@@ -496,10 +496,14 @@ class ChatGPT(PluginLoader):
     async def web_search_and_download(self, searchterm):
         """run the search and download top 2 results from duckduckgo"""
         self.exit_after_loop = False
-        await self.helper.log(f"searching the web for {searchterm}")
-        results = await self.web_search(searchterm)
         downloaded=[]
         localfiles=[]
+        await self.helper.log(f"searching the web for {searchterm}")
+        results = await self.web_search(searchterm)
+        # save the results to a file
+        filename = self.helper.save_content_to_tmp_file(json.dumps(results), "json")
+        # append to localfiles
+        localfiles.append(filename)
         i = 0
         # loop through the results and download the top 2 searches
         for result in results:

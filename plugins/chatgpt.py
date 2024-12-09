@@ -499,11 +499,9 @@ class ChatGPT(PluginLoader):
         downloaded=[]
         localfiles=[]
         await self.helper.log(f"searching the web for {searchterm}")
-        results = await self.web_search(searchterm)
-        # save the results to a file
-        filename = self.helper.save_content_to_tmp_file(json.dumps(results), "json")
-        # append to localfiles
-        localfiles.append(filename)
+        results, results_filename = await self.web_search(searchterm)
+        if results_filename:
+            localfiles.append(results_filename)
         i = 0
         # loop through the results and download the top 2 searches
         for result in results:

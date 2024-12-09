@@ -510,10 +510,12 @@ class ChatGPT(PluginLoader):
             await self.helper.log(f"downloading webpage {result}")
             try:
                 # download the webpage and add the content to the result object
+                if "href" not in result:
+                    return "Error: href not in result", None
                 content, localfile = await self.download_webpage(result.get("href"))
                 if localfile:
                     localfiles.append(localfile)
-                await self.helper.log(f"webpage content: {content[:500]}")
+                #await self.helper.log(f"webpage content: {content[:500]}")
                 i = i + 1
             except Exception as e:
                 await self.helper.log(f"Error: {e}")

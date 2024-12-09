@@ -428,6 +428,88 @@ class ChatGPT(PluginLoader):
         if value is None and key in self.ChatGPT_DEFAULTS:
             value = self.ChatGPT_DEFAULTS[key]
         return value
+    def extract_file_details(self, message: Message):
+        """Extract file details from a post and return a list of objects with their filename, type, and content."""
+        data = message.body["data"]
+        post = data["post"]
+        files = []
+
+        # Check if message contains files and metadata
+        if "file_ids" in post and "metadata" in post:
+            file_ids = post["file_ids"]
+            files_metadata = post["metadata"]["files"]
+            self.helper.slog(f"files_metadata: {files_metadata}")
+            self.helper.slog(f"file_ids: {file_ids}")
+            import magic
+            for i, metadata in enumerate(files_metadata):
+                # Get file extension and name
+                self.helper.slog(f"i: {i}")
+                self.helper.slog(f"metadata: {metadata}")
+                extension = metadata.get("extension")
+                filename = metadata.get("name", f"file_{i}.{extension}")
+                self.helper.slog(f"filename: {filename}. extension: {extension}")
+                # Get the file content
+                get_file_response = self.driver.files.get_file(file_ids[i])
+                if get_file_response.status_code != 200:
+                    continue
+
+                file_content = get_file_response.content
+                extension_types = {
+                    "image": ["png", "jpg", "jpeg"],
+                    "text": ["txt"],
+                    "pdf": ["pdf"],
+                    "doc": ["doc", "docx"],
+                    "xls": ["xls", "xlsx"],
+                    "ppt": ["ppt", "pptx"],
+                    "audio": ["mp3", "wav", "ogg"],
+                    "video": ["mp4", "webm", "ogg"],
+                    "archive": ["zip", "rar", "tar", "7z"],
+                    "code": ["py", "js", "html", "css", "java", "c", "cpp", "h", "hpp", "cs", "php", "rb", "sh"],
+                }
+                mime = magic.Magic(mime=True)
+                mime_type = mime.from_buffer(file_content)
+                self.helper.slog(f"mime_type: {mime_type}")
+
+                # Determine file type and content format
+                if extension in extension_types["image"]:
+                    # Encode image content to base64
+                    content_base64 = base64.b64encode(file_content).decode("utf-8")
+                    files.append({
+                        "filename": filename,
+                        "type": "image",
+                        "content": content_base64
+                    })
+                elif extension in extension_types["text"] or extension in extension_types["code"]:
+                    # Decode text content
+                    # find the encoding
+                    encoding = metadata.get("encoding")
+                    text_content = file_content.decode(encoding) if encoding else file_content.decode("utf-8")
+                    files.append({
+                        "filename": filename,
+                        "type": "text",
+                        "content": text_content
+                    })
+                elif extension in extension_types["audio"]:
+                    # Encode audio content to base64
+                    content_base64 = base64.b64encode(file_content).decode("utf-8")
+                    files.append({
+                        "filename": filename,
+                        "type": "audio",
+                        "content": content_base64
+                    })
+                elif extension in extension_types["video"]:
+                    # Encode video content to base64
+                    content_base64 = base64.b64encode(file_content).decode("utf-8")
+                    files.append({
+                        "filename": filename,
+                        "type": "video",
+                        "content": content_base64
+                    })               
+                else:
+                    # Other unsupported file types can be ignored or handled differently
+                    continue
+
+        return files
 
     @listen_to(r"^\.vision (.+)")
     async def parseimage(self, message: Message, msg: str):
@@ -727,7 +809,13 @@ class ChatGPT(PluginLoader):
         else:
             # thread does not exist, fetch all posts in thread
             thread = self.driver.get_post_thread(thread_id)
+            i = 0
+            thread_post_count = len(thread["posts"])
             for thread_index in thread["order"]:
+                i += 1
+                #skip the last post
+                if i == thread_post_count:
+                    continue
                 thread_post = thread["posts"][thread_index]
                 # turn the thread post into a Message object
                 thread_post = Message.create_message(thread_post)
@@ -831,7 +919,6 @@ class ChatGPT(PluginLoader):
             msg = ""
         else:
             msg = message.text
-
         # if message is not from a user, ignore
         if not self.users.is_user(message.sender_name):
             return
@@ -848,13 +935,44 @@ class ChatGPT(PluginLoader):
         status_msgs = []
         messages = []
         messages = self.get_thread_messages(thread_id)
-        if not tool_run and len(messages) != 1:
+        if True or not tool_run and len(messages) != 1:
             # we don't need to append if length = 1 because then it is already fetched via the mattermost api so we don't need to append it to the thread
             # append message to threads
-            m = {"role": "user", "content": message.text}
-            # append to messages and redis
-            messages.append(m)
-            self.thread_append(thread_id, m)
+            user_text = message.text
+            message_files = self.extract_file_details(message)
+            # log the type and filename of the files
+            for file in message_files:
+                await self.helper.log(f"file: {file.get('filename')} type: {file.get('type')}")
+            m = {"role": "user"}
+            if message_files:
+                # we have files lets add them to the message to be sent to the model
+                txt_files = [file for file in message_files if file["type"] == "text"]
+                img_files = [file for file in message_files if file["type"] == "image"]
+                for file in img_files:
+                    await self.helper.log(f"img file: {file}")
+                    m = {"role": "user"}
+                    # if the file is an image, add it to the message
+                    m["content"] = [
+                        { "type": "text", "text": user_text },
+                        {
+                            "type": "image_url",
+                            "image_url": { "url": f"data:image/jpeg;base64,{file['content']}"}
+                        }
+                    ]
+                    messages.append(m)
+                    self.thread_append(thread_id, m)
+                context_from_text_files = ""
+                for file in txt_files:
+                    context_from_text_files += file["filename"] + ": " + file["content"] + "\n"
+                if context_from_text_files:
+                    m["content"] = user_text + "\n" + context_from_text_files
+                    messages.append(m)
+                    self.thread_append(thread_id, m)
+            else:
+                m["content"] = user_text
+                # append to messages and redis
+                messages.append(m)
+                self.thread_append(thread_id, m)
 
         # add system message
         current_date = time.strftime("%Y-%m-%d %H:%M:%S")

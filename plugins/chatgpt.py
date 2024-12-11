@@ -14,7 +14,7 @@ aclient = AsyncOpenAI(api_key=env.str("OPENAI_API_KEY"))
 import aiohttp.client_exceptions as aiohttp_client_exceptions
 
 import base64
-from plugins.base import PluginLoader
+from .base import PluginLoader
 
 from mmpy_bot.driver import Driver
 from mmpy_bot.function import listen_to
@@ -23,6 +23,8 @@ from mmpy_bot.settings import Settings
 from mmpy_bot.wrappers import Message
 from redis_rate_limit import RateLimit, TooManyRequests
 from pprint import pformat
+# import tools and tools manager
+from .tools import ToolsManager, Tool
 
 MODEL = "gpt-4-1106-preview"
 REDIS_PREPEND = "thread_"
@@ -111,63 +113,74 @@ class ChatGPT(PluginLoader):
             "Cache-Control": "no-cache",
             "Pragma": "no-cache",
         }
+        self.openai_errors = (
+            openai.APIError,
+            openai.APIConnectionError,
+            openai.RateLimitError,
+            openai.APIStatusError,
+            openai.InternalServerError,
+            openai.NotFoundError,
+            openai.APIResponseValidationError,
+            openai.AuthenticationError,
+            openai.BadRequestError,
+            openai.ConflictError,
+            openai.LengthFinishReasonError
+        )
         self.update_allowed_models()
         print(f"Allowed models: {self.ALLOWED_MODELS}")
         # TODO: add ignore function for specific channels like town-square that is global for all users
         # chatgpt "function calling" so we define the tools here.
         # TODO: add more functions e.g. code_runnner, openai vision, dall-e3, etc
         #       define this elsewhere. we don't want to define this in the chat function
-        self.tools = [
-            {
-                "type": "function",
-                "function": {
-                    "name": "download_webpage",
-                    "description": "download a webpage to import as context and respond to the users query about the content and snippets from the webpage.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "url": {
-                                "type": "string",
-                                "description": "the url for the webpage",
-                            }
-                        },
-                        "required": ["url"],
-                    },
-                },
-            },{
-                "type": "function",
-                "function": {
-                    "name": "web_search_and_download",
-                    "description": "use this function if you think that it might be benificial with additional context to the conversation. This searches the web using duckduckgo and download the webpage to get the content and return the content always show the source for any statements made about the things downloaded.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "searchterm": {
-                                "type": "string",
-                                "description": "search term",
-                            }
-                        },
-                        "required": ["searchterm"],
-                    },
-                },
-            },{
-                "type": "function",
-                "function": {
-                    "name": "web_search",
-                    "description": "search the web using duckduckgo and return the top 10 results",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "searchterm": {
-                                "type": "string",
-                                "description": "search term",
-                            }
-                        },
-                        "required": ["searchterm"],
-                    },
-                },
-            }
-        ]
+        # configure tools
+        download_webpage_tool = Tool(
+            name=self.download_webpage,
+            description="Download and extract content from a specific webpage URL. Use this when the user provides a direct URL or when you need to fetch content from a known webpage.",
+            parameters=[{"name": "url", "description": "URL of the webpage to download"}],
+            privilege_level="user"
+        )
+
+        web_search_and_download_tool = Tool(
+            name=self.web_search_and_download,
+            description="Search the web AND download content from the best matching webpage. Use this when you need detailed information about a topic and want to provide accurate quotes and sources. IMPORTANT: Only use this when you need in-depth information, not for quick facts or simple searches.",
+            parameters=["searchterm"],
+            privilege_level="user"
+        )
+
+        web_search_tool = Tool(
+            name=self.web_search,
+            description="Quick web search that returns only titles and snippets of the top 10 results. Use this for general information, fact-checking, or when you need a broad overview of a topic. Does NOT download full webpage content.",
+            parameters=["searchterm"],
+            privilege_level="user"
+        )
+        generate_image_tool = Tool(
+            name=self.generate_image,
+            description="Generate an image from a text prompt using DALL-E-3. Use this to create visual representations of your ideas or to illustrate concepts. DO NOT CHANGE THE PROMPT from the user. The function returns an revised prompt that was used to generate the image. The assistant will not get to see the image but it will be returned by the program afterwards. so don't mistake the missing image as it not being generated. the only reason for it not being generated is if the revised prompt contains 'Error:' if it returns the revised prompt print it for the user as revised prompt: \{revised_prompt\}",
+            parameters=[
+                {"name": "prompt", "description": "The prompt to generate the image from. DO NOT CHANGE THE PROMPT from the user. maximum length is 4000 characters", "required": True},
+                {"name": "size", "description": "the size of the image to generate. default is 1024x1024. Must be one of 1024x1024, 1792x1024, or 1024x1792, allow for the user to say landscape or portrait or sqaure and return the correct size accordingly as the value", "required": False},
+                {"name": "style", "description": "the style of the image to generate. default is vivid. Must be one of vivid or natural", "required": False},
+                {"name": "quality", "description": "the quality of the image to generate. default is hd. Must be one of hd or standard", "required": False},
+            ],
+            privilege_level="user"
+        )
+        assistant_to_the_regional_manager_tool = Tool(
+            name=self.assistant_to_the_regional_manager,
+            description="You can use this function to ask the assistant to solve something for you. The assistant will try to solve the problem and return the solution to you. The assistant will not be able to solve all problems but it will try its best to solve the problem. If the assistant is unable to solve the problem it will return an error message. only send what what context you feel absolutely necessary for the assistant to solve the problem.",
+            parameters=["prompt","context"],
+            privilege_level="user"
+        )
+        manager = ToolsManager()
+        manager.add_tool(download_webpage_tool)
+        manager.add_tool(web_search_and_download_tool)
+        manager.add_tool(web_search_tool)
+        manager.add_tool(generate_image_tool)
+        #manager.add_tool(assistant_to_the_regional_manager_tool)
+        self.user_tools = manager.get_tools("user")
+        self.admin_tools = manager.get_tools("admin")
+        self.helper.slog(f"User tools: {self.user_tools}")
+        self.helper.slog(f"Admin tools: {self.admin_tools}")
+
     def update_allowed_models(self):
         """update allowed models"""
         response = openai.models.list()
@@ -193,26 +206,7 @@ class ChatGPT(PluginLoader):
         """return last x messages from list of messages limited by max_length_in_tokens"""
         # fuck this bs
         return messages
-        limited_messages = []
-        current_length_in_tokens = 0
 
-        for message_obj in reversed(messages):
-            if "content" in message_obj:
-                content = message_obj["content"]
-                message_length_in_tokens = len(
-                    self.string_to_tokens(content, model=self.model)
-                )
-
-                if (
-                    current_length_in_tokens + message_length_in_tokens
-                    <= max_length_in_tokens
-                ):
-                    current_length_in_tokens += message_length_in_tokens
-                    limited_messages.append(message_obj)
-                else:
-                    break
-
-        return list(reversed(limited_messages))
     @listen_to(r"^\.gpt model available")
     async def get_available_models(self, message: Message):
         """get available models"""
@@ -241,142 +235,45 @@ class ChatGPT(PluginLoader):
         if self.users.is_admin(message.sender_name):
             self.driver.reply_to(message, f"Model: {self.model}")
 
-    @listen_to(r"^\.(?:mk)?i[mn]g$")
-    async def img_help(self, message: Message):
-        await self.img(message, "help")
-
     @listen_to(r"^\.(?:mk)?i[mn]g ([\s\S]*)")
-    async def img(self, message: Message, text: str):
-        """use the openai module to get and image from text"""
-        # check if the text is help
-        if text == "help" or text == "-h" or text == "--help":
-            options_msg = ".img [options...] <prompt> - use dall-e-3 to generate an image from your prompt"
-            options_msg += "\noptions:"
-            options_msg += "\n\n*size:*"
-            options_msg += "\nportrait - use portrait mode"
-            options_msg += "\nlandscape - use landscape mode"
-            options_msg += "\nsquare - use square mode (default)"
-            options_msg += "\n\n*style:*"
-            options_msg += "\nnatural - use natural style"
-            options_msg += "\nvivid - use vivid style (default)"
-            options_msg += "\n\n*quality:*"
-            options_msg += "\nstandard - use standard quality"
-            options_msg += "\nhd - use hd quality (default)"
-            self.driver.reply_to(message, options_msg)
-            return
-        if self.users.is_user(message.sender_name):
-            # define defaults
-            default_size = "1024x1024"
-            default_style = "vivid"
-            default_quality = "hd"
-            # config words
-            size_words = ["portrait", "landscape", "square"]
-            style_words = ["vivid", "natural"]
-            quality_words = ["standard", "hd"]
-            quality = default_quality
-            style = default_style
-            size = default_size
+    async def mkimg_deprecated_just_ask(self, message: Message, args: str):
+        """send a message to the user that this is deprecated and they should just ask for an image instead"""
+        self.driver.reply_to(message, "This function is deprecated. i have asked my assistant to generate an image for you. Please ask for an image instead next time without the .mkimg command.")
+        message.text = "this user asked for an image and described it as follows: " + args
+        await self.chat(message)
 
-            # loop trough all words in text and remove config words but only if they are in the beginning of the string and next to eachother
-            words = text.split(" ")
-            i = 0
-            while i < len(words):
-                w = words[i]
-                # check if word is in config words
-                if w in size_words or w in style_words or w in quality_words:
-                    # parse the config word and set the setting
-                    if w == "portrait":
-                        size = "1024x1792"
-                    elif w == "landscape":
-                        size = "1792x1024"
-                    elif w == "square":
-                        size = "1024x1024"
-                    elif w == "natural":
-                        style = "natural"
-                    elif w == "vivid":
-                        style = "vivid"
-                    elif w == "standard":
-                        quality = "standard"
-                    elif w == "hd":
-                        quality = "hd"
-                    # remove the word at the index i
-                    del words[i]
-                else:
-                    break
-            # join the words back together
-            text = " ".join(words)
-
-            from openai import AsyncOpenAI  # pylint: disable=import-outside-toplevel
-
-            client = AsyncOpenAI(api_key=self.openai_api_key)
-            try:
-                with RateLimit(
-                    resource="mkimg",
-                    client=message.sender_name,
-                    max_requests=1,
-                    expire=5,
-                    redis_pool=self.redis_pool,
-                ):
-                    self.helper.add_reaction(message, "frame_with_picture")
-                    text = text.replace("\n", " ")
-                    response = await client.images.generate(
-                        prompt=text,
-                        n=1,
-                        size=size,
-                        model="dall-e-3",
-                        style=style,
-                        response_format="url",
-                        quality=quality,
-                    )
-                    # response = openai.Image.create(prompt=text, n=1, size="1024x1024")
-                    image_url = response.data[0].url
-                    revised_prompt = response.data[0].revised_prompt
-                    # download the image using the url
-                    filename = self.helper.download_file_to_tmp(image_url, "png")
-                    # format the image_url as mattermost markdown
-                    # image_url_txt = f"![img]({image_url})"
-                    # await self.helper.debug(response)
-                    # self.driver.reply_to(message, image_url_txt, file_paths=[filename])
-                    self.helper.remove_reaction(message, "frame_with_picture")
-                    self.driver.reply_to(
-                        message,
-                        f"prompt: {text}\nrevised: {revised_prompt}",
-                        file_paths=[filename],
-                    )
-                    self.helper.delete_downloaded_file(filename)
-                    await self.helper.log(
-                        f"{message.sender_name} used .img with {quality} {style} {size}"
-                    )
-            except TooManyRequests:
-                self.helper.remove_reaction(message, "frame_with_picture")
-                self.helper.add_reaction(message, "x")
-                self.driver.reply_to(message, "Rate limit exceeded (1/5s)")
-            except openai.BadRequestError as error:
-                self.helper.remove_reaction(message, "frame_with_picture")
-                self.helper.add_reaction(message, "pig")
-                # self.driver.reply_to(message, f"Error: {error.message}")
-                # example response:
-                # Error code: 400 - {'error': {'code': 'content_policy_violation', 'message': 'Your request was rejected as a result of our safety system. Your prompt may contain text that is not allowed by our safety system.', 'param': None, 'type': 'invalid_request_error'}}
-                # parse the error message and return it to the user
-                if "{" in error.message:
-                    error_message = error.message[error.message.index("{") :]
-                    try:
-                        error_message = json.loads(
-                            error_message.replace("'", '"').replace("None", "null")
-                        )
-                        self.driver.reply_to(
-                            message, f"Error: {error_message['error']['message']}"
-                        )
-                    except json.JSONDecodeError:
-                        self.driver.reply_to(message, f"Error: {error.message}")
-                        return
-                else:
-                    self.driver.reply_to(message, f"Error: {error.message}")
-                # self.driver.reply_to(message, f"Error: {pformat(error.message)}")
-                # self.driver.reply_to(message, f"Error: {pformat(error)}")
-            # except:  # pylint: disable=bare-except
-            #    self.driver.reply_to(message, "Error: OpenAI API error")
-
+    async def generate_image(self, prompt, size=None, style=None, quality=None):
+        """use the openai module to get an image from a prompt"""
+        self.helper.slog(f"generate_image: {prompt}")
+        # validate size
+        if size not in ["1024x1024", "1792x1024", "1024x1792"]:
+            size = "1024x1024"
+        # validate style
+        if style not in ["vivid", "natural"]:
+            style = "vivid"
+        # validate quality
+        if quality not in ["hd", "standard"]:
+            quality = "hd"
+        try:
+            response = await aclient.images.generate(
+                prompt=prompt,
+                n=1,
+                size=size,
+                model="dall-e-3",
+                style=style,
+                response_format="url",
+                quality=quality,
+            )
+            image_url = response.data[0].url
+            self.helper.slog(f"image_url: {image_url}")
+            revised_prompt = response.data[0].revised_prompt
+            self.helper.slog(f"revised_prompt: {revised_prompt}")
+            filename = self.helper.download_file_to_tmp(image_url, "png")
+            self.helper.slog(f"filename: {filename}")
+            return f"revised prompt: {revised_prompt}", filename
+        except Exception as e:
+            self.helper.slog(f"Error: {e}")
+            return f"Error: {e}", None
     @listen_to(r"^\.gpt set ([a-zA-Z0-9_-]+) (.*)")
     async def set_chatgpt(self, message: Message, key: str, value: str):
         """set the chatgpt key"""
@@ -511,70 +408,6 @@ class ChatGPT(PluginLoader):
 
         return files
 
-    @listen_to(r"^\.vision (.+)")
-    async def parseimage(self, message: Message, msg: str):
-        """check if post contains an image upload in the message.body.post.file_ids and parse it"""
-        if self.users.is_user(message.sender_name):
-            data = message.body["data"]
-            post = data["post"]
-            # url encode msg
-            msg = self.helper.urlencode_text(msg)
-            # check if message contains an image
-            if data["image"] == "true":
-                file_ids = post["file_ids"]
-                files_metadata = post["metadata"]["files"]
-                # check the metadata of the image and get the extension
-                extension = files_metadata[0]["extension"]
-                # skip if wrong extension
-                if extension not in ["png", "jpg", "jpeg"]:
-                    return
-                # get the image url
-                get_file_response = self.driver.files.get_file(file_ids[0])
-                if get_file_response.status_code == 200:
-                    image_content = get_file_response.content
-                else:
-                    return
-                # convert the image to base64
-                image_base64 = base64.b64encode(image_content).decode("utf-8")
-                # send the image to the openai vision model
-                headers = {
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {self.openai_api_key}",
-                }
-
-                payload = {
-                    "model": "gpt-4o",
-                    "messages": [
-                        {
-                            "role": "user",
-                            "content": [
-                                {"type": "text", "text": "{msg}"},
-                                {
-                                    "type": "image_url",
-                                    "image_url": {
-                                        "url": f"data:image/jpeg;base64,{image_base64}"
-                                    },
-                                },
-                            ],
-                        }
-                    ],
-                    "max_tokens": 300,
-                }
-                self.helper.add_reaction(message, "thought_balloon")
-                response = requests.post(
-                    "https://api.openai.com/v1/chat/completions",
-                    headers=headers,
-                    json=payload,
-                )
-                if response.status_code == 200:
-                    # convert the response.content to json
-                    response = response.json()
-                    # log the response:
-                    gpt_response = response["choices"][0]["message"]["content"]
-                    self.driver.reply_to(message, gpt_response)
-                    self.helper.remove_reaction(message, "thought_balloon")
-
-                    await self.helper.log(f"{message.sender_name} used .vision")
     async def web_search_and_download(self, searchterm):
         """run the search and download top 2 results from duckduckgo"""
         self.exit_after_loop = False
@@ -878,6 +711,30 @@ class ChatGPT(PluginLoader):
                 })
             self.helper.slog(f"formatted_messages: {formatted_messages}")
             return formatted_messages
+    async def assistant_to_the_regional_manager(self,prompt,context=None, model=None):
+        """a tool function that chatgpt can call as a tool with whatever context it deems necessary"""
+        # check if model is set
+        if model is None:
+            model = self.DEFAULT_MODEL
+        # check if context is set
+        if context:
+            prompt = f"context: {context}\nprompt: {prompt}"
+        # call the assistant to the regional manager
+        messages = [
+            {"role": "system", "content": "you're an agent running for your superior model. your task is to follow it's instructions and return what is asked of you. You are not talking with a human but with another ai"},
+            {"role": "user", "content": prompt}
+        ]
+        try:
+            request_object = {
+                "model": model,
+                "messages": messages,
+            }
+            completions = await aclient.chat.completions.create(**request_object)
+            return completions.choices[0].message.content
+        except self.openai_errors as error:
+            # update the message
+            self.helper.slog(f"Error: {error}")
+            return f"Error: {error}"
 
     # function that debugs a chat thread
     @listen_to(r"^\.gpt debugchat")
@@ -922,7 +779,13 @@ class ChatGPT(PluginLoader):
         # if message is not from a user, ignore
         if not self.users.is_user(message.sender_name):
             return
-        
+
+        # check if the user is and admin and set tools accordingly
+        if self.users.is_admin(message.sender_name):
+            self.tools = self.admin_tools
+        else:
+            self.tools = self.user_tools
+
         # message text exceptions. bail if message starts with any of these
         skips = [".", "!", "ollama", "@claude", "@opus", "@sonnet"]
         for skip in skips:
@@ -1023,7 +886,7 @@ class ChatGPT(PluginLoader):
                 request_object["tools"] = self.tools
                 request_object["tool_choice"] = "auto"
             response = await aclient.chat.completions.create(**request_object)
-        except (openai.error.RateLimitError, openai.error.APIError) as error:
+        except self.openai_errors as error:
             # update the message
             self.driver.posts.patch_post(reply_msg_id, {"message": f"Error: {error}"})
             self.driver.reactions.delete_reaction(
@@ -1110,7 +973,11 @@ class ChatGPT(PluginLoader):
                         continue
                     function_name = tool_function["function_name"]
                     tool_call_id = tool_function["tool_call_id"]
+                    self.helper.slog(f"function_name: {function_name}")
                     function = getattr(self, function_name)
+                    if not function:
+                        await self.helper.log(f"Error: function not found: {function_name}")
+                        continue
                     # format the arguments as a pretty string for the status msg it is an dict with a arg and value pair
                     # format it as key: value
                     status_args = json.loads(tool_function["arguments"])
@@ -1144,6 +1011,13 @@ class ChatGPT(PluginLoader):
                                 files.append(file)
                         if isinstance(filename, str):
                             files.append(filename)
+                    elif function_name == "generate_image":
+                        self.helper.slog(f"arguments: {arguments}")
+                        function_result, filename = await function(**arguments)
+                        if filename:
+                            files.append(filename)
+                    elif function_name == "assistant_to_the_regional_manager":
+                        function_result = await function(**arguments)
                     else:
                         await self.helper.log(f"Unknown function: {function_name}")
                         continue

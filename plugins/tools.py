@@ -134,7 +134,11 @@ class ToolsManager:
 
     def add_tool(self, tool: Tool):
         self.tools.append(tool.get_tool_info())
-
+    def get_tool(self, function_name: str):
+        for tool in self.tools:
+            if tool["function"]["name"] == function_name:
+                return tool
+        return None
     def disable_tool(self, function_name: str) -> bool:
         for i, tool in enumerate(self.tools):
             if tool["function"]["name"] == function_name:

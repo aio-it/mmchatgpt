@@ -170,14 +170,14 @@ class ChatGPT(PluginLoader):
             parameters=["prompt","context"],
             privilege_level="user"
         )
-        manager = ToolsManager()
-        manager.add_tool(download_webpage_tool)
-        manager.add_tool(web_search_and_download_tool)
-        manager.add_tool(web_search_tool)
-        manager.add_tool(generate_image_tool)
+        self.tools_manager = ToolsManager()
+        self.tools_manager.add_tool(download_webpage_tool)
+        self.tools_manager.add_tool(web_search_and_download_tool)
+        self.tools_manager.add_tool(web_search_tool)
+        self.tools_manager.add_tool(generate_image_tool)
         #manager.add_tool(assistant_to_the_regional_manager_tool)
-        self.user_tools = manager.get_tools("user")
-        self.admin_tools = manager.get_tools("admin")
+        self.user_tools = self.tools_manager.get_tools("user")
+        self.admin_tools = self.tools_manager.get_tools("admin")
         self.helper.slog(f"User tools: {self.user_tools}")
         self.helper.slog(f"Admin tools: {self.admin_tools}")
 
@@ -974,14 +974,21 @@ class ChatGPT(PluginLoader):
                     function_name = tool_function["function_name"]
                     tool_call_id = tool_function["tool_call_id"]
                     self.helper.slog(f"function_name: {function_name}")
-                    function = getattr(self, function_name)
-                    if not function:
+                    # get function name from the tool manager
+                    tool = self.tools_manager.get_tool(function_name)
+                    if tool:
+                        try:
+                            function = getattr(self, function_name)
+                        except AttributeError:
+                            await self.helper.log(f"Error: function not found: {function_name}")
+                            continue
+                    else:
                         await self.helper.log(f"Error: function not found: {function_name}")
                         continue
                     # format the arguments as a pretty string for the status msg it is an dict with a arg and value pair
                     # format it as key: value
                     status_args = json.loads(tool_function["arguments"])
-                    status_args = " | ".join([f"{v}" for k, v in status_args.items()])
+                    status_args = " | ".join([f"{k}:{v}" for k, v in status_args.items()])
                     status_msg = f"Running tool: {function_name}: {status_args}"
                     update_status(status_msg)
 
@@ -992,35 +999,12 @@ class ChatGPT(PluginLoader):
                         arguments = {}
 
                     # Execute the function
-                    if function_name == "download_webpage":
-                        function_result, filename = await function(arguments.get("url"))
-                        if filename:
-                            files.append(filename)
-                    elif function_name == "web_search":
-                        function_result, filename = await function(arguments.get("searchterm"))
-                        if isinstance(filename, list):
-                            for file in filename:
-                                files.append(file)
-                        if isinstance(filename, str):
-                            files.append(filename)
-                    elif function_name == "web_search_and_download":
-                        function_result, filename = await function(arguments.get("searchterm"))
-                        # check if filenames is a list and append to files if it is a str append as is
-                        if isinstance(filename, list):
-                            for file in filename:
-                                files.append(file)
-                        if isinstance(filename, str):
-                            files.append(filename)
-                    elif function_name == "generate_image":
-                        self.helper.slog(f"arguments: {arguments}")
-                        function_result, filename = await function(**arguments)
-                        if filename:
-                            files.append(filename)
-                    elif function_name == "assistant_to_the_regional_manager":
-                        function_result = await function(**arguments)
-                    else:
-                        await self.helper.log(f"Unknown function: {function_name}")
-                        continue
+                    function_result, filename = await function(**arguments)
+                    if isinstance(filename, list):
+                        for file in filename:
+                            files.append(file)
+                    if isinstance(filename, str):
+                        files.append(filename)
 
                     if function_result is None:
                         function_result = "Error: function returned None"

@@ -26,7 +26,7 @@ jobs:
 
 
     - name: Log in to Docker Hub
-      run: echo "::add-mask::${DOCKER_TOKEN}" | docker login docker.io -u "::add-mask::${DOCKER_USERNAME}" --password-stdin
+      run: echo "::add-mask::${{ env.DOCKER_TOKEN }}" | docker login docker.io -u "::add-mask::${{ env.DOCKER_USERNAME}}" --password-stdin
       env:
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}    

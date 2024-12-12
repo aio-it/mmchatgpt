@@ -45,12 +45,7 @@ jobs:
         ./bin/trivy image ghcr.io/aio-it/mmchatgpt:${{ env.TAG }}
         ./bin/trivy image docker.io/lbr88/mmchatgpt:${{ env.TAG }}
 
-    - name: Run Trivy scan on latest tag
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        ./bin/trivy image ghcr.io/aio-it/mmchatgpt:latest
-        ./bin/trivy image docker.io/lbr88/mmchatgpt:latest
+
 
     - name: Push the Docker image with specific tag to GitHub Container Registry
       run: docker push ghcr.io/aio-it/mmchatgpt:${{ env.TAG }}
@@ -63,3 +58,10 @@ jobs:
 
     - name: Push the Docker image with latest tag to Docker Hub
       run: docker push docker.io/lbr88/mmchatgpt:latest
+
+    - name: Run Trivy scan on latest tag
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        ./bin/trivy image ghcr.io/aio-it/mmchatgpt:latest
+        ./bin/trivy image docker.io/lbr88/mmchatgpt:latest

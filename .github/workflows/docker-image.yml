@@ -18,6 +18,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
 
     - name: Extract tag
       id: extract_tag
@@ -28,7 +31,7 @@ jobs:
 
 
     - name: Log in to Docker Hub
-      run: echo "${{ secrets.DOCKER_TOKEN }}" | docker login docker.io -u ${{ github.actor }} --password-stdin
+      run: echo "::add-mask::${DOCKER_TOKEN}" | docker login docker.io -u "::add-mask::${DOCKER_USERNAME}" --password-stdin
 
     - name: Build the Docker image
       run: |

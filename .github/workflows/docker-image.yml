@@ -35,6 +35,7 @@ jobs:
       run: |
         docker build . --file Dockerfile --tag ghcr.io/aio-it/mmchatgpt:${{ env.TAG }}
         docker tag ghcr.io/aio-it/mmchatgpt:${{ env.TAG }} ghcr.io/aio-it/mmchatgpt:latest
+        docker tag docker.io/lbr88/mmchatgpt:${{ env.TAG }} docker.io/lbr88/mmchatgpt:latest
 
     - name: Run Trivy scan on specific tag
       env:

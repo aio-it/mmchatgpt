@@ -43,6 +43,7 @@ jobs:
       run: |
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -
         ./bin/trivy image ghcr.io/aio-it/mmchatgpt:${{ env.TAG }}
+        ./bin/trivy image docker.io/lbr88/mmchatgpt:${{ env.TAG }}
 
     - name: Run Trivy scan on latest tag
       env:

@@ -33,7 +33,7 @@ jobs:
 
     - name: Build the Docker image
       run: |
-        docker build . --file Dockerfile --tag ghcr.io/aio-it/mmchatgpt:${{ env.TAG }}
+        docker build . --file Dockerfile --tag ghcr.io/aio-it/mmchatgpt:${{ env.TAG }} --tag docker.io/lbr88/mmchatgpt:${{ env.TAG }}
         docker tag ghcr.io/aio-it/mmchatgpt:${{ env.TAG }} ghcr.io/aio-it/mmchatgpt:latest
         docker tag docker.io/lbr88/mmchatgpt:${{ env.TAG }} docker.io/lbr88/mmchatgpt:latest
 

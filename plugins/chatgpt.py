@@ -178,14 +178,23 @@ class ChatGPT(PluginLoader):
         #manager.add_tool(assistant_to_the_regional_manager_tool)
         self.user_tools = self.tools_manager.get_tools("user")
         self.admin_tools = self.tools_manager.get_tools("admin")
-        self.helper.slog(f"User tools: {self.user_tools}")
-        self.helper.slog(f"Admin tools: {self.admin_tools}")
+        #self.helper.slog(f"User tools: {self.user_tools}")
+        #self.helper.slog(f"Admin tools: {self.admin_tools}")
 
     def update_allowed_models(self):
         """update allowed models"""
-        response = openai.models.list()
+        try:
+            response = openai.models.list()
+        except self.openai_errors as e:
+            self.helper.slog(f"Error: {e}")
+            response = None
+            return self.ALLOWED_MODELS
         available_models = []
         models_msg = "Available Models:\n"
+        if response is None:
+            available_models = self.ALLOWED_MODELS
+            self.helper.slog(f"Could not update allowed models. Using default models: {available_models}")
+            return available_models
         for model in response.data:
             available_models.append(model)
         if len(available_models) > 0:
@@ -244,7 +253,7 @@ class ChatGPT(PluginLoader):
 
     async def generate_image(self, prompt, size=None, style=None, quality=None):
         """use the openai module to get an image from a prompt"""
-        self.helper.slog(f"generate_image: {prompt}")
+        #self.helper.slog(f"generate_image: {prompt}")
         # validate size
         if size not in ["1024x1024", "1792x1024", "1024x1792"]:
             size = "1024x1024"
@@ -265,11 +274,8 @@ class ChatGPT(PluginLoader):
                 quality=quality,
             )
             image_url = response.data[0].url
-            self.helper.slog(f"image_url: {image_url}")
             revised_prompt = response.data[0].revised_prompt
-            self.helper.slog(f"revised_prompt: {revised_prompt}")
             filename = self.helper.download_file_to_tmp(image_url, "png")
-            self.helper.slog(f"filename: {filename}")
             return f"revised prompt: {revised_prompt}", filename
         except Exception as e:
             self.helper.slog(f"Error: {e}")
@@ -335,16 +341,16 @@ class ChatGPT(PluginLoader):
         if "file_ids" in post and "metadata" in post:
             file_ids = post["file_ids"]
             files_metadata = post["metadata"]["files"]
-            self.helper.slog(f"files_metadata: {files_metadata}")
-            self.helper.slog(f"file_ids: {file_ids}")
+            #self.helper.slog(f"files_metadata: {files_metadata}")
+            #self.helper.slog(f"file_ids: {file_ids}")
             import magic
             for i, metadata in enumerate(files_metadata):
                 # Get file extension and name
-                self.helper.slog(f"i: {i}")
-                self.helper.slog(f"metadata: {metadata}")
+                #self.helper.slog(f"i: {i}")
+                #self.helper.slog(f"metadata: {metadata}")
                 extension = metadata.get("extension")
                 filename = metadata.get("name", f"file_{i}.{extension}")
-                self.helper.slog(f"filename: {filename}. extension: {extension}")
+                #self.helper.slog(f"filename: {filename}. extension: {extension}")
                 # Get the file content
                 get_file_response = self.driver.files.get_file(file_ids[i])
                 if get_file_response.status_code != 200:
@@ -365,7 +371,7 @@ class ChatGPT(PluginLoader):
                 }
                 mime = magic.Magic(mime=True)
                 mime_type = mime.from_buffer(file_content)
-                self.helper.slog(f"mime_type: {mime_type}")
+                #self.helper.slog(f"mime_type: {mime_type}")
 
                 # Determine file type and content format
                 if extension in extension_types["image"]:
@@ -413,7 +419,7 @@ class ChatGPT(PluginLoader):
         self.exit_after_loop = False
         downloaded=[]
         localfiles=[]
-        await self.helper.log(f"searching the web for {searchterm}")
+        #await self.helper.log(f"searching the web for {searchterm}")
         results, results_filename = await self.web_search(searchterm)
         if results_filename:
             localfiles.append(results_filename)
@@ -435,7 +441,7 @@ class ChatGPT(PluginLoader):
                 #await self.helper.log(f"webpage content: {content[:500]}")
                 i = i + 1
             except Exception as e:
-                await self.helper.log(f"Error: {e}")
+                #await self.helper.log(f"Error: {e}")
                 content = None
             if content:
                 result["content"] = content
@@ -467,16 +473,16 @@ class ChatGPT(PluginLoader):
             filename = self.helper.save_content_to_tmp_file(json.dumps(results, indent=4), "json")
             return results, filename
         except Exception as e:
-            await self.helper.log(f"Error: {e}")
+            #await self.helper.log(f"Error: {e}")
             return f"Error: {e}", None
 
     async def download_webpage(self, url):
         """download a webpage and return the content"""
         self.exit_after_loop = False
-        await self.helper.log(f"downloading webpage {url}")
+        #await self.helper.log(f"downloading webpage {url}")
         validate_result = self.helper.validate_input(url, "url")
         if validate_result != True:
-            await self.helper.log(f"Error: {validate_result}")
+            #await self.helper.log(f"Error: {validate_result}")
             return validate_result, None
 
         max_content_size = 10 * 1024 * 1024  # 10 MB
@@ -602,14 +608,14 @@ class ChatGPT(PluginLoader):
                     return response_text, filename
                 else:
                     # unknown content type
-                    await self.helper.log(
-                        f"Error: unknown content type {content_type} for {url} (status code {response.status_code}) returned: {response_text[:500]}"
-                    )
+                    #await self.helper.log(
+                    #    f"Error: unknown content type {content_type} for {url} (status code {response.status_code}) returned: {response_text[:500]}"
+                    #)
                     return f"Error: unknown content type {content_type} for {url} (status code {response.status_code}) returned: {response_text}", None
             else:
-                await self.helper.log(
-                    f"Error: could not download webpage (status code {response.status_code})"
-                )
+                #await self.helper.log(
+                #    f"Error: could not download webpage (status code {response.status_code})"
+                #)
                 return f"Error: could not download webpage (status code {response.status_code})", None
         except requests.exceptions.Timeout:
             await self.helper.log("Error: could not download webpage (Timeout)")
@@ -620,12 +626,12 @@ class ChatGPT(PluginLoader):
             )
             return "Error: could not download webpage (TooManyRedirects)", None
         except requests.exceptions.RequestException as e:
-            await self.helper.log(
-                f"Error: could not download webpage (RequestException) {e}"
-            )
+            #await self.helper.log(
+            #    f"Error: could not download webpage (RequestException) {e}"
+            #)
             return "Error: could not download webpage (RequestException) " + str(e), None
         except Exception as e: # pylint: disable=bare-except
-            await self.helper.log(f"Error: could not download webpage (Exception) {e}")
+            #await self.helper.log(f"Error: could not download webpage (Exception) {e}")
             return "Error: could not download webpage (Exception) " + str(e), None
 
     def thread_append(self, thread_id, message) -> None:
@@ -812,7 +818,7 @@ class ChatGPT(PluginLoader):
                 txt_files = [file for file in message_files if file["type"] == "text"]
                 img_files = [file for file in message_files if file["type"] == "image"]
                 for file in img_files:
-                    await self.helper.log(f"img file: {file}")
+                    #await self.helper.log(f"img file: {file}")
                     m = {"role": "user"}
                     # if the file is an image, add it to the message
                     m["content"] = [
@@ -973,7 +979,7 @@ class ChatGPT(PluginLoader):
                         continue
                     function_name = tool_function["function_name"]
                     tool_call_id = tool_function["tool_call_id"]
-                    self.helper.slog(f"function_name: {function_name}")
+                    #self.helper.slog(f"function_name: {function_name}")
                     # get function name from the tool manager
                     tool = self.tools_manager.get_tool(function_name)
                     if tool:
@@ -995,7 +1001,7 @@ class ChatGPT(PluginLoader):
                     try:
                         arguments = json.loads(tool_function["arguments"])
                     except json.JSONDecodeError as e:
-                        await self.helper.log(f"Error parsing arguments: {tool_function['arguments']}")
+                        #await self.helper.log(f"Error parsing arguments: {tool_function['arguments']}")
                         arguments = {}
 
                     # Execute the function

@@ -31,7 +31,7 @@ aclient = AsyncAnthropic(
     api_key=env.str("ANTHROPIC_API_KEY"),
 )
 
-MODEL = "claude-3-opus-20240229"
+MODEL = "claude-3-5-sonnet-20241022"
 REDIS_PREPEND = "anthropic_thread_"
 
 # Custom Exceptions
@@ -54,8 +54,8 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         "claude-3-5-sonnet-20240620",
     ]
     MAX_TOKENS_PER_MODEL = {
-        DEFAULT_MODEL: 4096,
-        "claude-3-5-sonnet-20240620": 4096,
+        DEFAULT_MODEL: 8192,
+        "claude-3-5-sonnet-20240620": 8192,
     }
     ANTHROPIC_DEFAULTS = {
         "temperature": 1.0,
@@ -198,7 +198,6 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             user_message_content = ""
             for thread_index in thread["order"]:
                 thread_post = thread["posts"][thread_index]
-                self.helper.slog(f"Processing post: {thread_post.text[:50]}...")  # Log first 50 chars
                 # turn the thread post into a Message object
                 thread_post = Message.create_message(thread_post)
 
@@ -260,19 +259,14 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             await self.helper.debug("no messages in redis thread")
         self.driver.reply_to(message, json.dumps(messages, indent=4)[:4000])
 
-    @listen_to(r"^@s .*", regexp_flag=re_DOTALL)
-    @listen_to(r"^@sonnet .*", regexp_flag=re_DOTALL)
-    async def chat_sonnet(self, message: Message):
+    @listen_to(r"^@s ([\s\S]*)", regexp_flag=re_DOTALL)
+    async def chat_sonnet(self, message: Message, text: str):
         # await self.helper.log(f"@sonnet from {message.sender_name}")
-        return await self.chat(message, "claude-3-5-sonnet-20240620")
+        message.text = text
+        return await self.chat(message, text, "claude-3-5-sonnet-20241022")
 
-    @listen_to(r"^@opus .*", regexp_flag=re_DOTALL)
-    async def chat_opus(self, message: Message):
-        # await self.helper.log(f"@opus from {message.sender_name}")
-        return await self.chat(message, "claude-3-opus-20240229")
-
-    @listen_to(r"^@claude .*", re_DOTALL)
-    async def chat(self, message: Message, model: str = None):
+    @listen_to(r"^@claude ([\s\S]*)", re_DOTALL)
+    async def chat(self, message: Message, text: str, model: str = None):
         """listen to everything and respond when mentioned"""
         # no model is set, use default model
         if model is None:
@@ -306,9 +300,9 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             # check if the last message was of type role user if
             # so append to it instad of creating a new message
             if messages[-1]["role"] == "user":
-                messages[-1]["content"] += "\n" + message.text
+                messages[-1]["content"] += "\n" + text
             else:
-                message_append = {"role": "user", "content": message.text}
+                message_append = {"role": "user", "content": text}
                 # append to messages and redis
                 messages.append(message_append)
                 self.thread_append(thread_id, message_append)

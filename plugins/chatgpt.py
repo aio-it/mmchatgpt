@@ -244,7 +244,7 @@ class ChatGPT(PluginLoader):
 
     async def generate_image(self, prompt, size=None, style=None, quality=None):
         """use the openai module to get an image from a prompt"""
-        self.helper.slog(f"generate_image: {prompt}")
+        #self.helper.slog(f"generate_image: {prompt}")
         # validate size
         if size not in ["1024x1024", "1792x1024", "1024x1792"]:
             size = "1024x1024"
@@ -265,11 +265,11 @@ class ChatGPT(PluginLoader):
                 quality=quality,
             )
             image_url = response.data[0].url
-            self.helper.slog(f"image_url: {image_url}")
+            #self.helper.slog(f"image_url: {image_url}")
             revised_prompt = response.data[0].revised_prompt
-            self.helper.slog(f"revised_prompt: {revised_prompt}")
+            #self.helper.slog(f"revised_prompt: {revised_prompt}")
             filename = self.helper.download_file_to_tmp(image_url, "png")
-            self.helper.slog(f"filename: {filename}")
+            #self.helper.slog(f"filename: {filename}")
             return f"revised prompt: {revised_prompt}", filename
         except Exception as e:
             self.helper.slog(f"Error: {e}")
@@ -337,13 +337,13 @@ class ChatGPT(PluginLoader):
         if "file_ids" in post and "metadata" in post:
             file_ids = post["file_ids"]
             files_metadata = post["metadata"]["files"]
-            self.helper.slog(f"files_metadata: {files_metadata}")
-            self.helper.slog(f"file_ids: {file_ids}")
+            #self.helper.slog(f"files_metadata: {files_metadata}")
+            #self.helper.slog(f"file_ids: {file_ids}")
             #import magic
             for i, metadata in enumerate(files_metadata):
                 # Get file extension and name
-                self.helper.slog(f"i: {i}")
-                self.helper.slog(f"metadata: {metadata}")
+                #self.helper.slog(f"i: {i}")
+                #self.helper.slog(f"metadata: {metadata}")
                 extension = metadata.get("extension")
                 mime_type = metadata.get("mime_type")
                 preview_content = None
@@ -357,9 +357,10 @@ class ChatGPT(PluginLoader):
                 # compare mini_preview_content and preview_content
                 if mini_preview_content and preview_content:
                     if mini_preview_content == preview_content:
-                        self.helper.slog(f"mini_preview_content == preview_content")
+                        pass
+                        #self.helper.slog(f"mini_preview_content == preview_content")
                 filename = metadata.get("name", f"file_{i}.{extension}")
-                self.helper.slog(f"filename: {filename}. extension: {extension}")
+                #self.helper.slog(f"filename: {filename}. extension: {extension}")
                 # Get the file content
                 get_file_response = self.driver.files.get_file(file_ids[i])
                 if get_file_response.status_code != 200:
@@ -400,12 +401,12 @@ class ChatGPT(PluginLoader):
                     # Encode image content to base64
                     if use_preview_image and preview_content:
                         content_base64 = base64.b64encode(preview_content).decode("utf-8")
-                        self.helper.slog(f"preview_content: {preview_content}")
+                        #self.helper.slog(f"preview_content: {preview_content}")
                     else:
                         content_base64 = base64.b64encode(file_content).decode("utf-8")
                     # compare mini_preview_content and preview_content and file_content sizes
-                    if mini_preview_content and preview_content and file_content:
-                        self.helper.slog(f"mini_preview_content: {len(mini_preview_content)} preview_content: {len(preview_content)} file_content: {len(file_content)}")
+                    #if mini_preview_content and preview_content and file_content:
+                    #    self.helper.slog(f"mini_preview_content: {len(mini_preview_content)} preview_content: {len(preview_content)} file_content: {len(file_content)}")
                     files.append({
                         "filename": filename,
                         "type": "image",
@@ -1008,7 +1009,7 @@ class ChatGPT(PluginLoader):
                         continue
                     function_name = tool_function["function_name"]
                     tool_call_id = tool_function["tool_call_id"]
-                    self.helper.slog(f"function_name: {function_name}")
+                    #self.helper.slog(f"function_name: {function_name}")
                     # get function name from the tool manager
                     tool = self.tools_manager.get_tool(function_name)
                     if tool:

@@ -353,7 +353,7 @@ class ChatGPT(PluginLoader):
                 file_content = get_file_response.content
                 extension_types = {
                     "image": ["png", "jpg", "jpeg"],
-                    "text": ["txt"],
+                    "text": ["txt","xml","json","csv","tsv","log","md","html","htm"],
                     "pdf": ["pdf"],
                     "doc": ["doc", "docx"],
                     "xls": ["xls", "xlsx"],

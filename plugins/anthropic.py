@@ -198,9 +198,9 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             user_message_content = ""
             for thread_index in thread["order"]:
                 thread_post = thread["posts"][thread_index]
-                self.helper.slog(f"Processing post: {thread_post.text[:50]}...")  # Log first 50 chars
                 # turn the thread post into a Message object
                 thread_post = Message.create_message(thread_post)
+                self.helper.slog(f"Processing post: {thread_post.text[:50]}...")  # Log first 50 chars
 
                 # remove mentions of self
                 thread_post.text = self.helper.strip_self_username(thread_post.text)

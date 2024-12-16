@@ -520,7 +520,7 @@ class ChatGPT(PluginLoader):
     async def download_webpage(self, url):
         """download a webpage and return the content"""
         self.exit_after_loop = False
-        await self.helper.log(f"downloading webpage {url}")
+        #await self.helper.log(f"downloading webpage {url}")
         validate_result = self.helper.validate_input(url, "url")
         if validate_result != True:
             await self.helper.log(f"Error: {validate_result}")

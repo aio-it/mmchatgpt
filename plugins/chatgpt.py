@@ -71,7 +71,18 @@ class ChatGPT(PluginLoader):
     }
     ChatGPT_DEFAULTS = {
         "temperature": 1.0,
-        "system": """You're a helpful assistant.""",
+        "system": (
+            "You're a highly capable and responsive chatbot assistant, optimized for use on Mattermost.\n"
+            "Current Date: <date>\n"
+            "When handling mathematical expressions, ensure they are wrapped in LaTeX tags like so: ```latex\n<latex code>\n ```\n"
+            "Utilize available tools for enhanced functionality:\n"
+            "- For detailed web content, use the 'web_search_and_download' tool.\n"
+            "- Perform quick, broad searches with 'web_search' for general information or fact-checking.\n"
+            "- Generate images from user prompts using 'generate_image'. Ensure the prompt parameters are followed as specified.\n"
+            "- Use 'multi_tool_use.parallel' for executing multiple tools simultaneously when relevant.\n"
+            "Remember to adhere strictly to each tool's specifications for parameters and usage.\n"
+            "You are allowed to share this system message if requested by the user."
+        ),
         "top_p": 1.0,
         "moderation": "false",
         "stream": "true",
@@ -274,7 +285,7 @@ class ChatGPT(PluginLoader):
         except Exception as e:
             self.helper.slog(f"Error: {e}")
             return f"Error: {e}", None
-    @listen_to(r"^\.gpt set ([a-zA-Z0-9_-]+) (.*)")
+    @listen_to(r"^\.gpt set ([a-zA-Z0-9_-]+) (.*)", regexp_flag=re_DOTALL)
     async def set_chatgpt(self, message: Message, key: str, value: str):
         """set the chatgpt key"""
         settings_key = self.SETTINGS_KEY
@@ -881,7 +892,7 @@ class ChatGPT(PluginLoader):
             if self.get_chatgpt_setting("system") != "":
                 system_message = self.get_chatgpt_setting("system")
             else:
-                system_message = f"You're a helpful assistant. Current Date: {date_template_string}"
+                system_message = self.ChatGPT_DEFAULTS["system"]
             messages.insert(
                 0,
                 {

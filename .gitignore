@@ -6,3 +6,5 @@ mmpy_bot
 .vscode
 .github-token
 .docker-token
+.rewritten.json
+fix_messages.py

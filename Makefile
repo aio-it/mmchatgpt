@@ -42,3 +42,9 @@ logs:
 test:
 	pipenv run coverage run -m pytest tests
 	pipenv run coverage report
+release-patch:
+  ./make-release.sh patch
+release-minor:
+	./make-release.sh minor
+release-major:
+	./make-release.sh major

@@ -25,6 +25,10 @@ else
     echo "Please specify the type of release: major, minor or patch"
     exit 1
 fi
+# writing the new tag to the version file
+echo $new_tag > version
+# commit the version file
+git commit -am "Bump version to $new_tag"
 echo "Creating new tag: $new_tag"
 git push
 git tag $new_tag

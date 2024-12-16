@@ -2,6 +2,12 @@
 # get latest tag
 tag=$(git describe --tags `git rev-list --tags --max-count=1`)
 
+# check if current commit is already tagged if so tell the user and exit
+if [ $(git describe --tags) == $tag ]; then
+    echo "Current commit is already tagged with $tag"
+    exit 1
+fi
+
 # get if we want to make a major, minor or patch release
 release=$1
 #remove v from tag
@@ -20,6 +26,6 @@ else
     exit 1
 fi
 echo "Creating new tag: $new_tag"
-#git push
-#git tag $new_tag
-#git push --tags
+git push
+git tag $new_tag
+git push --tags

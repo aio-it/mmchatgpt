@@ -16,6 +16,7 @@ from plugins.calc import Calc
 from plugins.giphy import Giphy
 from plugins.ntp import Ntp
 from plugins.jira import Jira
+from plugins.version import Version
 import logging
 
 env = Env()
@@ -25,6 +26,10 @@ if debug:
     logging.basicConfig(level=logging.DEBUG)
 else:
     logging.basicConfig(level=logging.INFO)
+
+# read the version file and set the version
+with open("version") as f:
+    version = f.read().strip()
 
 bot = Bot(
     settings=Settings(
@@ -52,6 +57,7 @@ bot = Bot(
         Giphy(),
         Ntp(),
         Jira(),
+        Version(),
     ],
     enable_logging=True,
 )

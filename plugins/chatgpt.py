@@ -1,5 +1,6 @@
 """ChatGPT plugin for mmpy_bot"""
 
+from cgitb import text
 from math import log
 from pydoc import doc
 import re
@@ -7,8 +8,11 @@ import aiodocker.types
 import requests
 import time
 import json
+import mimetypes
 from environs import Env
-
+import random
+import string
+import base64
 from plugins import docker
 env = Env()
 
@@ -190,9 +194,43 @@ class ChatGPT(PluginLoader):
         )
         docker_run_python_tool = Tool(
             name=self.docker_run_python,
-            description="Run python code in a docker container. Do not create scripts that runs forever. Use this to run python code that may be unsafe or that you do not want to run on your local machine. The code will be run in a docker container and the output will be returned to you. if you create any files in the code they will be saved in a dir that will be returned to you so you can access them",
-            parameters=[{ "name": "code", "required": True }, { "name": "requirements_txt", "required": False, "description": "the packages you need to run the code. this is a string that will be saved to a file called requirements.txt and installed before running the code by the tool"}],
-            privilege_level="admin"
+            description="Run python code in a docker container. the python version is 3.11. Do not create scripts that runs forever. Use this to run python code that may be unsafe or that you do not want to run on your local machine. The code will be run in a docker container and the stdout and stderr will be returned to you. Any files created should be saved in the current directory or /app The script then returns them to the user but you do not get the data unless the files created have a mimetype of text",
+            parameters=[
+                {"name": "code", "required": True},
+                {
+                    "name": "requirements_txt",
+                    "required": False,
+                    "description": "the packages you need to run the code. this is a string that will be saved to a file called requirements.txt and installed before running the code by the tool",
+                },
+                {
+                    "name": "os_packages",
+                    "required": False,
+                    "description": "the os packages you need to run the code. you're running on the latest debian bookworm using the python:3.11-slim-bookworm docker image. one package per line. they will be installed before installing any python requirements.txt packages.",
+                },
+                {
+                    "name": "extra_file_name",
+                    "Required": False,
+                    "description": "This is the name variable for the extra file. any extra file you need to run the code. these files will be saved to the current directory or /app in the docker container. format it like this: filename:filecontent",
+                },
+                {
+                    "name": "extra_file_content",
+                    "Required": False,
+                    "description": "base64 encoded file content. (use the base64 encode tool if the content you have is not already encoded) this will be decoded by the tool and saved to <extra_file_name>. This is the content variable for the extra file any extra file you need to run the code. these files will be saved to the current directory or /app in the docker container. format it like this: filename:filecontent",
+                },
+            ],
+            privilege_level="admin",
+        )
+        base64_encode_tool = Tool(
+            name=self.base64_encode,
+            description="Encode a string or files content to base64",
+            parameters=["string"],
+            privilege_level="user",
+        )
+        base64_decode_tool = Tool(
+            name=self.base64_decode,
+            description="Decode a base64 string",
+            parameters=["string"],
+            privilege_level="user",
         )
 
         self.tools_manager = ToolsManager()
@@ -201,106 +239,392 @@ class ChatGPT(PluginLoader):
         self.tools_manager.add_tool(web_search_tool)
         self.tools_manager.add_tool(generate_image_tool)
         self.tools_manager.add_tool(docker_run_python_tool)
+        # self.tools_manager.add_tool(assistant_to_the_regional_manager_tool)
+        self.tools_manager.add_tool(base64_encode_tool)
+        self.tools_manager.add_tool(base64_decode_tool)
         # manager.add_tool(assistant_to_the_regional_manager_tool)
         self.user_tools = self.tools_manager.get_tools("user")
         self.admin_tools = self.tools_manager.get_tools("admin")
         self.helper.slog(f"User tools: {self.user_tools}")
         self.helper.slog(f"Admin tools: {self.admin_tools}")
+    async def base64_encode(self, string: str):
+        """Encode a string to base64"""
+        return base64.b64encode(string.encode()).decode(), None
+    async def base64_decode(self, string: str):
+        """Decode a base64 string"""
+        return base64.b64decode(string).decode(), None
+    async def docker_run_python(
+        self,
+        code,
+        requirements_txt=None,
+        os_packages=None,
+        extra_file_name=None,
+        extra_file_content=None,
+    ):
+        """Run Python code in a Docker container using environment variables to create files."""
+        docker_image = "python:3.11-slim-bookworm"
 
-    async def docker_run_python(self, code, requirements_txt=None):
-        """run python code in a docker container"""
-        docker_image = "python:3.10-slim"
-        #save the code to a tmp
-        import tempfile
-        #create directory to use for all the files
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            #create a file
+        # Initialize the Docker client
+        dockerclient = aiodocker.Docker()
+
+        # Track containers to ensure cleanup
+        containers_to_cleanup = []
+
+        # Track our generated files
+        GENERATED_FILES = {
+            "main.py",
+            "run.sh",
+            "requirements.txt",
+            "stdout.txt",
+            "stderr.txt",
+            "packages-install.txt",
+        }
+        output_files = []
+
+        try:
+            # Generate a random volume name
+            volume_name = "chatgpt-" + "".join(
+                random.choices(string.ascii_lowercase + string.digits, k=10)
+            )
+
+            # Create a new Docker volume
+            docker_volume = await dockerclient.volumes.create({"Name": volume_name})
+            await self.helper.log(f"Created volume: {volume_name}")
+
+            # Ensure Alpine image is available
+            try:
+                await dockerclient.images.inspect("alpine:latest")
+            except aiodocker.exceptions.DockerError:
+                await self.helper.log("Pulling Alpine image...")
+                try:
+                    await dockerclient.images.pull("alpine:latest")
+                except Exception as e:
+                    await self.helper.log(f"Error pulling Alpine image: {str(e)}")
+                    return f"Error: Failed to pull required image - {str(e)}", None
+
+            # Ensure Python image is available
+            try:
+                await dockerclient.images.inspect(docker_image)
+            except aiodocker.exceptions.DockerError:
+                await self.helper.log(f"Pulling {docker_image} image...")
+                try:
+                    await dockerclient.images.pull(docker_image)
+                except Exception as e:
+                    await self.helper.log(f"Error pulling Python image: {str(e)}")
+                    return f"Error: Failed to pull required image - {str(e)}", None
+
+            # Prepare the initialization script that will create the files from environment variables
+            init_script = """#!/bin/sh
+echo "$PYTHON_CODE" > /app/main.py
+if [ ! -z "$EXTRA_FILE_NAME" ]; then
+    echo "$EXTRA_FILE_CONTENT" | base64 -d > /app/$EXTRA_FILE_NAME
+fi
+if [ ! -z "$OS_PACKAGES" ]; then
+    echo "$OS_PACKAGES" > /app/os-packages.txt
+    apt-get update >> /app/packages-install.txt 2>&1
+    xargs -a /app/os-packages.txt apt-get install -y >> /app/packages-install.txt 2>&1
+fi
+if [ ! -z "$REQUIREMENTS_TXT" ]; then
+    echo "$REQUIREMENTS_TXT" > /app/requirements.txt
+fi
+echo '#!/bin/bash
+# install requirements
+if [ -f requirements.txt ]; then
+    # create venv
+    python3 -m venv /app/venv
+    source /app/venv/bin/activate
+    pip install -r requirements.txt > /app/requirements-install.txt 2>&1
+fi
+python3 ./main.py' > /app/run.sh
+chmod +x /app/run.sh
+"""
+            # Configure environment variables with the file contents
+            container_env = {"PYTHON_CODE": code, "INIT_SCRIPT": init_script}
             if requirements_txt:
-                #create a file
-                with open(tmpdirname + "/requirements.txt", "w") as f:
-                    f.write(requirements_txt)
-            #create a file
-            mount_tmp_dir_string = f"{tmpdirname}:/app"
-            workdir_string = "/app"
-            run_script = """
-            #!/bin/bash
-            # install requirements.txt if file exists
-            if [ -f requirements.txt ]; then
-                pip install -r requirements.txt
-            
-            fi
-            # run the python code output std to stdout.txt and stderr to stderr.txt and stdout to stdout
-            python3 ./main.py > stdout.txt 2> stderr.txt
-            echo "stdout:"
-            cat stdout.txt
-            echo "stderr:"
-            cat stderr.txt
-            """
-            # create the run script
-            with open(tmpdirname + "/run.sh", "w") as f:
-                f.write(run_script)
-                # make the file executable
-                import os
-                os.chmod(tmpdirname + "/run.sh", 0o755)
-            # create the main.py file
-            with open(tmpdirname + "/main.py", "w") as f:
-                f.write(code)
-            # log the files created to see if they are correct
-            await self.helper.log(f"files created: {os.listdir(tmpdirname)}")
-            command = ["bash", "./run.sh"]
-            command = ["ls", "-lash"]
-            # create the docker config
-            container_config = {
-                "Cmd": command,
-                "Image": docker_image,
+                container_env["REQUIREMENTS_TXT"] = requirements_txt
+            if os_packages:
+                container_env["OS_PACKAGES"] = os_packages
+            if extra_file_name and extra_file_content:
+                container_env["EXTRA_FILE_NAME"] = extra_file_name
+                container_env["EXTRA_FILE_CONTENT"] = extra_file_content
+
+            # Create initialization container to set up files
+            init_container_config = {
+                "Image": docker_image,  # Explicitly specify latest tag
+                "Cmd": [
+                    "/bin/sh",
+                    "-c",
+                    'echo "$INIT_SCRIPT" > /tmp/init.sh && chmod +x /tmp/init.sh && /tmp/init.sh',
+                ],
+                "Env": [f"{k}={v}" for k, v in container_env.items()],
                 "HostConfig": {
-                    "Binds": [mount_tmp_dir_string],
+                    "Binds": [f"{volume_name}:/app:rw"],
                 },
-                "WorkingDir": workdir_string
+                "WorkingDir": "/app",
             }
-            await self.helper.log(f"container_config: {container_config}")
-            # init the client
-            dockerclient = aiodocker.Docker()
-            # run the container and return the output
-            container = await dockerclient.containers.run(config=container_config)
-            await self.helper.log(f"files created: {os.listdir(tmpdirname)}")
-            output = ""
-            files = []
-            if container:
-                # get the output from the container
-                log_stdout = await container.log(stdout=True)
-                log_stderr = await container.log(stderr=True)
-                await self.helper.log(f"container log stdout: {log_stdout}")
-                await self.helper.log(f"container log stderr: {log_stderr}")
-                # get stdout and stderr
-                stdout = ''.join(log_stdout)
-                stderr = ''.join(log_stderr)
-                output = f"stdout: {stdout}"
-                if stderr:
-                    output += f"\nstderr: {stderr}"
-                output_filename = self.helper.save_content_to_tmp_file(output, "txt")
-                files.append(output_filename)
-                # remove the container
-                await container.delete()
-            # check if the file exists
-            stdout = ""
-            if os.path.exists(tmpdirname + "/stdout.txt"):
-                with open(tmpdirname + "/stdout.txt", "r") as f:
-                    # read the entire file
-                    stdout = f.read()
-            stderr = ""
-            if os.path.exists(tmpdirname + "/stderr.txt"):
-                with open(tmpdirname + "/stderr.txt", "r") as f:
-                    # read the entire file
-                    stderr = f.read()
-            # save the outputs to temp files
-            if stdout:
-                stdout_filename = self.helper.save_content_to_tmp_file(stdout, "txt")
-                files.append(stdout_filename)
-            if stderr:
-                stderr_filename = self.helper.save_content_to_tmp_file(stderr, "txt")
-                files.append(stderr_filename)
-            return output, files
+
+            init_container = await dockerclient.containers.create(init_container_config)
+            containers_to_cleanup.append(init_container)
+            try:
+                await init_container.start()
+                await init_container.wait()
+            finally:
+                await init_container.delete(force=True)
+                containers_to_cleanup.remove(init_container)
+
+            # Configure and run the main container
+            container_config = {
+                "Cmd": ["bash", "/app/run.sh"],
+                "Image": docker_image,
+                "HostConfig": {"Binds": [f"{volume_name}:/app"]},
+                "WorkingDir": "/app",
+            }
+
+            # Create and start the main container
+            container = await dockerclient.containers.create(config=container_config)
+            await container.start(detach=True)
+            containers_to_cleanup.append(container)
+            try:
+                await container.wait(max_wait=30)
+            except Exception as e:
+                await self.helper.log(f"container timed out (30s): {str(e)}")
+                return f"Error: Container timed out: {str(e)}", None
+
+            # Get logs directly from container
+            stdout = await container.log(stdout=True)
+            stderr = await container.log(stderr=True)
+
+            # Process the output
+            output = "".join(stdout)
+            error_output = "".join(stderr)
+
+            # Save the outputs to files
+            stdout_filename = self.helper.save_content_to_tmp_file(
+                output, extension="txt", prefix="stdout_"
+            )
+            stderr_filename = self.helper.save_content_to_tmp_file(
+                error_output, extension="txt", prefix="stderr_"
+            )
+
+            # After main container runs, create a container to extract created files
+            extract_container_config = {
+                "Image": "python:3.10-slim",
+                "Cmd": [
+                    "/bin/bash",
+                    "-c",
+                    """
+                    apt-get update && apt-get install -y apt-utils libmagic1 python3-magic && pip install python-magic &&
+                    python3 -c '
+import os
+import magic
+import base64
+import json
+import mimetypes
+
+def scan_files():
+    mime = magic.Magic(mime=True)
+    files = []
+    for root, _, filenames in os.walk("/app"):
+        for filename in filenames:
+            filepath = os.path.join(root, filename)
+            if "/venv/" not in filepath and not any(filepath.endswith(x) for x in ["run.sh", "main.py"]):
+                try:
+                    mime_type = mime.from_file(filepath)
+                    with open(filepath, "rb") as f:
+                        content = f.read()
+                        files.append({
+                            "path": filepath.replace("/app/", ""),
+                            "mime": mime_type,
+                            "content": base64.b64encode(content).decode("utf-8")
+                        })
+                except Exception as e:
+                    print(f"Error processing {filepath}: {str(e)}")
+    return files
+
+files = scan_files()
+if files:
+    print("START_FILES_JSON")
+    print(json.dumps(files))
+    print("END_FILES_JSON")
+'
+                    """,
+                ],
+                "HostConfig": {
+                    "Binds": [f"{volume_name}:/app:ro"],
+                },
+                "WorkingDir": "/app",
+            }
+
+            extract_container = await dockerclient.containers.create(
+                extract_container_config
+            )
+            containers_to_cleanup.append(extract_container)
+            try:
+                await extract_container.start()
+                result = await extract_container.wait()
+                file_logs = await extract_container.log(stdout=True)
+                error_log = await extract_container.log(stderr=True)
+                await self.helper.log(f"Extract container files: {file_logs}")
+                await self.helper.log(f"Extract container error: {''.join(error_log)}")
+
+                # Process found files from JSON output
+                if file_logs:
+                    # Join all log lines and extract content between markers
+                    full_log = "".join(file_logs)
+                    if "START_FILES_JSON" in full_log and "END_FILES_JSON" in full_log:
+                        json_str = (
+                            full_log.split("START_FILES_JSON")[1]
+                            .split("END_FILES_JSON")[0]
+                            .strip()
+                        )
+                        try:
+                            files_data = json.loads(json_str)
+                            for file_info in files_data:
+                                try:
+                                    file_content = base64.b64decode(
+                                        file_info["content"]
+                                    )
+                                    mime_type = file_info["mime"]
+                                    filepath = file_info["path"]
+
+                                    # Determine if file is binary based on mime type
+                                    is_binary = not mime_type.startswith(
+                                        ("text/", "application/json", "application/xml")
+                                    )
+
+                                    # Get appropriate extension based on mime type
+                                    extension = (
+                                        mimetypes.guess_extension(mime_type) or ".bin"
+                                    )
+                                    if extension.startswith("."):
+                                        extension = extension[1:]
+
+                                    if is_binary:
+                                        output_filename = (
+                                            self.helper.save_content_to_tmp_file(
+                                                file_content,
+                                                extension,
+                                                prefix=filepath.replace(
+                                                    "/", "_"
+                                                ).replace("\\", "_")
+                                                + "_",
+                                                binary=True,
+                                            )
+                                        )
+                                    else:
+                                        try:
+                                            text_content = file_content.decode("utf-8")
+                                            output_filename = (
+                                                self.helper.save_content_to_tmp_file(
+                                                    text_content,
+                                                    extension,
+                                                    prefix=filepath.replace(
+                                                        "/", "_"
+                                                    ).replace("\\", "_")
+                                                    + "_",
+                                                )
+                                            )
+                                        except UnicodeDecodeError:
+                                            output_filename = (
+                                                self.helper.save_content_to_tmp_file(
+                                                    file_content,
+                                                    extension,
+                                                    prefix=filepath.replace(
+                                                        "/", "_"
+                                                    ).replace("\\", "_")
+                                                    + "_",
+                                                    binary=True,
+                                                )
+                                            )
+                                    output_files.append(output_filename)
+                                    await self.helper.log(
+                                        f"Extracted file {filepath} as {output_filename}"
+                                    )
+                                except Exception as e:
+                                    await self.helper.log(
+                                        f"Error extracting file {filepath}: {str(e)}"
+                                    )
+                        except json.JSONDecodeError as e:
+                            await self.helper.log(f"Error parsing file data: {str(e)}")
+                    else:
+                        await self.helper.log(
+                            "No valid file data markers found in container output"
+                        )
+
+            finally:
+                await extract_container.delete(force=True)
+                containers_to_cleanup.remove(extract_container)
+
+            # save code to a file
+            code_filename = self.helper.save_content_to_tmp_file(code, "py", "main_")
+            output_files.append(code_filename)
+            # Add any found files to the output
+
+            all_files = [stdout_filename, stderr_filename] + output_files
+            text_return = f"Execution completed:\n<---STDOUT--->{output}\n<---/STDOUT--->\n\n<---STDERR--->\n{error_output}\n<---/STDERR--->\n"
+            # find all text files in all_files and and and append them to the text_return use magic to determine the file type
+            import magic
+
+            for file in all_files:
+                mime = magic.Magic(mime=True)
+                mimetype = mime.from_file(file)
+                if "text" in mimetype:
+                    text_return += f"\n---{file}---\n"
+                    with open(file, "r") as f:
+                        text_return += f.read()
+                        text_return += f"---{file} end---\n"
+
+            return text_return, all_files
+
+        except Exception as e:
+            await self.helper.log(f"Error: {str(e)}")
+            return f"Error: {str(e)}", None
+
+        finally:
+            # Cleanup all containers
+            for container in containers_to_cleanup:
+                try:
+                    await container.delete(force=True)
+                except Exception as e:
+                    await self.helper.log(f"Error cleaning up container: {str(e)}")
+
+            # List all containers using the volume
+            try:
+                containers = await dockerclient.containers.list(all=True)
+                for container in containers:
+                    container_data = await container.show()
+                    mounts = container_data.get("Mounts", [])
+                    if any(mount.get("Name") == volume_name for mount in mounts):
+                        await container.delete(force=True)
+            except Exception as e:
+                await self.helper.log(f"Error cleaning up related containers: {str(e)}")
+
+            # Now try to remove the volume
+            try:
+                await docker_volume.delete()
+                await self.helper.log(f"Deleted volume: {volume_name}")
+            except Exception as e:
+                await self.helper.log(f"Error deleting volume: {str(e)}")
+                # If still can't delete, try force remove using system command
+                try:
+                    import asyncio
+
+                    cmd = f"docker volume rm -f {volume_name}"
+                    proc = await asyncio.create_subprocess_shell(
+                        cmd,
+                        stdout=asyncio.subprocess.PIPE,
+                        stderr=asyncio.subprocess.PIPE,
+                    )
+                    stdout, stderr = await proc.communicate()
+                    if stderr:
+                        await self.helper.log(
+                            f"Force volume removal stderr: {stderr.decode()}"
+                        )
+                except Exception as e:
+                    await self.helper.log(f"Error force removing volume: {str(e)}")
+
+            # Close the docker client
+            await dockerclient.close()
 
     def update_allowed_models(self):
         """update allowed models"""
@@ -1256,7 +1580,16 @@ class ChatGPT(PluginLoader):
                                 reply_msg_id,
                                 {"message": f"{post_prefix}{full_message[:14000]}\nMessage too long, see attached file"},
                             )
-                            self.driver.reply_to(message, f"Files: {files}", file_paths=files)
+                            # limit of 5 files per message so loop through the files and send them in batches of 5
+                            if len(files) > 5:
+                                for i in range(0, len(files), 5):
+                                    self.driver.reply_to(
+                                        message, f"Files:", file_paths=files[i : i + 5]
+                                    )
+                            else:
+                                self.driver.reply_to(
+                                    message, f"Files: {files}", file_paths=files
+                                )
                             for file in files:
                                 self.helper.delete_downloaded_file(file)
                             await self.helper.log(f"Error in final response: {e}")
@@ -1288,7 +1621,13 @@ class ChatGPT(PluginLoader):
                 {"message": final_message [:max_message_length]},
             )
             if files and len(files) > 0:
-                self.driver.reply_to(message, f"Files:", file_paths=files)
+                if len(files) > 5:
+                    for i in range(0, len(files), 5):
+                        self.driver.reply_to(
+                            message, f"Files:", file_paths=files[i : i + 5]
+                        )
+                else:
+                    self.driver.reply_to(message, f"Files:", file_paths=files)
                 for file in files:
                     self.helper.delete_downloaded_file(file)
 

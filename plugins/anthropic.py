@@ -97,7 +97,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     async def model_set(self, message: Message, model: str):
         """set the model"""
         if self.users.is_admin(message.sender_name):
-            if model in self.ALLOWED_MODELS:
+            if True or model in self.ALLOWED_MODELS:
                 self.redis.hset(self.SETTINGS_KEY, "model", model)
                 self.model = model
                 self.driver.reply_to(message, f"Set model to {model}")

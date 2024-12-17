@@ -301,12 +301,14 @@ class ChatGPT(PluginLoader):
                 except Exception as e:
                     await self.helper.log(f"Error pulling Python image: {str(e)}")
                     return f"Error: Failed to pull required image - {str(e)}", None
-
+            # base64 the code
+            code_base64 = base64.b64encode(code.encode()).decode()
             # Prepare the initialization script that will create the files from environment variables
             init_script = """#!/bin/sh
-echo "$PYTHON_CODE" > /app/main.py
+# create the app file without breaking newlines to /app/main.py
+echo -n "$PYTHON_CODE" | base64 -d > /app/main.py
 if [ ! -z "$EXTRA_FILE_NAME" ]; then
-    echo "$EXTRA_FILE_CONTENT" | base64 -d > /app/$EXTRA_FILE_NAME
+    echo -n "$EXTRA_FILE_CONTENT" | base64 -d > /app/$EXTRA_FILE_NAME
 fi
 if [ ! -z "$OS_PACKAGES" ]; then
     echo "$OS_PACKAGES" > /app/os-packages.txt
@@ -328,7 +330,7 @@ python3 ./main.py' > /app/run.sh
 chmod +x /app/run.sh
 """
             # Configure environment variables with the file contents
-            container_env = {"PYTHON_CODE": code, "INIT_SCRIPT": init_script}
+            container_env = {"PYTHON_CODE": code_base64, "INIT_SCRIPT": init_script}
             if requirements_txt:
                 container_env["REQUIREMENTS_TXT"] = requirements_txt
             if os_packages:

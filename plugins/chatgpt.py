@@ -1,9 +1,15 @@
 """ChatGPT plugin for mmpy_bot"""
 
+from math import log
+from pydoc import doc
+import re
+import aiodocker.types
 import requests
 import time
 import json
 from environs import Env
+
+from plugins import docker
 env = Env()
 
 import openai
@@ -23,6 +29,7 @@ from mmpy_bot.settings import Settings
 from mmpy_bot.wrappers import Message
 from redis_rate_limit import RateLimit, TooManyRequests
 from pprint import pformat
+import aiodocker
 # import tools and tools manager
 from .tools import ToolsManager, Tool
 
@@ -181,16 +188,119 @@ class ChatGPT(PluginLoader):
             parameters=["prompt","context"],
             privilege_level="user"
         )
+        docker_run_python_tool = Tool(
+            name=self.docker_run_python,
+            description="Run python code in a docker container. Do not create scripts that runs forever. Use this to run python code that may be unsafe or that you do not want to run on your local machine. The code will be run in a docker container and the output will be returned to you. if you create any files in the code they will be saved in a dir that will be returned to you so you can access them",
+            parameters=[{ "name": "code", "required": True }, { "name": "requirements_txt", "required": False, "description": "the packages you need to run the code. this is a string that will be saved to a file called requirements.txt and installed before running the code by the tool"}],
+            privilege_level="admin"
+        )
+
         self.tools_manager = ToolsManager()
         self.tools_manager.add_tool(download_webpage_tool)
         self.tools_manager.add_tool(web_search_and_download_tool)
         self.tools_manager.add_tool(web_search_tool)
         self.tools_manager.add_tool(generate_image_tool)
-        #manager.add_tool(assistant_to_the_regional_manager_tool)
+        self.tools_manager.add_tool(docker_run_python_tool)
+        # manager.add_tool(assistant_to_the_regional_manager_tool)
         self.user_tools = self.tools_manager.get_tools("user")
         self.admin_tools = self.tools_manager.get_tools("admin")
         self.helper.slog(f"User tools: {self.user_tools}")
         self.helper.slog(f"Admin tools: {self.admin_tools}")
+
+    async def docker_run_python(self, code, requirements_txt=None):
+        """run python code in a docker container"""
+        docker_image = "python:3.10-slim"
+        #save the code to a tmp
+        import tempfile
+        #create directory to use for all the files
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            #create a file
+            if requirements_txt:
+                #create a file
+                with open(tmpdirname + "/requirements.txt", "w") as f:
+                    f.write(requirements_txt)
+            #create a file
+            mount_tmp_dir_string = f"{tmpdirname}:/app"
+            workdir_string = "/app"
+            run_script = """
+            #!/bin/bash
+            # install requirements.txt if file exists
+            if [ -f requirements.txt ]; then
+                pip install -r requirements.txt
+            
+            fi
+            # run the python code output std to stdout.txt and stderr to stderr.txt and stdout to stdout
+            python3 ./main.py > stdout.txt 2> stderr.txt
+            echo "stdout:"
+            cat stdout.txt
+            echo "stderr:"
+            cat stderr.txt
+            """
+            # create the run script
+            with open(tmpdirname + "/run.sh", "w") as f:
+                f.write(run_script)
+                # make the file executable
+                import os
+                os.chmod(tmpdirname + "/run.sh", 0o755)
+            # create the main.py file
+            with open(tmpdirname + "/main.py", "w") as f:
+                f.write(code)
+            # log the files created to see if they are correct
+            await self.helper.log(f"files created: {os.listdir(tmpdirname)}")
+            command = ["bash", "./run.sh"]
+            command = ["ls", "-lash"]
+            # create the docker config
+            container_config = {
+                "Cmd": command,
+                "Image": docker_image,
+                "HostConfig": {
+                    "Binds": [mount_tmp_dir_string],
+                },
+                "WorkingDir": workdir_string
+            }
+            await self.helper.log(f"container_config: {container_config}")
+            # init the client
+            dockerclient = aiodocker.Docker()
+            # run the container and return the output
+            container = await dockerclient.containers.run(config=container_config)
+            await self.helper.log(f"files created: {os.listdir(tmpdirname)}")
+            output = ""
+            files = []
+            if container:
+                # get the output from the container
+                log_stdout = await container.log(stdout=True)
+                log_stderr = await container.log(stderr=True)
+                await self.helper.log(f"container log stdout: {log_stdout}")
+                await self.helper.log(f"container log stderr: {log_stderr}")
+                # get stdout and stderr
+                stdout = ''.join(log_stdout)
+                stderr = ''.join(log_stderr)
+                output = f"stdout: {stdout}"
+                if stderr:
+                    output += f"\nstderr: {stderr}"
+                output_filename = self.helper.save_content_to_tmp_file(output, "txt")
+                files.append(output_filename)
+                # remove the container
+                await container.delete()
+            # check if the file exists
+            stdout = ""
+            if os.path.exists(tmpdirname + "/stdout.txt"):
+                with open(tmpdirname + "/stdout.txt", "r") as f:
+                    # read the entire file
+                    stdout = f.read()
+            stderr = ""
+            if os.path.exists(tmpdirname + "/stderr.txt"):
+                with open(tmpdirname + "/stderr.txt", "r") as f:
+                    # read the entire file
+                    stderr = f.read()
+            # save the outputs to temp files
+            if stdout:
+                stdout_filename = self.helper.save_content_to_tmp_file(stdout, "txt")
+                files.append(stdout_filename)
+            if stderr:
+                stderr_filename = self.helper.save_content_to_tmp_file(stderr, "txt")
+                files.append(stderr_filename)
+            return output, files
 
     def update_allowed_models(self):
         """update allowed models"""
@@ -255,7 +365,7 @@ class ChatGPT(PluginLoader):
 
     async def generate_image(self, prompt, size=None, style=None, quality=None):
         """use the openai module to get an image from a prompt"""
-        #self.helper.slog(f"generate_image: {prompt}")
+        # self.helper.slog(f"generate_image: {prompt}")
         # validate size
         if size not in ["1024x1024", "1792x1024", "1024x1792"]:
             size = "1024x1024"
@@ -276,11 +386,11 @@ class ChatGPT(PluginLoader):
                 quality=quality,
             )
             image_url = response.data[0].url
-            #self.helper.slog(f"image_url: {image_url}")
+            # self.helper.slog(f"image_url: {image_url}")
             revised_prompt = response.data[0].revised_prompt
-            #self.helper.slog(f"revised_prompt: {revised_prompt}")
+            # self.helper.slog(f"revised_prompt: {revised_prompt}")
             filename = self.helper.download_file_to_tmp(image_url, "png")
-            #self.helper.slog(f"filename: {filename}")
+            # self.helper.slog(f"filename: {filename}")
             return f"revised prompt: {revised_prompt}", filename
         except Exception as e:
             self.helper.slog(f"Error: {e}")
@@ -348,13 +458,13 @@ class ChatGPT(PluginLoader):
         if "file_ids" in post and "metadata" in post:
             file_ids = post["file_ids"]
             files_metadata = post["metadata"]["files"]
-            #self.helper.slog(f"files_metadata: {files_metadata}")
-            #self.helper.slog(f"file_ids: {file_ids}")
-            #import magic
+            # self.helper.slog(f"files_metadata: {files_metadata}")
+            # self.helper.slog(f"file_ids: {file_ids}")
+            # import magic
             for i, metadata in enumerate(files_metadata):
                 # Get file extension and name
-                #self.helper.slog(f"i: {i}")
-                #self.helper.slog(f"metadata: {metadata}")
+                # self.helper.slog(f"i: {i}")
+                # self.helper.slog(f"metadata: {metadata}")
                 extension = metadata.get("extension")
                 mime_type = metadata.get("mime_type")
                 preview_content = None
@@ -369,9 +479,9 @@ class ChatGPT(PluginLoader):
                 if mini_preview_content and preview_content:
                     if mini_preview_content == preview_content:
                         pass
-                        #self.helper.slog(f"mini_preview_content == preview_content")
+                        # self.helper.slog(f"mini_preview_content == preview_content")
                 filename = metadata.get("name", f"file_{i}.{extension}")
-                #self.helper.slog(f"filename: {filename}. extension: {extension}")
+                # self.helper.slog(f"filename: {filename}. extension: {extension}")
                 # Get the file content
                 get_file_response = self.driver.files.get_file(file_ids[i])
                 if get_file_response.status_code != 200:
@@ -390,9 +500,9 @@ class ChatGPT(PluginLoader):
                     "archive": ["zip", "rar", "tar", "7z"],
                     "code": ["py", "js", "html", "css", "java", "c", "cpp", "h", "hpp", "cs", "php", "rb", "sh"],
                 }
-                #mime = magic.Magic(mime=True)
-                #mime_type = mime.from_buffer(file_content)
-                #self.helper.slog(f"mime_type: {mime_type}")
+                # mime = magic.Magic(mime=True)
+                # mime_type = mime.from_buffer(file_content)
+                # self.helper.slog(f"mime_type: {mime_type}")
 
                 # Determine file type and content format
                 if extension in extension_types["image"]:
@@ -412,11 +522,11 @@ class ChatGPT(PluginLoader):
                     # Encode image content to base64
                     if use_preview_image and preview_content:
                         content_base64 = base64.b64encode(preview_content).decode("utf-8")
-                        #self.helper.slog(f"preview_content: {preview_content}")
+                        # self.helper.slog(f"preview_content: {preview_content}")
                     else:
                         content_base64 = base64.b64encode(file_content).decode("utf-8")
                     # compare mini_preview_content and preview_content and file_content sizes
-                    #if mini_preview_content and preview_content and file_content:
+                    # if mini_preview_content and preview_content and file_content:
                     #    self.helper.slog(f"mini_preview_content: {len(mini_preview_content)} preview_content: {len(preview_content)} file_content: {len(file_content)}")
                     files.append({
                         "filename": filename,
@@ -471,7 +581,7 @@ class ChatGPT(PluginLoader):
             # try all of them in line and stop after 2. zero indexed
             if i >= 2:
                 break
-            #await self.helper.log(f"downloading webpage {result}")
+            # await self.helper.log(f"downloading webpage {result}")
             try:
                 # download the webpage and add the content to the result object
                 if "href" not in result:
@@ -479,7 +589,7 @@ class ChatGPT(PluginLoader):
                 content, localfile = await self.download_webpage(result.get("href"))
                 if localfile:
                     localfiles.append(localfile)
-                #await self.helper.log(f"webpage content: {content[:500]}")
+                # await self.helper.log(f"webpage content: {content[:500]}")
                 i = i + 1
             except Exception as e:
                 await self.helper.log(f"Error: {e}")
@@ -490,7 +600,7 @@ class ChatGPT(PluginLoader):
             else:
                 result["content"] = f"Error: could not download webpage {result.get('href')}"
                 downloaded.append(result)
-        #await self.helper.log(f"search results: {results}")
+        # await self.helper.log(f"search results: {results}")
         # return the downloaded webpages as json
         return json.dumps(downloaded), localfiles
 
@@ -520,7 +630,7 @@ class ChatGPT(PluginLoader):
     async def download_webpage(self, url):
         """download a webpage and return the content"""
         self.exit_after_loop = False
-        #await self.helper.log(f"downloading webpage {url}")
+        # await self.helper.log(f"downloading webpage {url}")
         validate_result = self.helper.validate_input(url, "url")
         if validate_result != True:
             await self.helper.log(f"Error: {validate_result}")
@@ -558,17 +668,17 @@ class ChatGPT(PluginLoader):
                 return f"Error: content size exceeds the maximum limit ({max_content_size} bytes)", None
         # decode the content
         # check the encoding type so we can decode if it is compressed
-        #encoding = response.headers.get("Content-Encoding")
-        #if encoding == "gzip":
+        # encoding = response.headers.get("Content-Encoding")
+        # if encoding == "gzip":
         #    import gzip
         #    response_text = gzip.decompress(content).decode("utf-8")
-        #elif encoding == "deflate":
+        # elif encoding == "deflate":
         #    import zlib
         #    response_text = zlib.decompress(content).decode("utf-8")
-        #elif encoding == "br":
+        # elif encoding == "br":
         #    import brotli
         #    response_text = brotli.decompress(content).decode("utf-8")
-        #else:
+        # else:
         response_text = content.decode("utf-8")
         # find the file extension from the content type
         content_types = {
@@ -693,7 +803,7 @@ class ChatGPT(PluginLoader):
             thread_post_count = len(thread["posts"])
             for thread_index in thread["order"]:
                 i += 1
-                #skip the last post
+                # skip the last post
                 if i == thread_post_count:
                     continue
                 thread_post = thread["posts"][thread_index]
@@ -717,7 +827,7 @@ class ChatGPT(PluginLoader):
                 message = {"role": role, "content": thread_post.text}
                 messages.append(message)
                 self.thread_append(thread_id, message)
-        #messages = self.get_formatted_messages(messages)
+        # messages = self.get_formatted_messages(messages)
         return messages
     def get_formatted_messages(self,messages):
         current_tool_call = None
@@ -859,7 +969,7 @@ class ChatGPT(PluginLoader):
                 txt_files = [file for file in message_files if file["type"] == "text"]
                 img_files = [file for file in message_files if file["type"] == "image"]
                 for file in img_files:
-                    #await self.helper.log(f"img file: {file}")
+                    # await self.helper.log(f"img file: {file}")
                     m = {"role": "user"}
                     # if the file is an image, add it to the message
                     m["content"] = [
@@ -900,7 +1010,7 @@ class ChatGPT(PluginLoader):
                     "content": system_message.replace(date_template_string, current_date),
                 },
             )
-        
+
         # add thought balloon to show assistant is thinking
         self.driver.react_to(message, "thought_balloon")
         # set the full message to empty string so we can append to it later
@@ -981,7 +1091,7 @@ class ChatGPT(PluginLoader):
                             {"message": f"{post_prefix}{full_message}"},
                         )
                         last_update_time = time.time()
-
+                function_name = ""
                 if chunk_message.tool_calls and chunk_message.content is None:
                     index = 0
                     for tool_call in chunk_message.tool_calls:
@@ -1020,7 +1130,7 @@ class ChatGPT(PluginLoader):
                         continue
                     function_name = tool_function["function_name"]
                     tool_call_id = tool_function["tool_call_id"]
-                    #self.helper.slog(f"function_name: {function_name}")
+                    # self.helper.slog(f"function_name: {function_name}")
                     # get function name from the tool manager
                     tool = self.tools_manager.get_tool(function_name)
                     if tool:
@@ -1076,7 +1186,7 @@ class ChatGPT(PluginLoader):
                     # append role to tool_function tool call message
                     tool_function["tool_call_message"]["role"] = "assistant"
                     # Update thread with tool call and result
-                    #await self.helper.log(f"tool_result: {tool_function['tool_call_message']}")
+                    # await self.helper.log(f"tool_result: {tool_function['tool_call_message']}")
                     self.append_thread_and_get_messages(thread_id, tool_function["tool_call_message"])
                     self.append_thread_and_get_messages(thread_id, tool_result)
                     self.redis.hset(call_key, tool_call_id, "true")
@@ -1099,8 +1209,8 @@ class ChatGPT(PluginLoader):
 
                     try:
                         # Debug log to see the formatted messages
-                        #await self.helper.log(f"Formatted messages: {json.dumps(formatted_messages, indent=2)}")
-                        
+                        # await self.helper.log(f"Formatted messages: {json.dumps(formatted_messages, indent=2)}")
+
                         final_response = await aclient.chat.completions.create(
                             model=model,
                             messages=formatted_messages,
@@ -1329,14 +1439,14 @@ class ChatGPT(PluginLoader):
         self.redis.rpush(thread_key, self.redis_serialize_json(msg))
         self.redis.expire(thread_key, expiry)
         messages = self.helper.redis_deserialize_json(self.redis.lrange(thread_key, 0, -1))
-        #messages = self.get_formatted_messages(messages)
+        # messages = self.get_formatted_messages(messages)
         return messages
 
     def get_thread_messages_from_redis(self, thread_id):
         """get a chatlog"""
         thread_key = REDIS_PREPEND + thread_id
         messages = self.helper.redis_deserialize_json(self.redis.lrange(thread_key, 0, -1))
-        #messages = self.get_formatted_messages(messages)
+        # messages = self.get_formatted_messages(messages)
         return messages
 
     def redis_serialize_json(self,msg):

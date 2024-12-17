@@ -126,29 +126,46 @@ class Helper:
 
         return urllib.parse.quote_plus(text)
 
-    def create_tmp_filename(self, extension: str) -> str:
+    def create_tmp_filename(self, extension: str, prefix: str = None) -> str:
         """create a tmp filename"""
+        import tempfile
+        # create a tmp file using tempfile
+        if extension.startswith("."):
+            extension = extension[1:]
+        if prefix is not None:
+            return tempfile.mktemp(suffix="."+extension, prefix=prefix)
+        return tempfile.mktemp(suffix="."+extension)
 
-        return f"/tmp/{uuid.uuid4()}.{extension}"
 
     def download_file(self, url: str, filename: str) -> str:
         """download file from url using requests and return the filename/location"""
-
         request = requests.get(url, allow_redirects=True)
         with open(filename, "wb") as file:
             file.write(request.content)
         return filename
 
-    def download_file_to_tmp(self, url: str, extension: str) -> str:
+    def download_file_to_tmp(self, url: str, extension: str, prefix: str = None) -> str:
         """download file using requests and return the filename/location"""
 
-        filename = self.create_tmp_filename(extension)
+        filename = self.create_tmp_filename(extension, prefix=prefix)
         return self.download_file(url, filename)
-    def save_content_to_tmp_file(self, content: str, extension: str) -> str:
+
+    def save_content_to_tmp_file(self, content, extension: str, prefix: str = None, binary: bool = False) -> str:
         """save content to a tmp file"""    
-        filename = self.create_tmp_filename(extension)
-        with open(filename, "w") as file:
-            file.write(content)
+        filename = self.create_tmp_filename(extension, prefix=prefix)
+        mode = 'wb' if binary else 'w'
+        # If it's already bytes, write directly
+        if isinstance(content, bytes):
+            with open(filename, 'wb') as file:
+                file.write(content)
+        # If it's string but binary mode, encode it
+        elif binary and isinstance(content, str):
+            with open(filename, 'wb') as file:
+                file.write(content.encode('utf-8'))
+        # Otherwise write as text
+        else:
+            with open(filename, mode) as file:
+                file.write(content)
         return filename
     def delete_downloaded_file(self, filename: str):
         """delete the downloaded file"""

@@ -416,7 +416,7 @@ def scan_files():
     for root, _, filenames in os.walk("/app"):
         for filename in filenames:
             filepath = os.path.join(root, filename)
-            if "/venv/" not in filepath and not any(filepath.endswith(x) for x in ["run.sh", "main.py"]):
+            if "/venv/" not in filepath and not any(filepath.endswith(x) for x in ["run.sh"]):
                 try:
                     mime_type = mime.from_file(filepath)
                     with open(filepath, "rb") as f:

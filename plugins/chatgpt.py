@@ -374,9 +374,9 @@ chmod +x /app/run.sh
             await container.start(detach=True)
             containers_to_cleanup.append(container)
             try:
-                await container.wait(max_wait=30)
+                await container.wait(max_wait=600)
             except Exception as e:
-                await self.helper.log(f"container timed out (30s): {str(e)}")
+                await self.helper.log(f"container timed out (10 minutes): {str(e)}")
                 return f"Error: Container timed out: {str(e)}", None
 
             # Get logs directly from container

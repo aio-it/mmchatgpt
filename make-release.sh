@@ -7,6 +7,8 @@ if [ $(git describe --tags) == $tag ]; then
     echo "Current commit is already tagged with $tag"
     exit 1
 fi
+# commit the requirements.txt file
+git commit -vm "updated requirements.txt" requirements.txt 2> /dev/null
 
 # get if we want to make a major, minor or patch release
 release=$1

@@ -43,11 +43,8 @@ test:
 	pipenv run coverage run -m pytest tests
 	pipenv run coverage report
 release-patch: requirements
-	git commit -vm "updated requirements.txt" requirements.txt
 	./make-release.sh patch
 release-minor: requirements
-	git commit -vm "updated requirements.txt" requirements.txt
 	./make-release.sh minor
 release-major: requirements
-	git commit -vm "updated requirements.txt" requirements.txt
 	./make-release.sh major

@@ -291,17 +291,6 @@ class ChatGPT(PluginLoader):
             docker_volume = await dockerclient.volumes.create({"Name": volume_name})
             await self.helper.log(f"Created volume: {volume_name}")
 
-            # Ensure Alpine image is available
-            try:
-                await dockerclient.images.inspect("alpine:latest")
-            except aiodocker.exceptions.DockerError:
-                await self.helper.log("Pulling Alpine image...")
-                try:
-                    await dockerclient.images.pull("alpine:latest")
-                except Exception as e:
-                    await self.helper.log(f"Error pulling Alpine image: {str(e)}")
-                    return f"Error: Failed to pull required image - {str(e)}", None
-
             # Ensure Python image is available
             try:
                 await dockerclient.images.inspect(docker_image)
@@ -408,7 +397,7 @@ chmod +x /app/run.sh
 
             # After main container runs, create a container to extract created files
             extract_container_config = {
-                "Image": "python:3.10-slim",
+                "Image": docker_image,
                 "Cmd": [
                     "/bin/bash",
                     "-c",

@@ -475,18 +475,18 @@ if files:
                                     file_content = base64.b64decode(
                                         file_info["content"]
                                     )
+
                                     mime_type = file_info["mime"]
                                     filepath = file_info["path"]
-
+                                    await self.helper.log("Extracted file: " + filepath)
+                                    await self.helper.log("Mime type: " + mime_type)
                                     # Determine if file is binary based on mime type
                                     is_binary = not mime_type.startswith(
                                         ("text/", "application/json", "application/xml")
                                     )
 
-                                    # Get appropriate extension based on mime type
-                                    extension = (
-                                        mimetypes.guess_extension(mime_type) or ".bin"
-                                    )
+                                    # extract the extension from filename
+                                    extension = filepath.split(".")[-1]
                                     if extension.startswith("."):
                                         extension = extension[1:]
 

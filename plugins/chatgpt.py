@@ -186,6 +186,19 @@ class ChatGPT(PluginLoader):
             ],
             privilege_level="user"
         )
+        text_to_speech_tool = Tool(
+            name=self.text_to_speech_tool,
+            description="Convert text to speech using the openai api. The text will be converted to speech and returned to the user. Do not give out download links. these files are provided to the user via another post by the tool",
+            parameters=[{
+                "name": "text",
+                "description": "the text you want to convert to speech",
+                "required": True,
+            }, {
+                "name": "voice",
+                "description": "the voice you want to use to convert the text to speech. options are: alloy, echo, fable, onyx, nova, and shimmer. default is nova",
+                "required": False,
+            }]
+        )
         assistant_to_the_regional_manager_tool = Tool(
             name=self.assistant_to_the_regional_manager,
             description="You can use this function to ask the assistant to solve something for you. The assistant will try to solve the problem and return the solution to you. The assistant will not be able to solve all problems but it will try its best to solve the problem. If the assistant is unable to solve the problem it will return an error message. only send what what context you feel absolutely necessary for the assistant to solve the problem.",
@@ -239,6 +252,7 @@ class ChatGPT(PluginLoader):
         self.tools_manager.add_tool(web_search_tool)
         self.tools_manager.add_tool(generate_image_tool)
         self.tools_manager.add_tool(docker_run_python_tool)
+        self.tools_manager.add_tool(text_to_speech_tool)
         # self.tools_manager.add_tool(assistant_to_the_regional_manager_tool)
         # self.tools_manager.add_tool(base64_encode_tool)
         # self.tools_manager.add_tool(base64_decode_tool)
@@ -256,6 +270,22 @@ class ChatGPT(PluginLoader):
         """Decode a base64 string"""
         return base64.b64decode(string).decode(), None
 
+    async def text_to_speech_tool(self, text: str, voice: str = "nova"):
+        """Convert text to speech using the openai api"""
+        try:
+            tmp_filename = self.helper.create_tmp_filename(
+                "mp3", f"audio_{voice}_")
+            with openai.audio.speech.with_streaming_response.create(
+                model="tts-1-hd",
+                input=text,
+                voice=voice,
+                response_format="mp3"
+            ) as response:
+                response.stream_to_file(tmp_filename)
+
+            return "Audio file created, see attached file", tmp_filename
+        except self.openai_errors as e:
+            return f"Error: {str(e)}", None
     async def docker_run_python(
         self,
         code,

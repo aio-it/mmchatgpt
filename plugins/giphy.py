@@ -48,14 +48,16 @@ class Giphy(PluginLoader):
                     # get the gif from giphy api
                     response = requests.get(url, params=params)
                     # get the url from the response
-                    gif_url = response.json()["data"][0]["images"]["original"]["url"]
+                    gif_url = response.json(
+                    )["data"][0]["images"]["original"]["url"]
                     # download the gif using the url
                     filename = self.helper.download_file_to_tmp(gif_url, "gif")
                     # format the gif_url as mattermost markdown
                     # gif_url_txt = f"![gif]({gif_url})"
                     gif_url_txt = ""
                     self.helper.remove_reaction(message, "frame_with_picture")
-                    self.driver.reply_to(message, gif_url_txt, file_paths=[filename])
+                    self.driver.reply_to(
+                        message, gif_url_txt, file_paths=[filename])
                     # delete the gif file
                     self.helper.delete_downloaded_file(filename)
                     await self.helper.log(

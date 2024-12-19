@@ -26,6 +26,7 @@ class HIPB(PluginLoader):
             self.helper.slog("HIBP_API_KEY not found in .env")
             self.disabled = True
     # TODO: add command to add a watch on a email address
+
     @listen_to(r"^\.hibp ([\s\S]*)")
     @listen_to(r"^\.haveibeenpwned ([\s\S]*)")
     async def hibp(self, message: Message, text: str):
@@ -51,7 +52,8 @@ class HIPB(PluginLoader):
                         regex = re.compile(r'<a href="(.+?)".*?>(.+?)</a>')
 
                         # Use re.sub() for substitution. Notice the use of '\\2' and '\\1' for referencing groups
-                        r["Description"] = re.sub(regex, r"[\2](\1)", r["Description"])
+                        r["Description"] = re.sub(
+                            regex, r"[\2](\1)", r["Description"])
 
                 # format result with title, Breachdate, domain, Description and dataclasses
                 result = "\n------\n".join(
@@ -65,7 +67,8 @@ class HIPB(PluginLoader):
                 self.helper.slog(
                     f"user {message.sender_name} used .hibp and got breaches"
                 )
-                self.driver.reply_to(message, f"HIBP Results for {text}:\n{result}")
+                self.driver.reply_to(
+                    message, f"HIBP Results for {text}:\n{result}")
             elif result == 429:
                 self.helper.slog(
                     f"user {message.sender_name} used .hibp and got rate limited"

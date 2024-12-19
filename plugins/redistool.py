@@ -3,6 +3,7 @@ from mmpy_bot.function import listen_to
 from mmpy_bot.wrappers import Message
 from plugins.base import PluginLoader
 
+
 class RedisTool(PluginLoader):
     @listen_to(r"^\.redis get ([\s\S]*)")
     async def redis_get(self, message: Message, key: str):

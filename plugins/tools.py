@@ -54,9 +54,11 @@
         ]
 """
 
+
 class Tool:
     def __init__(self, name, description, parameters, privilege_level="user", tool_type="function"):
-        self.validate_tool(name, description, parameters, privilege_level, tool_type)
+        self.validate_tool(name, description, parameters,
+                           privilege_level, tool_type)
         self.name = name
         self.description = description
         self.parameters = self.format_parameters(parameters)
@@ -127,6 +129,7 @@ class Tool:
                     formatted_parameters["required"].append(param["name"])
         return formatted_parameters
 
+
 class ToolsManager:
     def __init__(self):
         self.tools = []
@@ -134,11 +137,13 @@ class ToolsManager:
 
     def add_tool(self, tool: Tool):
         self.tools.append(tool.get_tool_info())
+
     def get_tool(self, function_name: str):
         for tool in self.tools:
             if tool["function"]["name"] == function_name:
                 return tool
         return None
+
     def disable_tool(self, function_name: str) -> bool:
         for i, tool in enumerate(self.tools):
             if tool["function"]["name"] == function_name:
@@ -159,7 +164,7 @@ class ToolsManager:
             if privilege_level == "admin":
                 return all_tools
             return [tool for tool in all_tools if tool["function"]["privilege_level"] == "user"]
-        
+
         if privilege_level == "admin":
             return self.tools
         return [tool for tool in self.tools if tool["function"]["privilege_level"] == "user"]

@@ -17,7 +17,8 @@ MM_BOT_USERS = env.list("MM_BOT_USERS", USERS)
 # merge users
 USERS = USERS + MM_BOT_USERS
 NEEDWHITELIST = False  # if true only users in the users can use the bot
-MM_BOT_USERS_NEEDWHITELIST = env.bool("MM_BOT_USERS_NEEDWHITELIST", NEEDWHITELIST)
+MM_BOT_USERS_NEEDWHITELIST = env.bool(
+    "MM_BOT_USERS_NEEDWHITELIST", NEEDWHITELIST)
 
 
 class UserNotFound(Exception):
@@ -28,9 +29,11 @@ class UserNotFound(Exception):
 
 class Users(Plugin):
     """manage users"""
+
     def __init__(self, driver: Driver = None, plugin_manager: PluginManager = None, settings: Settings = None):
         if (driver is not None) and (plugin_manager is not None) and (settings is not None):
             self.initialize(driver, plugin_manager, settings)
+
     def initialize(
         self,
         driver: Driver,
@@ -50,7 +53,8 @@ class Users(Plugin):
             try:
                 uid = self.get_uid(admin)
             except UserNotFound:
-                self.helper.slog(f"unable to add admin. User not found: {admin}")
+                self.helper.slog(
+                    f"unable to add admin. User not found: {admin}")
             if self.redis.sismember("admins", uid):
                 continue
             if uid is not None:
@@ -88,12 +92,12 @@ class Users(Plugin):
             # replace current admin username with uid in redis
             self.redis.srem("admins", admin)
             try:
-                uid=self.get_uid(admin)
+                uid = self.get_uid(admin)
                 self.redis.sadd("admins", uid)
             except UserNotFound:
                 # user not found must be wrong. delete him.
                 self.redis.srem("admins", admin)
-            
+
         # convert all users usernames to user ids and save to redis
         for user in self.redis.smembers("users"):
             # check if it is already a uid
@@ -102,7 +106,7 @@ class Users(Plugin):
             # replace current user username with uid in redis
             self.redis.srem("users", user)
             try:
-                uid=self.get_uid(user)
+                uid = self.get_uid(user)
                 self.redis.sadd("users", uid)
             except UserNotFound:
                 self.redis.srem("users", user)
@@ -118,9 +122,11 @@ class Users(Plugin):
             # replace current ban username with uid in redis
             self.redis.delete(key)
             self.redis.set(f"ban:{self.get_uid(user)}", expire)
+
     def on_stop(self):
         """on stop"""
         pass
+
     def is_user(self, username):
         """check if user is user"""
         # check if user is banned
@@ -129,10 +135,12 @@ class Users(Plugin):
         if NEEDWHITELIST == False:
             return True
         return True if self.u2id(username) in self.redis.smembers("users") else False
+
     def is_admin(self, username):
         """check if user is admin"""
         # convert username to uid
         return True if self.u2id(username) in self.redis.smembers("admins") else False
+
     def u2id(self, username):
         """convert username to uid"""
         return self.get_uid(username)
@@ -158,11 +166,13 @@ class Users(Plugin):
             return "user"
         if uid is not None:
             return "uid"
+
     def user_exists(self, username):
         """check if user exists"""
         if self.check_if_username_or_id(username) == "not found":
             return False
         return True
+
     def get_user_by_username(self, username):
         """get user from username"""
         # check if user is cached in redis
@@ -196,6 +206,7 @@ class Users(Plugin):
             return user
         except:
             return None
+
     def get_uid(self, username, force=False):
         """get uid from username"""
         # check if uid is cached in redis
@@ -259,6 +270,7 @@ class Users(Plugin):
             seconds += days * 24 * 60 * 60
             self.redis.set(f"ban:{uid}", seconds, ex=seconds)
             return True
+
     def nohl(self, user):
         """prevent highlighting the user by adding a zero width space to the username after the first letter"""
         return user[0] + "\u200B" + user[1:]
@@ -302,6 +314,7 @@ class Users(Plugin):
             self.driver.reply_to(message, f"Unbanned {user}")
             self.redis.delete(f"ban:{uid}")
             await self.log(f"{message.sender_name} unbanned {user}")
+
     @listen_to(r"^\.users remove (.+)")
     async def users_remove(self, message: Message, username: str):
         """remove user"""
@@ -364,4 +377,3 @@ class Users(Plugin):
             for admin in self.redis.smembers("admins"):
                 admins += f"{self.id2u(admin)} ({admin})\n"
             self.driver.reply_to(message, f"Allowed admins:\n{admins}")
-

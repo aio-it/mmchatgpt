@@ -79,6 +79,7 @@ SHELL_COMMANDS = {
     },
 }
 
+
 class ShellCmds(PluginLoader):
 
     def validatecommand(self, command):
@@ -88,16 +89,18 @@ class ShellCmds(PluginLoader):
         else:
             return False
             # return { "error": f"invalid command. supported commands: {' '.join(list(SHELL_COMMANDS.keys()))}" }
-    def validateinput(self,input,types=["domain","ip"], allowed_args=[]):
+
+    def validateinput(self, input, types=["domain", "ip"], allowed_args=[]):
         """function that takes a string and validates that it matches against one or more of the types given in the list"""
         self.helper.validate_input(input, types, allowed_args)
 
     @listen_to(r"^!(.*)")
-    async def run_command(self,message: Message, command):
+    async def run_command(self, message: Message, command):
         """ runs a command after validating the command and the input"""
         # check if user is user (lol)
         if not self.users.is_user(message.sender_name):
-            self.driver.reply_to(message, f"Error: {message.sender_name} is not a user")
+            self.driver.reply_to(
+                message, f"Error: {message.sender_name} is not a user")
             return
         await self.helper.log(f"{message.sender_name} tried to run command: !{command}")
         # split command into command and input
@@ -145,22 +148,26 @@ class ShellCmds(PluginLoader):
             if input != "":
                 inputs = input.split(" ")
                 for word in inputs:
-                    valid_input = self.validateinput(word,validators,allowed_args)
+                    valid_input = self.validateinput(
+                        word, validators, allowed_args)
                     # check if dict
                     if type(valid_input) is dict:
                         if "error" in valid_input:
-                            self.driver.reply_to(message, f"Error: {valid_input['error']}")
+                            self.driver.reply_to(
+                                message, f"Error: {valid_input['error']}")
                             await self.helper.log(f"Error: {valid_input['error']}")
                             return False
                     if valid_input is False:
-                        self.driver.reply_to(message, f"Error: {word} is not a valid input to {command}")
+                        self.driver.reply_to(
+                            message, f"Error: {word} is not a valid input to {command}")
                         await self.helper.log(f"Error: {word} is not a valid input to {command}")
                         return False
                     # run command
             self.helper.add_reaction(message, "hourglass")
             await self.helper.log(f"{message.sender_name} is running command: {command} {args} {input}")
             cmd = shlex.split(f"{command} {args} {input}")
-            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            process = subprocess.Popen(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             timeout = False
             try:
                 output, error = process.communicate(timeout=10)
@@ -173,9 +180,10 @@ class ShellCmds(PluginLoader):
                     output = output.decode("utf-8")
                 if error:
                     error = error.decode("utf-8")
-                timeout=True
+                timeout = True
             self.helper.remove_reaction(message, "hourglass")
-            self.driver.reply_to(message, f"{command} {args} {input}\nResult:\n```\n{output}\n```")
+            self.driver.reply_to(
+                message, f"{command} {args} {input}\nResult:\n```\n{output}\n```")
             if error:
                 self.driver.reply_to(message, f"Error:\n```\n{error}\n```")
             if timeout:
@@ -233,6 +241,7 @@ class ShellCmds(PluginLoader):
                 self.driver.user_id, message.id, "runner"
             )
     # restart bot
+
     @listen_to(r"^\.restart$")
     async def restart(self, message: Message):
         """restarts the bot"""
@@ -242,6 +251,7 @@ class ShellCmds(PluginLoader):
             import sys
             sys.exit(1)
     # eval function that allows admins to run arbitrary python code and return the result to the chat
+
     @listen_to(r"^\.eval (.*)")
     async def admin_eval_function(self, message, code):
         """eval function that allows admins to run arbitrary python code and return the result to the chat"""
@@ -286,7 +296,8 @@ class ShellCmds(PluginLoader):
                     if decode:
                         text = base64.b64decode(text).decode("utf-8")
                     if encode:
-                        text = base64.b64encode(text.encode("utf-8")).decode("utf-8")
+                        text = base64.b64encode(
+                            text.encode("utf-8")).decode("utf-8")
                 except Exception as error:
                     self.driver.reply_to(message, f"Error: {error}")
                     return

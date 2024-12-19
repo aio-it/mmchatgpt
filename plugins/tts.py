@@ -22,7 +22,8 @@ class TTS(PluginLoader):
                     redis_pool=self.redis_pool,
                 ):
                     # get the audio from dr tts website https://www.dr.dk/tjenester/tts?text=<text> using the requests module urlencode the text
-                    self.helper.add_reaction(message, "speaking_head_in_silhouette")
+                    self.helper.add_reaction(
+                        message, "speaking_head_in_silhouette")
                     # replace newlines with spaces
                     text = text.replace("\n", " ")
                     urlencoded_text = self.helper.urlencode_text(text)
@@ -30,11 +31,14 @@ class TTS(PluginLoader):
                         f"https://www.dr.dk/tjenester/tts?text={urlencoded_text}"
                     )
                     # download the audio using the url
-                    filename = self.helper.download_file_to_tmp(audio_url, "mp3")
+                    filename = self.helper.download_file_to_tmp(
+                        audio_url, "mp3")
                     # format the link in mattermost markdown
                     msg_txt = f"link: [drtts]({audio_url})"
-                    self.helper.remove_reaction(message, "speaking_head_in_silhouette")
-                    self.driver.reply_to(message, msg_txt, file_paths=[filename])
+                    self.helper.remove_reaction(
+                        message, "speaking_head_in_silhouette")
+                    self.driver.reply_to(
+                        message, msg_txt, file_paths=[filename])
                     # delete the audio file
                     self.helper.delete_downloaded_file(filename)
                     await self.helper.log(f"{message.sender_name} used .drtts")
@@ -55,6 +59,7 @@ class TTS(PluginLoader):
         return voices, rate, volume
     # Broken fix maybe?
     # @listen_to(r"^\.tts ([\s\S]*)")
+
     async def tts(self, message: Message, text: str):
         if self.users.is_user(message.sender_name):
             try:
@@ -65,7 +70,8 @@ class TTS(PluginLoader):
                     expire=5,
                     redis_pool=self.redis_pool,
                 ):
-                    self.helper.add_reaction(message, "speaking_head_in_silhouette")
+                    self.helper.add_reaction(
+                        message, "speaking_head_in_silhouette")
                     text = text.replace("\n", " ")
                     filename = self.helper.create_tmp_filename("mp3")
                     voices, rate, volume = await self.create_tts_audio(text, filename)
@@ -74,8 +80,10 @@ class TTS(PluginLoader):
                     await self.helper.debug(f"rate: {rate}")
                     await self.helper.debug(f"volume: {volume}")
 
-                    self.driver.reply_to(message, f"tts: {text}", file_paths=[filename])
-                    self.helper.remove_reaction(message, "speaking_head_in_silhouette")
+                    self.driver.reply_to(
+                        message, f"tts: {text}", file_paths=[filename])
+                    self.helper.remove_reaction(
+                        message, "speaking_head_in_silhouette")
                     await self.helper.log(f"{message.sender_name} used .tts")
             except TooManyRequests:
                 self.driver.reply_to(message, "Rate limit exceeded (1/5s)")

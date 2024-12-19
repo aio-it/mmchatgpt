@@ -20,14 +20,16 @@ class Version(PluginLoader):
         super().initialize(driver, plugin_manager, settings)
         self.version = self.get_version_from_file()
         self.source = "https://github.com/aio-it/mmchatgpt"
-        self.helper.slog(f"Started. Version {self.version} Source: {self.source}")
+        self.helper.slog(
+            f"Started. Version {self.version} Source: {self.source}")
 
     def get_version_from_file(self):
         """get the version of the bot"""
         # check if .git exists if it does return the git version using git describe --tags
         if os.path.exists(".git"):
             import subprocess
-            version = subprocess.check_output(["git", "describe", "--tags"]).strip()
+            version = subprocess.check_output(
+                ["git", "describe", "--tags"]).strip()
             return version.decode("utf-8")
         # open version file
         with open("version") as f:
@@ -37,4 +39,4 @@ class Version(PluginLoader):
     @listen_to("^.gpt version$")
     def get_version(self, message: Message):
         """get the version of the bot"""
-        return self.driver.reply_to(message,f"Source: {self.source} Version: {self.version}")
+        return self.driver.reply_to(message, f"Source: {self.source} Version: {self.version}")

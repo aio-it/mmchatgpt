@@ -6,6 +6,7 @@ import datetime
 
 env = Env()
 
+
 class Pushups(PluginLoader):
 
     @listen_to(r"^\.pushups reset ([a-zA-Z0-9_-]+)")
@@ -158,6 +159,7 @@ class Pushups(PluginLoader):
                 total += int(self.redis.get(key))
             messagetxt += f":weight_lifter: Alltime Total: {total}\n"
             self.driver.reply_to(message, messagetxt)
+
     @listen_to(r"^\.pushups$")
     @listen_to(r"^\.pushups help$")
     async def pushups_helps(self, message: Message):

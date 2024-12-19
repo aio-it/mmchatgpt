@@ -13,10 +13,12 @@ from environs import Env
 env = Env()
 
 REDIS_PREPEND = "ollama_"
+
+
 class Ollama(PluginLoader):
     REDIS_PREFIX = "ollama_"
     DEFAULT_MODEL = "mistral"
-    URL = env.str("OLLAMA_URL","http://localhost:11434/api")
+    URL = env.str("OLLAMA_URL", "http://localhost:11434/api")
     CHAT_ENDPOINT = "/chat"
     PULL_ENDPOINT = "/pull"
     SHOW_ENDPOINT = "/show"
@@ -24,8 +26,10 @@ class Ollama(PluginLoader):
     DEFAULT_STREAM = True
     DEFAULT_SYSTEM_MESSAGE = ""
     DEFAULT_STREAM_DELAY = 100
+
     def __init__(self):
         super().__init__()
+
     def initialize(self, driver: Driver, plugin_manager: PluginManager, settings: Settings):
         super().initialize(driver, plugin_manager, settings)
         self.name = "ollama"
@@ -38,38 +42,48 @@ class Ollama(PluginLoader):
             )
         self.stream = self.redis.get(self.REDIS_PREFIX + "stream")
         if self.redis.get(self.REDIS_PREFIX + "system_message") is None:
-            self.redis.set(self.REDIS_PREFIX + "system_message", self.DEFAULT_SYSTEM_MESSAGE)
-        self.system_message = self.redis.get(self.REDIS_PREFIX + "system_message")
+            self.redis.set(self.REDIS_PREFIX + "system_message",
+                           self.DEFAULT_SYSTEM_MESSAGE)
+        self.system_message = self.redis.get(
+            self.REDIS_PREFIX + "system_message")
         if self.redis.get(self.REDIS_PREFIX + "stream_delay") is None:
-            self.redis.set(self.REDIS_PREFIX + "stream_delay", self.DEFAULT_STREAM_DELAY)
+            self.redis.set(self.REDIS_PREFIX + "stream_delay",
+                           self.DEFAULT_STREAM_DELAY)
         self.stream_delay = self.redis.get(self.REDIS_PREFIX + "stream_delay")
         self.helper.slog(f"model: {self.model}")
         self.helper.slog(f"stream: {self.stream}")
         self.helper.slog(f"system_message: {self.system_message}")
         self.helper.slog(f"stream_delay: {self.stream_delay}ms")
+
     @listen_to(r"^\.ollama help")
     async def ollama_help(self, message: Message):
         if self.users.is_admin(message.sender_name):
-            self.driver.reply_to(message, f"commands: model set/get/show/pull/list, stream enable/disable, stream delay get/set, system_message set/get")
+            self.driver.reply_to(
+                message, f"commands: model set/get/show/pull/list, stream enable/disable, stream delay get/set, system_message set/get")
+
     @listen_to(r"^\.ollama stream disable")
     async def ollama_stream_disable(self, message: Message):
         if self.users.is_admin(message.sender_name):
             self.redis.set(self.REDIS_PREFIX + "stream", 0)
             self.stream = 0
             self.driver.reply_to(message, f"streaming disabled")
+
     @listen_to(r"^\.ollama stream enable")
     async def ollama_stream_enable(self, message: Message):
         if self.users.is_admin(message.sender_name):
             self.redis.set(self.REDIS_PREFIX + "stream", 1)
             self.stream = 1
             delay = self.redis.get(self.REDIS_PREFIX + "stream_delay")
-            self.driver.reply_to(message, f"streaming enabled. delay: {delay}ms")
+            self.driver.reply_to(
+                message, f"streaming enabled. delay: {delay}ms")
+
     @listen_to(r"^\.ollama stream delay set ([\s\S]*)")
     async def ollama_stream_delay_set(self, message: Message, delay: str):
         if self.users.is_admin(message.sender_name):
             self.redis.set(self.REDIS_PREFIX + "stream_delay", delay)
             self.stream_delay = delay
             self.driver.reply_to(message, f"stream delay set to: {delay}ms")
+
     @listen_to(r"^\.ollama model show ([\s\S]*)")
     async def ollama_model_show(self, message: Message, model: str):
         if self.users.is_admin(message.sender_name):
@@ -85,7 +99,8 @@ class Ollama(PluginLoader):
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 self.helper.add_reaction(message, "x")
-    @listen_to (r"^\.ollama model list")
+
+    @listen_to(r"^\.ollama model list")
     async def ollama_model_list(self, message: Message):
         if self.users.is_admin(message.sender_name):
             try:
@@ -103,13 +118,14 @@ class Ollama(PluginLoader):
             except Exception as error:
                 self.driver.reply_to(message, f"Error: {error}")
                 self.helper.add_reaction(message, "x")
+
     @listen_to(r"^\.ollama model pull ([\s\S]*)")
     async def ollama_model_pull(self, message: Message, model: str):
         if self.users.is_admin(message.sender_name):
             self.driver.reply_to(message, f"pulling {model}")
             data = {
-            "name": model,
-            "stream": False
+                "name": model,
+                "stream": False
             }
             try:
                 timeout = aiohttp.ClientTimeout(total=60*60*24*7)
@@ -125,7 +141,8 @@ class Ollama(PluginLoader):
                                     continue
                                 obj = json.loads(obj)
                                 if "status" in obj:
-                                    self.driver.reply_to(message, f"{pformat(obj['status'])}")
+                                    self.driver.reply_to(
+                                        message, f"{pformat(obj['status'])}")
                         self.driver.reply_to(message, f"pulled {model}")
 
             except Exception as error:
@@ -138,38 +155,48 @@ class Ollama(PluginLoader):
             self.redis.set(self.REDIS_PREFIX + "model", model)
             self.model = model
             self.driver.reply_to(message, f"model set to: {model}")
+
     @listen_to(r"^\.ollama model get")
     async def ollama_model_get(self, message: Message):
         if self.users.is_admin(message.sender_name):
-            self.driver.reply_to(message, f"model: {self.redis.get(self.REDIS_PREFIX + 'model')}")
-    def get_system_message(self,model):
+            self.driver.reply_to(
+                message, f"model: {self.redis.get(self.REDIS_PREFIX + 'model')}")
+
+    def get_system_message(self, model):
         """get system message for model"""
         # if : is in model, get system message for model
         if ":" in model:
             model = model.split(":")[0]
         message = self.redis.get(f"{self.REDIS_PREFIX}_{model}_system_message")
         return "" if message is None else message
-    def set_system_message(self,model,system_message):
+
+    def set_system_message(self, model, system_message):
         """set system message for model"""
         # if : is in model, set system message for model
         if ":" in model:
             model = model.split(":")[0]
-        self.redis.set(f"{self.REDIS_PREFIX}_{model}_system_message", system_message)
+        self.redis.set(
+            f"{self.REDIS_PREFIX}_{model}_system_message", system_message)
+
     @listen_to(r"^\.ollama system_message set ([\s\S]*) ([\s\S]*)")
     async def ollama_system_message_set(self, message: Message, model: str, system_message: str):
         # if : is in model, set system message for model
         if ":" in model:
             model = model.split(":")[0]
         if self.users.is_admin(message.sender_name):
-            self.set_system_message(model,system_message)
-            self.driver.reply_to(message, f"system_message for {model} set to: {system_message}")
+            self.set_system_message(model, system_message)
+            self.driver.reply_to(
+                message, f"system_message for {model} set to: {system_message}")
+
     @listen_to(r"^\.ollama system_message get ([\s\S]*)")
     async def ollama_system_message_get(self, message: Message, model: str):
         # if : is in model, get system message for model
         if ":" in model:
             model = model.split(":")[0]
         if self.users.is_admin(message.sender_name):
-            self.driver.reply_to(message, f"system_message for {model}: {self.get_system_message(model)}")
+            self.driver.reply_to(
+                message, f"system_message for {model}: {self.get_system_message(model)}")
+
     @listen_to("^bitch please")
     @listen_to("^sudo")
     @listen_to("^ollama")
@@ -197,7 +224,8 @@ class Ollama(PluginLoader):
         messages = []
         cache_thread = False
         if self.redis.exists(thread_key) and cache_thread:
-            messages = self.append_chatlog(thread_id, {"role": "user", "content": msg})
+            messages = self.append_chatlog(
+                thread_id, {"role": "user", "content": msg})
         else:
             # thread does not exist, fetch all posts in thread
             thread = self.driver.get_post_thread(thread_id)
@@ -230,7 +258,8 @@ class Ollama(PluginLoader):
         # add system message
         if self.get_system_message(self.model) != "":
             messages.insert(
-                0, {"role": "system", "content": self.get_system_message(self.model)}
+                0, {"role": "system",
+                    "content": self.get_system_message(self.model)}
             )
         # add thought balloon to show assistant is thinking
         self.driver.react_to(message, "thought_balloon")
@@ -262,7 +291,8 @@ class Ollama(PluginLoader):
                 )
                 # add response to chatlog
                 if cache_thread:
-                    self.append_chatlog(thread_id, response['message']['content'])
+                    self.append_chatlog(
+                        thread_id, response['message']['content'])
                 else:
                     messages.append(response['message']['content'])
         else:
@@ -270,14 +300,15 @@ class Ollama(PluginLoader):
             full_message = ""
             post_prefix = f"({self.model}) @{message.sender_name}: "
             # post initial message as a reply and save the message id
-            reply_msg_id = self.driver.reply_to(message, f"{self.model} working...")["id"]
+            reply_msg_id = self.driver.reply_to(
+                message, f"{self.model} working...")["id"]
             # send async request to openai
             last_update_time = time.time()
             stream_update_delay_ms = float(100)
             try:
                 data = {
-                  "model": self.model,
-                  "messages": messages
+                    "model": self.model,
+                    "messages": messages
                 }
                 timeout = aiohttp.ClientTimeout(total=60*60*24*7)
                 async with aiohttp.ClientSession(timeout=timeout) as session:
@@ -297,7 +328,8 @@ class Ollama(PluginLoader):
                                     if "message" not in chunk:
                                         continue
                                 except json.JSONDecodeError as error:
-                                    self.driver.reply_to(message, f"Error: {error}")
+                                    self.driver.reply_to(
+                                        message, f"Error: {error}")
                                     self.driver.reactions.delete_reaction(
                                         self.driver.user_id, message.id, "thought_balloon"
                                     )
@@ -352,7 +384,8 @@ class Ollama(PluginLoader):
         thread_key = REDIS_PREPEND + thread_id
         self.redis.rpush(thread_key, self.helper.redis_serialize_json(msg))
         self.redis.expire(thread_key, expiry)
-        messages = self.helper.redis_deserialize_json(self.redis.lrange(thread_key, 0, -1))
+        messages = self.helper.redis_deserialize_json(
+            self.redis.lrange(thread_key, 0, -1))
         return messages
 
     def redis_serialize_json(self, msg):
@@ -364,6 +397,7 @@ class Ollama(PluginLoader):
         if isinstance(msg, list):
             return [json.loads(m) for m in msg]
         return json.loads(msg)
+
     def return_last_x_messages(self, messages, max_length_in_tokens):
         """return last x messages from list of messages limited by max_length_in_tokens"""
         limited_messages = []

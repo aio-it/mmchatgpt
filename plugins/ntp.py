@@ -76,7 +76,8 @@ class Ntp(PluginLoader):
             stratum = ntplib.stratum_to_text(response.stratum)
             mode = ntplib.mode_to_text(response.mode)
             leap = ntplib.leap_to_text(response.leap)
-            ref_id_str = ntplib.ref_id_to_text(response.ref_id, response.stratum)
+            ref_id_str = ntplib.ref_id_to_text(
+                response.ref_id, response.stratum)
             self.driver.reply_to(
                 message,
                 dedent(
@@ -120,8 +121,10 @@ class Ntp(PluginLoader):
             delay2 = response2.delay
             stratum1 = ntplib.stratum_to_text(response1.stratum)
             stratum2 = ntplib.stratum_to_text(response2.stratum)
-            ref_id_str1 = ntplib.ref_id_to_text(response1.ref_id, response1.stratum)
-            ref_id_str2 = ntplib.ref_id_to_text(response2.ref_id, response2.stratum)
+            ref_id_str1 = ntplib.ref_id_to_text(
+                response1.ref_id, response1.stratum)
+            ref_id_str2 = ntplib.ref_id_to_text(
+                response2.ref_id, response2.stratum)
 
             self.driver.reply_to(
                 message,
@@ -150,7 +153,8 @@ class Ntp(PluginLoader):
             servers = socket.gethostbyname_ex(server)
             servers = servers[2]
 
-            self.driver.reply_to(message, f"hostname: {server}, ips: {servers}")
+            self.driver.reply_to(
+                message, f"hostname: {server}, ips: {servers}")
         except Exception as e:  # pylint: disable=broad-except
             self.driver.reply_to(message, f"error: {str(e)}")
 

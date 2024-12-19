@@ -1,22 +1,21 @@
 """shared functions and variables for the project"""
 
-from mmpy_bot.wrappers import Message
 import inspect
 import json
 import redis
 import urllib
 import requests
 import logging
-import uuid
 import os
 import dns.resolver
 import validators
+from duckduckgo_search import DDGS
 import ipaddress
 import re
 from environs import Env
+from mmpy_bot.wrappers import Message
 
 env = Env()
-import logging
 
 
 # logging.basicConfig(level=logging.DEBUG)
@@ -234,7 +233,7 @@ class Helper:
                 except Exception as error:
                     return {"error": f"error resolving domain: {error}"}
                 if len(answers) == 0 and len(answers6) == 0 and len(answersc) == 0:
-                    return {"error": f"no dns records found for {domain}"}
+                    return {"error": f"no dns records found for {input}"}
                 # loop over answers6 and answers and check if any of them are private ips
                 for answer in [answersc, answers6, answers]:
                     for rdata in answer:
@@ -369,3 +368,210 @@ class Helper:
         return {
             "error": f"invalid input: {input} (no matches) for types {', '.join(types)}"
         }
+
+    async def download_webpage(self, url):
+        """download a webpage and return the content"""
+        self.exit_after_loop = False
+        # await self.log(f"downloading webpage {url}")
+        validate_result = self.validate_input(url, "url")
+        if validate_result != True:
+            await self.log(f"Error: {validate_result}")
+            return validate_result, None
+
+        max_content_size = 10 * 1024 * 1024  # 10 MB
+        # follow redirects
+        response = requests.get(
+            url,
+            headers=self.headers,
+            timeout=10,
+            verify=True,
+            allow_redirects=True,
+            stream=True,
+        )
+        # check the content length before downloading
+        content_length = response.headers.get("Content-Length")
+        if content_length and int(content_length) > max_content_size:
+            await self.log(
+                f"Error: content size exceeds the maximum limit ({max_content_size} bytes)"
+            )
+            return f"Error: content size exceeds the maximum limit ({max_content_size} bytes)", None
+
+        # download the content in chunks
+        content = b""
+        total_bytes_read = 0
+        chunk_size = 1024  # adjust the chunk size as needed
+        for chunk in response.iter_content(chunk_size=chunk_size):
+            content += chunk
+            total_bytes_read += len(chunk)
+            if total_bytes_read > max_content_size:
+                await self.log(
+                    f"Error: content size exceeds the maximum limit ({max_content_size} bytes)"
+                )
+                return f"Error: content size exceeds the maximum limit ({max_content_size} bytes)", None
+        response_text = content.decode("utf-8")
+        # find the file extension from the content type
+        content_types = {
+            # text types use txt for html since we are extracting text
+            "html": { "text/html": "txt" },
+            "text": { "application/xml": "xml", "application/json": "json", "text/plain": "txt" },
+            "video": { "video/mp4": "mp4", "video/webm": "webm", "video/ogg": "ogg" },
+            "image": { "image/jpeg": "jpg", "image/png": "png", "image/gif": "gif", "image/svg+xml": "svg" },
+            "audio": { "audio/mpeg": "mp3", "audio/ogg": "ogg", "audio/wav": "wav" },
+            "documents": { "application/pdf": "pdf", "application/msword": "doc", "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx", "application/vnd.ms-excel": "xls" },
+            "compressed": { "application/zip": "zip", "application/x-rar-compressed": "rar", "application/x-tar": "tar", "application/x-7z-compressed": "7z" },
+        }
+        # save response_text to a tmp fil
+        blacklisted_tags = ["script", "style", "head", "title", "noscript"]
+        # debug response
+        # await self.debug(f"response: {pformat(response.text[:500])}")
+        # mattermost limit is 4000 characters
+        def get_content_type_and_ext(content_type):
+            """find the type and extension of the content"""
+            for type, types in content_types.items():
+                if ";" in content_type:
+                    if content_type.split(";")[0] in types:
+                        return type, types[content_type.split(";")[0]]
+                else:
+                    if content_type in types:
+                        return type, types[content_type]
+            return "unknown", "unknown"
+        try:
+            if response.status_code == 200:
+                # check what type of content we got
+                content_type , ext = get_content_type_and_ext(response.headers.get("content-type"))
+                # await self.log(f"content_type: {url} {content_type}")
+                # html
+                if "html" in content_type:
+                    # extract all text from the webpage
+                    import bs4
+
+                    soup = bs4.BeautifulSoup(response_text, "html.parser")
+                    # check if the soup could parse anything
+                    try:
+                        if soup.find():
+                            # soup parsed something lets extract the text
+                            # remove all blacklisted tags
+                            for tag in blacklisted_tags:
+                                for match in soup.find_all(tag):
+                                    match.decompose()
+                            # get all links and links text from the webpage
+                            links = []
+                            for link in soup.find_all("a"):
+                                links.append(f"{link.get('href')} {link.text}")
+                            links = " | ".join(links)
+                            # check if title exists and set it to a variable
+                            title = soup.title.string if soup.title else ""
+                            # extract all text from the body
+                            text = soup.body.get_text(separator=" ", strip=True)
+                            text_full = soup.body.get_text()
+                            # trim all newlines to 2 spaces
+                            text = text.replace("\n", "  ")
+
+                            # remove all newlines and replace them with spaces
+                            # text = text.replace("\n", " ")
+                            # remove all double spaces
+                            # save the text to a file
+                            text_to_return = f"links:{links}|title:{title}|body:{text}".strip()
+                            text_to_save = f"Url: {url}\nTitle: {title}\nLinks: {links}\nBody:\n{text_full}".strip()
+                            filename = self.save_content_to_tmp_file(text_to_save, ext)
+                            return text_to_return, filename
+
+                    except Exception as e:  # pylint: disable=bare-except
+                        await self.log(
+                            f"Error: could not parse webpage (Exception) {e}"
+                        )
+                        return f"Error: could not parse webpage (Exception) {e}", None
+                elif content_type == "text":
+                    # save the text to a file
+                    filename = self.save_content_to_tmp_file(response_text, ext)
+                    # text content
+                    return response_text, filename
+                else:
+                    # unknown content type
+                    await self.log(
+                        f"Error: unknown content type {content_type} for {url} (status code {response.status_code}) returned: {response_text[:500]}"
+                    )
+                    return f"Error: unknown content type {content_type} for {url} (status code {response.status_code}) returned: {response_text}", None
+            else:
+                await self.log(
+                    f"Error: could not download webpage (status code {response.status_code})"
+                )
+                return f"Error: could not download webpage (status code {response.status_code})", None
+        except requests.exceptions.Timeout:
+            await self.log("Error: could not download webpage (Timeout)")
+            return "Error: could not download webpage (Timeout)", None
+        except requests.exceptions.TooManyRedirects:
+            await self.log(
+                "Error: could not download webpage (TooManyRedirects)"
+            )
+            return "Error: could not download webpage (TooManyRedirects)", None
+        except requests.exceptions.RequestException as e:
+            await self.log(
+                f"Error: could not download webpage (RequestException) {e}"
+            )
+            return "Error: could not download webpage (RequestException) " + str(e), None
+        except Exception as e: # pylint: disable=bare-except
+            await self.log(f"Error: could not download webpage (Exception) {e}")
+            return "Error: could not download webpage (Exception) " + str(e), None
+
+
+    async def web_search_and_download(self, searchterm):
+        """run the search and download top 2 results from duckduckgo"""
+        self.exit_after_loop = False
+        downloaded=[]
+        localfiles=[]
+        await self.log(f"searching the web for {searchterm}")
+        results, results_filename = await self.web_search(searchterm)
+        if results_filename:
+            localfiles.append(results_filename)
+        i = 0
+        # loop through the results and download the top 2 searches
+        for result in results:
+            # only download 2 results
+            # try all of them in line and stop after 2. zero indexed
+            if i >= 2:
+                break
+            # await self.log(f"downloading webpage {result}")
+            try:
+                # download the webpage and add the content to the result object
+                if "href" not in result:
+                    return "Error: href not in result", None
+                content, localfile = await self.download_webpage(result.get("href"))
+                if localfile:
+                    localfiles.append(localfile)
+                # await self.log(f"webpage content: {content[:500]}")
+                i = i + 1
+            except Exception as e:
+                await self.log(f"Error: {e}")
+                content = None
+            if content:
+                result["content"] = content
+                downloaded.append(result)
+            else:
+                result["content"] = f"Error: could not download webpage {result.get('href')}"
+                downloaded.append(result)
+        # await self.log(f"search results: {results}")
+        # return the downloaded webpages as json
+        return json.dumps(downloaded), localfiles
+
+    async def web_search(self, searchterm):
+        """search the web using duckduckgo"""
+        self.exit_after_loop = False
+        await self.log(f"searching the web using backend=api")
+
+        try:
+            results = DDGS().text(keywords=searchterm, backend="api", max_results=10)
+            # save to file
+            filename = self.save_content_to_tmp_file(json.dumps(results, indent=4), "json")
+            return results, filename
+        except Exception as e:
+            await self.log(f"Error: falling back to html backend")
+        await self.log(f"searching the web using backend=html")
+        try:
+            results = DDGS().text(keywords=searchterm, backend="html", max_results=10)
+            # save to file
+            filename = self.save_content_to_tmp_file(json.dumps(results, indent=4), "json")
+            return results, filename
+        except Exception as e:
+            await self.log(f"Error: {e}")
+            return f"Error: {e}", None

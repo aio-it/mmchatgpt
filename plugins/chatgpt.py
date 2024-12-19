@@ -1,5 +1,19 @@
 """ChatGPT plugin for mmpy_bot"""
 
+from .tools import ToolsManager, Tool
+import aiodocker
+from pprint import pformat
+from redis_rate_limit import RateLimit, TooManyRequests
+from mmpy_bot.wrappers import Message
+from mmpy_bot.settings import Settings
+from mmpy_bot.plugins.base import Plugin, PluginManager
+from mmpy_bot.function import listen_to
+from mmpy_bot.driver import Driver
+from .base import PluginLoader
+import aiohttp.client_exceptions as aiohttp_client_exceptions
+from re import DOTALL as re_DOTALL
+from openai import AsyncOpenAI
+import openai
 from cgitb import text
 from math import log
 from pydoc import doc
@@ -16,26 +30,11 @@ import base64
 from plugins import docker
 env = Env()
 
-import openai
-from openai import AsyncOpenAI
-from re import DOTALL as re_DOTALL
 
 aclient = AsyncOpenAI(api_key=env.str("OPENAI_API_KEY"))
-import aiohttp.client_exceptions as aiohttp_client_exceptions
 
-import base64
-from .base import PluginLoader
 
-from mmpy_bot.driver import Driver
-from mmpy_bot.function import listen_to
-from mmpy_bot.plugins.base import Plugin, PluginManager
-from mmpy_bot.settings import Settings
-from mmpy_bot.wrappers import Message
-from redis_rate_limit import RateLimit, TooManyRequests
-from pprint import pformat
-import aiodocker
 # import tools and tools manager
-from .tools import ToolsManager, Tool
 
 MODEL = "gpt-4-1106-preview"
 REDIS_PREPEND = "thread_"
@@ -158,7 +157,8 @@ class ChatGPT(PluginLoader):
         download_webpage_tool = Tool(
             name=self.helper.download_webpage,
             description="Download and extract content from a specific webpage URL. Use this when the user provides a direct URL or when you need to fetch content from a known webpage.",
-            parameters=[{"name": "url", "description": "URL of the webpage to download"}],
+            parameters=[
+                {"name": "url", "description": "URL of the webpage to download"}],
             privilege_level="user"
         )
 
@@ -189,7 +189,7 @@ class ChatGPT(PluginLoader):
         assistant_to_the_regional_manager_tool = Tool(
             name=self.assistant_to_the_regional_manager,
             description="You can use this function to ask the assistant to solve something for you. The assistant will try to solve the problem and return the solution to you. The assistant will not be able to solve all problems but it will try its best to solve the problem. If the assistant is unable to solve the problem it will return an error message. only send what what context you feel absolutely necessary for the assistant to solve the problem.",
-            parameters=["prompt","context"],
+            parameters=["prompt", "context"],
             privilege_level="user"
         )
         docker_run_python_tool = Tool(
@@ -240,19 +240,22 @@ class ChatGPT(PluginLoader):
         self.tools_manager.add_tool(generate_image_tool)
         self.tools_manager.add_tool(docker_run_python_tool)
         # self.tools_manager.add_tool(assistant_to_the_regional_manager_tool)
-        #self.tools_manager.add_tool(base64_encode_tool)
-        #self.tools_manager.add_tool(base64_decode_tool)
+        # self.tools_manager.add_tool(base64_encode_tool)
+        # self.tools_manager.add_tool(base64_decode_tool)
         # manager.add_tool(assistant_to_the_regional_manager_tool)
         self.user_tools = self.tools_manager.get_tools("user")
         self.admin_tools = self.tools_manager.get_tools("admin")
         self.helper.slog(f"User tools: {self.user_tools}")
         self.helper.slog(f"Admin tools: {self.admin_tools}")
+
     async def base64_encode(self, string: str):
         """Encode a string to base64"""
         return base64.b64encode(string.encode()).decode(), None
+
     async def base64_decode(self, string: str):
         """Decode a base64 string"""
         return base64.b64decode(string).decode(), None
+
     async def docker_run_python(
         self,
         code,
@@ -330,7 +333,8 @@ python3 ./main.py' > /app/run.sh
 chmod +x /app/run.sh
 """
             # Configure environment variables with the file contents
-            container_env = {"PYTHON_CODE": code_base64, "INIT_SCRIPT": init_script}
+            container_env = {"PYTHON_CODE": code_base64,
+                             "INIT_SCRIPT": init_script}
             if requirements_txt:
                 container_env["REQUIREMENTS_TXT"] = requirements_txt
             if os_packages:
@@ -482,7 +486,8 @@ if files:
                                     await self.helper.log("Mime type: " + mime_type)
                                     # Determine if file is binary based on mime type
                                     is_binary = not mime_type.startswith(
-                                        ("text/", "application/json", "application/xml")
+                                        ("text/", "application/json",
+                                         "application/xml")
                                     )
 
                                     # extract the extension from filename
@@ -504,7 +509,8 @@ if files:
                                         )
                                     else:
                                         try:
-                                            text_content = file_content.decode("utf-8")
+                                            text_content = file_content.decode(
+                                                "utf-8")
                                             output_filename = (
                                                 self.helper.save_content_to_tmp_file(
                                                     text_content,
@@ -547,7 +553,8 @@ if files:
                 containers_to_cleanup.remove(extract_container)
 
             # save code to a file
-            code_filename = self.helper.save_content_to_tmp_file(code, "py", "main_")
+            code_filename = self.helper.save_content_to_tmp_file(
+                code, "py", "main_")
             output_files.append(code_filename)
             # Add any found files to the output
 
@@ -628,17 +635,19 @@ if files:
             self.ALLOWED_MODELS = [model.id for model in available_models]
         else:
             available_models = self.ALLOWED_MODELS
-            self.helper.slog(f"Could not update allowed models. Using default models: {available_models}")
+            self.helper.slog(
+                f"Could not update allowed models. Using default models: {available_models}")
         # sort the models on the created key
         available_models.sort(key=lambda x: x.created, reverse=True)
         for model in available_models:
             # convert unix to human readable date
-            model.created = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(model.created))
+            model.created = time.strftime(
+                "%Y-%m-%d %H:%M:%S", time.localtime(model.created))
             models_msg += f"- {model.id}\n ({model.created})\n"
         self.helper.slog(models_msg)
         return available_models
 
-    def return_last_x_messages(self, messages, max_length_in_tokens = 7000):
+    def return_last_x_messages(self, messages, max_length_in_tokens=7000):
         """return last x messages from list of messages limited by max_length_in_tokens"""
         # fuck this bs
         return messages
@@ -649,7 +658,7 @@ if files:
         available_models = self.update_allowed_models()
         models_msg = "Available Models:\n"
         for model in available_models:
-            models_msg += f"- {model.id} ({model.created})\n"        
+            models_msg += f"- {model.id} ({model.created})\n"
         self.driver.reply_to(message, models_msg)
 
     @listen_to(r"^\.gpt model set ([a-zA-Z0-9_-]+)")
@@ -674,7 +683,8 @@ if files:
     @listen_to(r"^\.(?:mk)?i[mn]g ([\s\S]*)")
     async def mkimg_deprecated_just_ask(self, message: Message, args: str):
         """send a message to the user that this is deprecated and they should just ask for an image instead"""
-        self.driver.reply_to(message, "This function is deprecated. i have asked my assistant to generate an image for you. Please ask for an image instead next time without the .mkimg command.")
+        self.driver.reply_to(
+            message, "This function is deprecated. i have asked my assistant to generate an image for you. Please ask for an image instead next time without the .mkimg command.")
         message.text = "this user asked for an image and described it as follows: " + args
         await self.chat(message)
 
@@ -710,6 +720,7 @@ if files:
         except Exception as e:
             self.helper.slog(f"Error: {e}")
             return f"Error: {e}", None
+
     @listen_to(r"^\.gpt set ([a-zA-Z0-9_-]+) (.*)", regexp_flag=re_DOTALL)
     async def set_chatgpt(self, message: Message, key: str, value: str):
         """set the chatgpt key"""
@@ -761,6 +772,7 @@ if files:
         if value is None and key in self.ChatGPT_DEFAULTS:
             value = self.ChatGPT_DEFAULTS[key]
         return value
+
     def extract_file_details(self, message: Message, use_preview_image=False):
         """Extract file details from a post and return a list of objects with their filename, type, and content."""
         data = message.body["data"]
@@ -787,7 +799,8 @@ if files:
                 has_preview_image = metadata.get("has_preview_image")
                 if use_preview_image and has_preview_image:
                     # get the thumbnail
-                    preview_content_response = self.driver.files.get_file_thumbnail(file_ids[i])
+                    preview_content_response = self.driver.files.get_file_thumbnail(
+                        file_ids[i])
                     if preview_content_response.status_code == 200:
                         preview_content = preview_content_response.content
                 # compare mini_preview_content and preview_content
@@ -805,7 +818,7 @@ if files:
                 file_content = get_file_response.content
                 extension_types = {
                     "image": ["png", "jpg", "jpeg"],
-                    "text": ["txt","xml","json","csv","tsv","log","md","html","htm"],
+                    "text": ["txt", "xml", "json", "csv", "tsv", "log", "md", "html", "htm"],
                     "pdf": ["pdf"],
                     "doc": ["doc", "docx"],
                     "xls": ["xls", "xlsx"],
@@ -827,7 +840,8 @@ if files:
                     image = Image.open(BytesIO(file_content))
                     width, height = image.size
                     if width > image_max_width or height > image_max_height:
-                        ratio = min(image_max_width / width, image_max_height / height)
+                        ratio = min(image_max_width / width,
+                                    image_max_height / height)
                         # Resize the image
                         image.thumbnail((width * ratio, height * ratio))
                         # save to bytes and update file_content
@@ -836,10 +850,12 @@ if files:
                         file_content = image_bytes.getvalue()
                     # Encode image content to base64
                     if use_preview_image and preview_content:
-                        content_base64 = base64.b64encode(preview_content).decode("utf-8")
+                        content_base64 = base64.b64encode(
+                            preview_content).decode("utf-8")
                         # self.helper.slog(f"preview_content: {preview_content}")
                     else:
-                        content_base64 = base64.b64encode(file_content).decode("utf-8")
+                        content_base64 = base64.b64encode(
+                            file_content).decode("utf-8")
                     # compare mini_preview_content and preview_content and file_content sizes
                     # if mini_preview_content and preview_content and file_content:
                     #    self.helper.slog(f"mini_preview_content: {len(mini_preview_content)} preview_content: {len(preview_content)} file_content: {len(file_content)}")
@@ -852,7 +868,8 @@ if files:
                     # Decode text content
                     # find the encoding
                     encoding = metadata.get("encoding")
-                    text_content = file_content.decode(encoding) if encoding else file_content.decode("utf-8")
+                    text_content = file_content.decode(
+                        encoding) if encoding else file_content.decode("utf-8")
                     files.append({
                         "filename": filename,
                         "type": "text",
@@ -860,7 +877,8 @@ if files:
                     })
                 elif extension in extension_types["audio"]:
                     # Encode audio content to base64
-                    content_base64 = base64.b64encode(file_content).decode("utf-8")
+                    content_base64 = base64.b64encode(
+                        file_content).decode("utf-8")
                     files.append({
                         "filename": filename,
                         "type": "audio",
@@ -868,12 +886,13 @@ if files:
                     })
                 elif extension in extension_types["video"]:
                     # Encode video content to base64
-                    content_base64 = base64.b64encode(file_content).decode("utf-8")
+                    content_base64 = base64.b64encode(
+                        file_content).decode("utf-8")
                     files.append({
                         "filename": filename,
                         "type": "video",
                         "content": content_base64
-                    })               
+                    })
                 else:
                     # Other unsupported file types can be ignored or handled differently
                     continue
@@ -906,7 +925,8 @@ if files:
                 thread_post = Message.create_message(thread_post)
 
                 # remove mentions of self
-                thread_post.text = self.helper.strip_self_username(thread_post.text)
+                thread_post.text = self.helper.strip_self_username(
+                    thread_post.text)
                 # remove mentions of self from self.names
                 for name in self.names:
                     thread_post.text = thread_post.text.replace(f"{name} ", "")
@@ -924,7 +944,8 @@ if files:
                 self.thread_append(thread_id, message)
         # messages = self.get_formatted_messages(messages)
         return messages
-    def get_formatted_messages(self,messages):
+
+    def get_formatted_messages(self, messages):
         current_tool_call = None
         formatted_messages = []
         return messages
@@ -963,7 +984,8 @@ if files:
                 })
             self.helper.slog(f"formatted_messages: {formatted_messages}")
             return formatted_messages
-    async def assistant_to_the_regional_manager(self,prompt,context=None, model=None):
+
+    async def assistant_to_the_regional_manager(self, prompt, context=None, model=None):
         """a tool function that chatgpt can call as a tool with whatever context it deems necessary"""
         # check if model is set
         if model is None:
@@ -1000,8 +1022,10 @@ if files:
         # thread_key = REDIS_PREPEND + thread_id
         messages = self.get_thread_messages_from_redis(thread_id)
         # save messages to a file.
-        filename = self.helper.save_content_to_tmp_file(json.dumps(messages, indent=4), "json")
-        self.driver.reply_to(message, f"debugging thread {thread_id}", file_paths=[filename])
+        filename = self.helper.save_content_to_tmp_file(
+            json.dumps(messages, indent=4), "json")
+        self.driver.reply_to(
+            message, f"debugging thread {thread_id}", file_paths=[filename])
         self.helper.delete_downloaded_file(filename)
 
     # soon to be deprecated
@@ -1061,24 +1085,27 @@ if files:
             m = {"role": "user"}
             if message_files:
                 # we have files lets add them to the message to be sent to the model
-                txt_files = [file for file in message_files if file["type"] == "text"]
-                img_files = [file for file in message_files if file["type"] == "image"]
+                txt_files = [
+                    file for file in message_files if file["type"] == "text"]
+                img_files = [
+                    file for file in message_files if file["type"] == "image"]
                 for file in img_files:
                     # await self.helper.log(f"img file: {file}")
                     m = {"role": "user"}
                     # if the file is an image, add it to the message
                     m["content"] = [
-                        { "type": "text", "text": user_text },
+                        {"type": "text", "text": user_text},
                         {
                             "type": "image_url",
-                            "image_url": { "url": f"data:image/jpeg;base64,{file['content']}"}
+                            "image_url": {"url": f"data:image/jpeg;base64,{file['content']}"}
                         }
                     ]
                     messages.append(m)
                     self.thread_append(thread_id, m)
                 context_from_text_files = ""
                 for file in txt_files:
-                    context_from_text_files += file["filename"] + ": " + file["content"] + "\n"
+                    context_from_text_files += file["filename"] + \
+                        ": " + file["content"] + "\n"
                 if context_from_text_files:
                     m["content"] = user_text + "\n" + context_from_text_files
                     messages.append(m)
@@ -1140,7 +1167,8 @@ if files:
             response = await aclient.chat.completions.create(**request_object)
         except self.openai_errors as error:
             # update the message
-            self.driver.posts.patch_post(reply_msg_id, {"message": f"Error: {error}"})
+            self.driver.posts.patch_post(
+                reply_msg_id, {"message": f"Error: {error}"})
             self.driver.reactions.delete_reaction(
                 self.driver.user_id, message.id, "thought_balloon"
             )
@@ -1150,14 +1178,16 @@ if files:
         # get current time and set that as last_update_time
         last_update_time = time.time()
         # get the setting for how often to update the message
-        stream_update_delay_ms = float(self.get_chatgpt_setting("stream_update_delay_ms"))
+        stream_update_delay_ms = float(
+            self.get_chatgpt_setting("stream_update_delay_ms"))
         i = 0
         try:
             functions_to_call = {}
             async for chunk in response:
                 if "error" in chunk:
                     if "message" in chunk:
-                        self.driver.reply_to(message, f"Error: {response['message']}")
+                        self.driver.reply_to(
+                            message, f"Error: {response['message']}")
                     else:
                         self.driver.reply_to(message, "Error")
                     # remove thought balloon
@@ -1175,7 +1205,8 @@ if files:
                     full_message += chunk_message.content
                     # if full message begins with ``` or any other mattermost markdown append a \
                     # newline to the post_prefix so it renders correctly
-                    markdown = [">", "*", "_", "-", "+", "1", "~", "!", "`", "|", "#", "@", "•"]
+                    markdown = [">", "*", "_", "-", "+", "1",
+                                "~", "!", "`", "|", "#", "@", "•"]
                     if i == 0 and post_prefix[-1] != "\n" and full_message[0] in markdown:
                         post_prefix += "\n"
                         i += 1
@@ -1203,7 +1234,8 @@ if files:
                                 functions_to_call[index]["function_name"] = function_name
                             if tool_call.id:
                                 functions_to_call[index]["tool_call_id"] = tool_call.id
-                            functions_to_call[index]["tool_call_message"] = self.custom_serializer(chunk_message)
+                            functions_to_call[index]["tool_call_message"] = self.custom_serializer(
+                                chunk_message)
 
                         functions_to_call[index]["arguments"] += tool_call.function.arguments
 
@@ -1215,7 +1247,8 @@ if files:
                     # update the thread with the status messages so the user can see the progress
                     self.driver.posts.patch_post(
                         reply_msg_id,
-                        {"message": "```\n" + '\n'.join(status_msgs) + "\n```\n"},
+                        {"message": "```\n" +
+                            '\n'.join(status_msgs) + "\n```\n"},
                     )
                 call_key = f"{REDIS_PREPEND}_call_{thread_id}"
                 tool_results = []
@@ -1240,7 +1273,8 @@ if files:
                     # format the arguments as a pretty string for the status msg it is an dict with a arg and value pair
                     # format it as key: value
                     status_args = json.loads(tool_function["arguments"])
-                    status_args = " | ".join([f"{k}:{v}" for k, v in status_args.items()])
+                    status_args = " | ".join(
+                        [f"{k}:{v}" for k, v in status_args.items()])
                     status_msg = f"Running tool: {function_name}: {status_args}"
                     update_status(status_msg)
 
@@ -1282,7 +1316,8 @@ if files:
                     tool_function["tool_call_message"]["role"] = "assistant"
                     # Update thread with tool call and result
                     # await self.helper.log(f"tool_result: {tool_function['tool_call_message']}")
-                    self.append_thread_and_get_messages(thread_id, tool_function["tool_call_message"])
+                    self.append_thread_and_get_messages(
+                        thread_id, tool_function["tool_call_message"])
                     self.append_thread_and_get_messages(thread_id, tool_result)
                     self.redis.hset(call_key, tool_call_id, "true")
 
@@ -1297,7 +1332,7 @@ if files:
 
                     # insert system if needed:
                     if not model.startswith("o1"):
-                        formatted_messages.insert(0,{
+                        formatted_messages.insert(0, {
                             "role": "system",
                             "content": system_message.replace(date_template_string, current_date),
                         })
@@ -1317,7 +1352,8 @@ if files:
                         full_message = ""
                         status_str = ""
                         if status_msgs:
-                            status_str = "```" + "\n".join(status_msgs) + "\n```\n"
+                            status_str = "```" + \
+                                "\n".join(status_msgs) + "\n```\n"
                         have_notified_user_about_long_message = False
                         async for chunk in final_response:
                             if chunk.choices[0].delta.content:
@@ -1340,12 +1376,14 @@ if files:
                                         have_notified_user_about_long_message = True
                         # Store final response
                         if full_message:
-                            self.thread_append(thread_id, {"role": "assistant", "content": full_message})
+                            self.thread_append(
+                                thread_id, {"role": "assistant", "content": full_message})
 
                     except Exception as e:
                         # if "Invalid Message." the message is to long so trim the message and save the full result to a files and add to files
                         if "Invalid Message." in str(e):
-                            filename = self.helper.save_content_to_tmp_file(full_message, "txt")
+                            filename = self.helper.save_content_to_tmp_file(
+                                full_message, "txt")
                             files.append(filename)
                             self.driver.posts.patch_post(
                                 reply_msg_id,
@@ -1355,7 +1393,7 @@ if files:
                             if len(files) > 5:
                                 for i in range(0, len(files), 5):
                                     self.driver.reply_to(
-                                        message, f"Files:", file_paths=files[i : i + 5]
+                                        message, f"Files:", file_paths=files[i: i + 5]
                                     )
                             else:
                                 self.driver.reply_to(
@@ -1374,28 +1412,31 @@ if files:
                         )
                         return
             elif full_message:  # No tools were called, store the regular response
-                self.thread_append(thread_id, {"role": "assistant", "content": full_message})
+                self.thread_append(
+                    thread_id, {"role": "assistant", "content": full_message})
 
             # Final message update
             # if status_msgs are set then update the message with the status messages prepended to the final message
             status_str = ""
             if status_msgs:
-                status_str = "```\n"+ "\n".join(status_msgs) + "\n```\n"
+                status_str = "```\n" + "\n".join(status_msgs) + "\n```\n"
             final_message = f"{status_str}{post_prefix}{full_message}"
             if len(final_message) > max_message_length:
                 # save the full message to a file and add to files
-                filename = self.helper.save_content_to_tmp_file(final_message, "txt")
+                filename = self.helper.save_content_to_tmp_file(
+                    final_message, "txt")
                 files.append(filename)
-                final_message = final_message[:max_message_length] + "\nMessage too long, see attached file"
+                final_message = final_message[:max_message_length] + \
+                    "\nMessage too long, see attached file"
             self.driver.posts.patch_post(
                 reply_msg_id,
-                {"message": final_message [:max_message_length]},
+                {"message": final_message[:max_message_length]},
             )
             if files and len(files) > 0:
                 if len(files) > 5:
                     for i in range(0, len(files), 5):
                         self.driver.reply_to(
-                            message, f"Files:", file_paths=files[i : i + 5]
+                            message, f"Files:", file_paths=files[i: i + 5]
                         )
                 else:
                     self.driver.reply_to(message, f"Files:", file_paths=files)
@@ -1460,7 +1501,7 @@ if files:
         tool_calls = []
         for tool_call in choice_delta.tool_calls:
             tool_calls.append({
-                #'index': tool_call.index,
+                # 'index': tool_call.index,
                 'id': tool_call.id,
                 'function': {
                     'arguments': tool_call.function.arguments,
@@ -1484,7 +1525,8 @@ if files:
         # This function is a custom serializer for objects that are not JSON serializable by default.
         if obj.__class__.__name__ == 'ChoiceDelta':
             return self.serialize_choice_delta(obj)
-        raise TypeError(f'Object of type {obj.__class__.__name__} is not JSON serializable')
+        raise TypeError(
+            f'Object of type {obj.__class__.__name__} is not JSON serializable')
 
     @listen_to(r"^\.help")
     async def help_function(self, message):
@@ -1548,18 +1590,20 @@ if files:
         thread_key = REDIS_PREPEND + thread_id
         self.redis.rpush(thread_key, self.redis_serialize_json(msg))
         self.redis.expire(thread_key, expiry)
-        messages = self.helper.redis_deserialize_json(self.redis.lrange(thread_key, 0, -1))
+        messages = self.helper.redis_deserialize_json(
+            self.redis.lrange(thread_key, 0, -1))
         # messages = self.get_formatted_messages(messages)
         return messages
 
     def get_thread_messages_from_redis(self, thread_id):
         """get a chatlog"""
         thread_key = REDIS_PREPEND + thread_id
-        messages = self.helper.redis_deserialize_json(self.redis.lrange(thread_key, 0, -1))
+        messages = self.helper.redis_deserialize_json(
+            self.redis.lrange(thread_key, 0, -1))
         # messages = self.get_formatted_messages(messages)
         return messages
 
-    def redis_serialize_json(self,msg):
+    def redis_serialize_json(self, msg):
         """serialize a message to json, using a custom serializer for types not
         handled by the default json serialization"""
         # return json.dumps(msg)
@@ -1569,7 +1613,7 @@ if files:
         """deserialize a message from json"""
         return self.redis_deserialize_jsonpickle(msg)
 
-    def redis_serialize_jsonpickle(self,msg):
+    def redis_serialize_jsonpickle(self, msg):
         """serialize a message to json, using a custom serializer for types not
         handled by the default json serialization"""
         import jsonpickle

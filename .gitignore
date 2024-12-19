@@ -3,7 +3,7 @@
 monitor.py
 mmpy_bot
 .pytest_cache
-.vscode
+.vscode/*
 .github-token
 .docker-token
 .rewritten.json

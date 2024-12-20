@@ -110,6 +110,13 @@ class ToolsManager:
 
     def get_tools(self, privilege_level="user", include_disabled=False) -> dict[Tool]:
         """Get all tools from the tools manager based on privilege level and include_disabled"""
+        if privilege_level == "user":
+            # filter out all the tools that are admin only
+            tools = self.tools
+            if include_disabled:
+                tools = {**tools, **self.disabled_tools}
+            tools = {k: v for k, v in self.tools.items() if v.privilege_level == "user"}
+            return tools
         # return all tools if privilege_level is admin
         if privilege_level == "admin":
             return self.tools

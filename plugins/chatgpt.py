@@ -107,6 +107,12 @@ class ChatGPT(PluginLoader):
         self.name = "ChatGPT"
         self.names = ["chatgpt", "@gpt4", "@gpt3", "@gpt"]
         self.openai_api_key = env.str("OPENAI_API_KEY")
+        self.model = None
+        self.headers = None
+        self.openai_errors = None
+        self.tools_manager = None
+        self.user_tools = None
+        self.admin_tools = None
 
     def initialize(
         self,
@@ -281,8 +287,13 @@ class ChatGPT(PluginLoader):
         # manager.add_tool(assistant_to_the_regional_manager_tool)
         self.user_tools = self.tools_manager.get_tools_as_dict("user")
         self.admin_tools = self.tools_manager.get_tools_as_dict("admin")
-        self.helper.slog(f"User tools: {self.user_tools}")
-        self.helper.slog(f"Admin tools: {self.admin_tools}")
+        # print the tools
+        self.helper.slog(
+            "User tools: " + ", ".join(self.tools_manager.get_tools("user").keys())
+        )
+        self.helper.slog(
+            "Admin tools: " + ", ".join(self.tools_manager.get_tools("admin").keys())
+        )
 
     async def base64_encode(self, string: str):
         """Encode a string to base64"""

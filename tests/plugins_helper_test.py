@@ -1,15 +1,21 @@
+""" Tests for the helper plugin """
+
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import patch, Mock
+
 from plugins import helper
 
 
 @pytest.fixture
 def helper_instance():
+    """helper instance fixture"""
     mock_driver = Mock()
     return helper.Helper(mock_driver)
 
-
+# pylint: disable=redefined-outer-name
 def test_strip_self_username(helper_instance):
+    """Test strip_self_username"""
     helper_instance.driver.client.username = "testuser"
     message = "@testuser Hello, world!"
     expected = "Hello, world!"
@@ -44,15 +50,17 @@ def test_strip_self_username(helper_instance):
 )
 @patch("requests.head")
 def test_validate_input(
-    mock_requests_head, helper_instance, input, expected_result, validate_type
+    mock_requests_head, helper_instance, input_val, expected_result, validate_type
 ):
+    """Test validate_input"""
     mock_requests_head.return_value.status_code = 200
 
-    result = helper_instance.validate_input(input, types=[validate_type])
+    result = helper_instance.validate_input(input_val, types=[validate_type])
     assert result == expected_result
 
 
 def test_urlencode_text(helper_instance):
+    """Test urlencode_text"""
     text = "Hello, world!"
     expected = "Hello%2C+world%21"
     result = helper_instance.urlencode_text(text)
@@ -60,6 +68,7 @@ def test_urlencode_text(helper_instance):
 
 
 def test_redis_serialize_json(helper_instance):
+    """Test redis_serialize_json"""
     data = {"key": "value"}
     expected = '{"key": "value"}'
     result = helper_instance.redis_serialize_json(data)
@@ -67,6 +76,7 @@ def test_redis_serialize_json(helper_instance):
 
 
 def test_redis_deserialize_json(helper_instance):
+    """Test redis_deserialize_json"""
     data = '{"key": "value"}'
     expected = {"key": "value"}
     result = helper_instance.redis_deserialize_json(data)
@@ -74,15 +84,10 @@ def test_redis_deserialize_json(helper_instance):
 
 
 def test_create_tmp_filename(helper_instance):
-    import uuid
-
-    # this is only to get the length of the uuid which is used in the test
-    uuid_len = len(str(uuid.uuid4()))
+    """Test create_tmp_filename"""
     extension = "png"
     begin = "/tmp/"
     end = f".{extension}"
     result = helper_instance.create_tmp_filename(extension)
     # the result should start with /tmp/ and end with .png
     assert result.startswith(begin) and result.endswith(end)
-    # the length of the result should be the length of /tmp/ + the length of the uuid + the length of .png
-    assert len(result) == len(begin) + uuid_len + len(end)

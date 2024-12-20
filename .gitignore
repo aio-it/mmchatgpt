@@ -8,3 +8,4 @@ mmpy_bot
 .docker-token
 .rewritten.json
 fix_messages.py
+__pycache__

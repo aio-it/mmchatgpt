@@ -1,2 +1,2 @@
 #!/bin/bash
-find plugins/ -type f | entr -r make dev
+find . -type f -name '*.py' -or -name "Pipfile*" | entr -r make dev

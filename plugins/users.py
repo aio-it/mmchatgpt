@@ -298,7 +298,9 @@ class Users(Plugin):
             else:
                 self.driver.reply_to(message, f"Banned {user} for {days} days")
                 self.ban_user(user, days)
-            await self.log(f"{message.sender_name} banned {user} for {days} days")
+            await self.helper.log(
+                f"{message.sender_name} banned {user} for {days} days"
+            )
 
     @listen_to(r"^\.unban ([a-zA-Z0-9_-]+)")
     async def unban(self, message: Message, user):
@@ -316,7 +318,7 @@ class Users(Plugin):
             uid = self.u2id(user)
             self.driver.reply_to(message, f"Unbanned {user}")
             self.redis.delete(f"ban:{uid}")
-            await self.log(f"{message.sender_name} unbanned {user}")
+            await self.helper.log(f"{message.sender_name} unbanned {user}")
 
     @listen_to(r"^\.users remove (.+)")
     async def users_remove(self, message: Message, username: str):
@@ -326,7 +328,7 @@ class Users(Plugin):
             uid = self.u2id(username)
             self.redis.srem("users", uid)
             self.driver.reply_to(message, f"Removed user: {username} ({uid})")
-            await self.log(f"Removed user: {username} ({uid})")
+            await self.helper.log(f"Removed user: {username} ({uid})")
 
     @listen_to(r"^\.users add (.+)")
     async def users_add(self, message: Message, username: str):

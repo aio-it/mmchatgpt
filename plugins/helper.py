@@ -1,20 +1,22 @@
 """shared functions and variables for the project"""
 
 import inspect
+import ipaddress
 import json
-import redis
-import urllib
-import requests
 import logging
 import os
+import re
+import tempfile
+import urllib
+
+import bs4
 import dns.resolver
+import redis
+import requests
 import validators
 from duckduckgo_search import DDGS
-import ipaddress
-import re
 from environs import Env
 from mmpy_bot.wrappers import Message
-import bs4
 
 env = Env()
 
@@ -26,6 +28,7 @@ log = logging.getLogger(__name__)
 # Monkey patch message class to extend it.
 # this is so dirty, i love it.
 def message_from_thread_post(post) -> Message:
+    """create a message from a thread post"""
     return Message({"data": {"post": post}})
 
 
@@ -39,13 +42,14 @@ Message.is_from_self = is_from_self
 
 
 class Helper:
+    """helper class for the bot"""
     REDIS_HOST = env.str("REDIS_HOST", "localhost")
     REDIS_DB = env.int("REDIS_DB", 0)
     """helper functions"""
     REDIS = redis.Redis(host=REDIS_HOST, port=6379,
                         db=REDIS_DB, decode_responses=True)
 
-    def __init__(self, driver, rediss=None, log_channel=None):
+    def __init__(self, driver, log_channel=None):
         self.driver = driver
         self.redis = self.REDIS
         self.redis_pool = self.REDIS.connection_pool
@@ -59,10 +63,10 @@ class Helper:
         else:
             self.log_to_channel = True
             self.log_channel = self.log_channel
-        self.USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0"
+        self.user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0"
 
         self.headers = {
-            "User-Agent": self.USER_AGENT,
+            "User-Agent": self.user_agent,
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.7,da;q=0.3",
             "Accept-Encoding": "gzip, deflate, br",
@@ -85,7 +89,7 @@ class Helper:
 
     def print_to_console(self, message: Message):
         """print to console"""
-        log.info(f"INFO: {message}")
+        log.info("INFO: %s", message)
 
     async def wall(self, message):
         """send message to all admins"""
@@ -105,9 +109,9 @@ class Helper:
         msg = f"[{callerclass}.{callerfunc}] {message}"
         level = level.upper()
         if level == "INFO":
-            log.info(f"LOG: {msg}")
+            log.info("LOG: %s", msg)
         elif level == "DEBUG":
-            log.debug(f"LOG: {msg}")
+            log.debug("LOG: %s", msg)
         if (
             self.log_to_channel and level == "INFO"
         ):  # only log to channel if level is info
@@ -117,13 +121,13 @@ class Helper:
         """sync log"""
         callerclass, callerfunc = self.get_caller_info()
         msg = f"[{callerclass}.{callerfunc}] {message}"
-        log.info(f"LOG: {msg}")
+        log.info("LOG: %s", msg)
         if self.log_to_channel:
             self.driver.create_post(self.log_channel, msg[:4000])
 
     async def debug(self, message: str, private: bool = False):
         """send debug message to log channel. if private is true send to all admins"""
-        log.debug(f"DEBUG: {message}")
+        log.debug("DEBUG: %s", message)
         if self.log_to_channel and not private:
             await self.log(f"DEBUG: {message}", level="DEBUG")
 
@@ -143,7 +147,6 @@ class Helper:
 
     def create_tmp_filename(self, extension: str, prefix: str = None) -> str:
         """create a tmp filename"""
-        import tempfile
 
         # create a tmp file using tempfile
         if extension.startswith("."):
@@ -154,7 +157,7 @@ class Helper:
 
     def download_file(self, url: str, filename: str) -> str:
         """download file from url using requests and return the filename/location"""
-        request = requests.get(url, allow_redirects=True)
+        request = requests.get(url, allow_redirects=True, timeout=90)
         with open(filename, "wb") as file:
             file.write(request.content)
         return filename
@@ -181,7 +184,7 @@ class Helper:
                 file.write(content.encode("utf-8"))
         # Otherwise write as text
         else:
-            with open(filename, mode) as file:
+            with open(filename, mode, encoding="utf-8") as file:
                 file.write(content)
         return filename
 
@@ -200,8 +203,12 @@ class Helper:
 
         return message.replace(f"@{self.driver.client.username}", "").strip()
 
-    def validate_input(self, input, types=["domain", "ip"], allowed_args=[], count=0):
+    def validate_input(self, input_val, types=None, allowed_args=None, count=0):
         """function that takes a string and validates that it matches against one or more of the types given in the list"""
+        if allowed_args is None:
+            allowed_args = []
+        if types is None:
+            types = ["domain", "ip"]
         # keep a counter to prevent infinite recursion
         count += 1
         if count > 10:
@@ -218,41 +225,44 @@ class Helper:
             "argument",
             "port",
         ]
-        if types and type(types) is not list:
+        if types and not isinstance(types, list):
             types = [types]
         if len(types) == 0:
             return {"error": "no arguments allowed"}
         # check if any of the bad chars exist in input
         for char in bad_chars:
-            if char in input:
+            if char in input_val:
                 return {"error": f"bad char: {char}"}
 
         for ctype in types:
             if ctype not in valid_types:
                 return {"error": f"invalid type: {ctype}"}
         if "domain" in types:
-            if validators.domain(input):
+            if validators.domain(input_val):
                 # verify that the ip returned from a dns lookup is not a private ip
                 try:
-                    answers = dns.resolver.resolve(input, "A")
+                    answers = dns.resolver.resolve(input_val, "A")
                 except dns.resolver.NoAnswer:
                     answers = []
+                # pylint: disable=broad-except
                 except Exception as error:
                     return {"error": f"error resolving domain: {error}"}
                 try:
-                    answers6 = dns.resolver.resolve(input, "AAAA")
+                    answers6 = dns.resolver.resolve(input_val, "AAAA")
                 except dns.resolver.NoAnswer:
                     answers6 = []
+                # pylint: disable=broad-except
                 except Exception as error:
                     return {"error": f"error resolving domain: {error}"}
                 try:
-                    answersc = dns.resolver.resolve(input, "CNAME")
+                    answersc = dns.resolver.resolve(input_val, "CNAME")
                 except dns.resolver.NoAnswer:
                     answersc = []
+                # pylint: disable=broad-except
                 except Exception as error:
                     return {"error": f"error resolving domain: {error}"}
                 if len(answers) == 0 and len(answers6) == 0 and len(answersc) == 0:
-                    return {"error": f"no dns records found for {input}"}
+                    return {"error": f"no dns records found for {input_val}"}
                 # loop over answers6 and answers and check if any of them are private ips
                 for answer in [answersc, answers6, answers]:
                     for rdata in answer:
@@ -262,7 +272,7 @@ class Helper:
                                 str(rdata.target).rstrip("."), ["domain"], count=count
                             )
                             # check if dict
-                            if type(result) is dict:
+                            if isinstance(result, dict):
                                 if "error" in result:
                                     return {"error": f"cname: {result['error']}"}
                             continue
@@ -298,59 +308,59 @@ class Helper:
                                     return {"error": "link local ip (nice try though)"}
                 return True
         if "ipv4" in types or "ip" in types:
-            if validators.ipv4(input):
+            if validators.ipv4(input_val):
                 # verify that it is not a private ip
-                if ipaddress.ip_address(input).is_reserved:
+                if ipaddress.ip_address(input_val).is_reserved:
                     return {"error": "reserved ip"}
-                if ipaddress.ip_address(input).is_multicast:
+                if ipaddress.ip_address(input_val).is_multicast:
                     return {"error": "multicast ip"}
-                if ipaddress.ip_address(input).is_unspecified:
+                if ipaddress.ip_address(input_val).is_unspecified:
                     return {"error": "unspecified ip"}
-                if ipaddress.ip_address(input).is_loopback:
+                if ipaddress.ip_address(input_val).is_loopback:
                     return {"error": "loopback ip"}
-                if ipaddress.ip_address(input).is_private:
+                if ipaddress.ip_address(input_val).is_private:
                     return {"error": "private ip"}
                 return True
         if "ipv6" in types or "ip" in types:
-            if validators.ipv6(input):
+            if validators.ipv6(input_val):
                 # verify that it is not a private ip
-                if ipaddress.ip_address(input).is_reserved:
+                if ipaddress.ip_address(input_val).is_reserved:
                     return {"error": "reserved ip"}
-                if ipaddress.ip_address(input).is_multicast:
+                if ipaddress.ip_address(input_val).is_multicast:
                     return {"error": "multicast ip"}
-                if ipaddress.ip_address(input).is_unspecified:
+                if ipaddress.ip_address(input_val).is_unspecified:
                     return {"error": "unspecified ip"}
-                if ipaddress.ip_address(input).is_loopback:
+                if ipaddress.ip_address(input_val).is_loopback:
                     return {"error": "loopback ip"}
-                if ipaddress.ip_address(input).is_link_local:
+                if ipaddress.ip_address(input_val).is_link_local:
                     return {"error": "link local ip"}
-                if ipaddress.ip_address(input).is_private:
+                if ipaddress.ip_address(input_val).is_private:
                     return {"error": "private ip"}
-                if ipaddress.ip_address(input).sixtofour is not None:
+                if ipaddress.ip_address(input_val).sixtofour is not None:
                     # verify the ipv4 address inside the ipv6 address is not private
                     if ipaddress.ip_address(
-                        ipaddress.ip_address(input).sixtofour
+                        ipaddress.ip_address(input_val).sixtofour
                     ).is_private:
                         return {"error": "private ip (nice try though)"}
                 return True
         if "url" in types:
-            if validators.url(input):
+            if validators.url(input_val):
                 # fetch the url to verify all urls in the redirect chain
                 try:
                     # get domain from url and validate it as a domain so we can check if it is a private ip
-                    domain = urllib.parse.urlparse(input).netloc
-                    if domain == input:
+                    domain = urllib.parse.urlparse(input_val).netloc
+                    if domain == input_val:
                         # no domain found in url
                         return {"error": "no domain found in url (or localhost)"}
                     # call validateinput again with domain
                     result = self.validate_input(
                         domain, ["domain"], count=count)
                     # check if dict
-                    if type(result) is dict:
+                    if isinstance(result, dict):
                         if "error" in result:
                             return {"error": f"domain: {result['error']}"}
                     response = requests.head(
-                        input, timeout=10, allow_redirects=True, verify=False
+                        input_val, timeout=10, allow_redirects=True, verify=False
                     )
                     urls = []
                     for r in response.history:
@@ -363,38 +373,39 @@ class Helper:
                     for url in urls:
                         result = self.validate_input(url, ["url"], count=count)
                         # check if dict
-                        if type(result) is dict:
+                        if isinstance(result, dict):
                             if "error" in result:
                                 return {"error": f"redirect: {result['error']}"}
                 except requests.exceptions.RequestException as error:
                     return {"error": f"error fetching url: {error}"}
                 return True
         if "asn" in types:
-            if re.match(r"(AS|as)[0-9]+", input):
+            if re.match(r"(AS|as)[0-9]+", input_val):
                 return True
         if "string" in types:
-            if re.match(r"[a-zA-Z0-9_-]+", input):
+            if re.match(r"[a-zA-Z0-9_-]+", input_val):
                 return True
         if "port" in types:
-            if re.match(r"[0-9]+", input):
-                if int(input) > 65535:
+            if re.match(r"[0-9]+", input_val):
+                if int(input_val) > 65535:
                     return {"error": "port can not be higher than 65535"}
-                if int(input) < 1:
+                if int(input_val) < 1:
                     return {"error": "port can not be lower than 1"}
                 return True
         if "argument" in types:
-            if input in allowed_args:
+            if input_val in allowed_args:
                 return True
         return {
-            "error": f"invalid input: {input} (no matches) for types {', '.join(types)}"
+            "error": f"invalid input: {input_val} (no matches) for types {', '.join(types)}"
         }
 
     async def download_webpage(self, url):
         """download a webpage and return the content"""
+        # pylint: disable=attribute-defined-outside-init
         self.exit_after_loop = False
         # await self.log(f"downloading webpage {url}")
         validate_result = self.validate_input(url, "url")
-        if validate_result != True:
+        if validate_result is not True:
             await self.log(f"Error: {validate_result}")
             return validate_result, None
 
@@ -473,13 +484,16 @@ class Helper:
         # mattermost limit is 4000 characters
         def get_content_type_and_ext(content_type):
             """find the type and extension of the content"""
-            for type, types in content_types.items():
+            for content_type, content_types_arr in content_types.items():
                 if ";" in content_type:
-                    if content_type.split(";")[0] in types:
-                        return type, types[content_type.split(";")[0]]
+                    if content_type.split(";", maxsplit=1)[0] in content_types_arr:
+                        return (
+                            content_type,
+                            content_types_arr[content_type.split(";", maxsplit=1)[0]],
+                        )
                 else:
-                    if content_type in types:
-                        return type, types[content_type]
+                    if content_type in content_types_arr:
+                        return content_type, content_types_arr[content_type]
             return "unknown", "unknown"
 
         try:
@@ -528,8 +542,8 @@ class Helper:
                             filename = self.save_content_to_tmp_file(
                                 text_to_save, ext)
                             return text_to_return, filename
-
-                    except Exception as e:  # pylint: disable=bare-except
+                    # pylint: disable=broad-except
+                    except Exception as e:
                         await self.log(
                             f"Error: could not parse webpage (Exception) {e}"
                         )
@@ -570,12 +584,14 @@ class Helper:
                 str(e),
                 None,
             )
-        except Exception as e:  # pylint: disable=bare-except
+        # pylint: disable=broad-except
+        except Exception as e:  # pylint: disable=broad-except
             await self.log(f"Error: could not download webpage (Exception) {e}")
             return "Error: could not download webpage (Exception) " + str(e), None
 
     async def web_search_and_download(self, searchterm):
         """run the search and download top 2 results from duckduckgo"""
+        # pylint: disable=attribute-defined-outside-init
         self.exit_after_loop = False
         downloaded = []
         localfiles = []
@@ -600,6 +616,7 @@ class Helper:
                     localfiles.append(localfile)
                 # await self.log(f"webpage content: {content[:500]}")
                 i = i + 1
+            # pylint: disable=broad-except
             except Exception as e:
                 await self.log(f"Error: {e}")
                 content = None
@@ -617,8 +634,9 @@ class Helper:
 
     async def web_search(self, searchterm):
         """search the web using duckduckgo"""
+        # pylint: disable=attribute-defined-outside-init
         self.exit_after_loop = False
-        await self.log(f"searching the web using backend=api")
+        await self.log("searching the web using backend=api")
 
         try:
             results = DDGS().text(keywords=searchterm, backend="api", max_results=10)
@@ -627,9 +645,10 @@ class Helper:
                 json.dumps(results, indent=4), "json"
             )
             return results, filename
-        except Exception as e:
-            await self.log(f"Error: falling back to html backend")
-        await self.log(f"searching the web using backend=html")
+        # pylint: disable=broad-exception-caught
+        except Exception:
+            await self.log("Error: falling back to html backend")
+        await self.log("searching the web using backend=html")
         try:
             results = DDGS().text(keywords=searchterm, backend="html", max_results=10)
             # save to file
@@ -637,6 +656,7 @@ class Helper:
                 json.dumps(results, indent=4), "json"
             )
             return results, filename
+        # pylint: disable=broad-except
         except Exception as e:
             await self.log(f"Error: {e}")
             return f"Error: {e}", None

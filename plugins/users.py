@@ -1,3 +1,5 @@
+"""users plugin"""
+
 import datetime
 
 from environs import Env
@@ -27,12 +29,14 @@ MM_BOT_USERS_NEEDWHITELIST = env.bool(
 class UserNotFound(Exception):
     """user not found exception"""
 
-    pass
+
+class TooManyUsersFound(Exception):
+    """too many users found exception"""
 
 
 class Users(Plugin):
     """manage users"""
-
+    # pylint: disable=super-init-not-called
     def __init__(self, driver: Driver = None, plugin_manager: PluginManager = None, settings: Settings = None):
         if (driver is not None) and (plugin_manager is not None) and (settings is not None):
             self.initialize(driver, plugin_manager, settings)
@@ -128,14 +132,13 @@ class Users(Plugin):
 
     def on_stop(self):
         """on stop"""
-        pass
 
     def is_user(self, username):
         """check if user is user"""
         # check if user is banned
         if self.redis.exists(f"ban:{self.u2id(username)}"):
             return False
-        if NEEDWHITELIST == False:
+        if NEEDWHITELIST is False:
             return True
         return True if self.u2id(username) in self.redis.smembers("users") else False
 
@@ -156,11 +159,13 @@ class Users(Plugin):
         """check if username or id"""
         try:
             user = self.get_user_by_username(username_or_id)["username"]
-        except:
+        # pylint: disable=broad-except
+        except Exception:
             user = None
         try:
             uid = self.get_user_by_user_id(username_or_id)["id"]
-        except:
+        # pylint: disable=broad-except
+        except Exception:
             uid = None
 
         if user is None and uid is None:
@@ -190,7 +195,7 @@ class Users(Plugin):
             return users[0]
         if len(users) > 1:
             # throw exception if more than one user is found
-            raise Exception(
+            raise TooManyUsersFound(
                 f"More than one user found: {users} this is undefined behavior"
             )
         return None
@@ -207,7 +212,8 @@ class Users(Plugin):
                 f"user:{user_id}", self.helper.redis_serialize_json(user), ex=60 * 60
             )
             return user
-        except:
+        # pylint: disable=broad-except
+        except Exception:
             return None
 
     def get_uid(self, username, force=False):
@@ -217,13 +223,14 @@ class Users(Plugin):
             return self.redis.get(f"uid:{username}")
         try:
             uid = self.get_user_by_username(username)["id"]
-        except:
+        # pylint: disable=broad-except
+        except Exception as e:
             # uid not found
             uid = None
             # throw exception if user is not found
-            raise UserNotFound(f"User not found: {username}")
+            raise UserNotFound(f"User not found: {username}") from e
         # cache the uid in redis for 10 hours
-        if uid != None:
+        if uid is not None:
             self.redis.set(f"uid:{username}", uid, ex=10 * 60 * 60)
         return uid
 

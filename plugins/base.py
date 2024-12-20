@@ -1,17 +1,23 @@
+"""Base class for plugins."""
 
 from mmpy_bot.driver import Driver
-from mmpy_bot.function import listen_to
 from mmpy_bot.plugins.base import Plugin, PluginManager
 from mmpy_bot.settings import Settings
-from mmpy_bot.wrappers import Message
+
 from plugins.helper import Helper
 from plugins.users import Users
-from environs import Env
 
 
 class PluginLoader(Plugin):
+    """Base class for plugins."""
+    # pylint: disable=super-init-not-called
     def __init__(self):
-        pass
+        self.helper = None
+        self.driver = None
+        self.settings = None
+        self.redis_pool = None
+        self.redis = None
+        self.users = None
 
     def initialize(self,
                    driver: Driver,
@@ -29,7 +35,7 @@ class PluginLoader(Plugin):
         for plugin in self.plugin_manager.plugins:
             pname = type(plugin).__name__
             self.helper.plugins[pname.lower()] = plugin
-        if 'users' in self.helper.plugins.keys():
+        if "users" in self.helper.plugins:
             self.users = self.helper.plugins['users']
         else:
             self.users = Users()
@@ -37,4 +43,4 @@ class PluginLoader(Plugin):
                 self.driver, self.plugin_manager, self.settings)
             self.helper.plugins['users'] = self.users
         # self.helper.slog(f"Plugins loaded: {', '.join(self.helper.plugins.keys())}")
-        self.helper.slog(f"initialized.")
+        self.helper.slog("initialized.")

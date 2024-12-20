@@ -1,7 +1,6 @@
 """baseclass for openai tools"""
 
 # should be inherited by all tools to ensure a consistent interface
-import json
 from typing import Literal
 
 class Tool:

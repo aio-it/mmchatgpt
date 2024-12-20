@@ -227,12 +227,6 @@ class ChatGPT(PluginLoader):
                 },
             ],
         )
-        assistant_to_the_regional_manager_tool = Tool(
-            function=self.assistant_to_the_regional_manager,
-            description="You can use this function to ask the assistant to solve something for you. The assistant will try to solve the problem and return the solution to you. The assistant will not be able to solve all problems but it will try its best to solve the problem. If the assistant is unable to solve the problem it will return an error message. only send what what context you feel absolutely necessary for the assistant to solve the problem.",
-            parameters=["prompt", "context"],
-            privilege_level="user",
-        )
         docker_run_python_tool = Tool(
             function=self.docker_run_python,
             description="Run python code in a docker container. the python version is 3.11. Do not create scripts that runs forever. Use this to run python code that may be unsafe or that you do not want to run on your local machine. The code will be run in a docker container and the stdout and stderr will be returned to you. Any files created should be saved in the current directory or /app The script then returns them to the user but you do not get the data unless the files created have a mimetype of text",
@@ -261,18 +255,6 @@ class ChatGPT(PluginLoader):
             ],
             privilege_level="admin",
         )
-        base64_encode_tool = Tool(
-            function=self.base64_encode,
-            description="Encode a string or files content to base64",
-            parameters=["string"],
-            privilege_level="user",
-        )
-        base64_decode_tool = Tool(
-            function=self.base64_decode,
-            description="Decode a base64 string",
-            parameters=["string"],
-            privilege_level="user",
-        )
 
         self.tools_manager = ToolsManager()
         self.tools_manager.add_tool(download_webpage_tool)
@@ -281,10 +263,7 @@ class ChatGPT(PluginLoader):
         self.tools_manager.add_tool(generate_image_tool)
         self.tools_manager.add_tool(docker_run_python_tool)
         self.tools_manager.add_tool(text_to_speech_tool)
-        # self.tools_manager.add_tool(assistant_to_the_regional_manager_tool)
-        # self.tools_manager.add_tool(base64_encode_tool)
-        # self.tools_manager.add_tool(base64_decode_tool)
-        # manager.add_tool(assistant_to_the_regional_manager_tool)
+
         self.user_tools = self.tools_manager.get_tools_as_dict("user")
         self.admin_tools = self.tools_manager.get_tools_as_dict("admin")
         # print the tools

@@ -1,33 +1,35 @@
 """ChatGPT plugin for mmpy_bot"""
 
-from .tools import ToolsManager, Tool
-import aiodocker
-from pprint import pformat
-from redis_rate_limit import RateLimit, TooManyRequests
-from mmpy_bot.wrappers import Message
-from mmpy_bot.settings import Settings
-from mmpy_bot.plugins.base import Plugin, PluginManager
-from mmpy_bot.function import listen_to
-from mmpy_bot.driver import Driver
-from .base import PluginLoader
-import aiohttp.client_exceptions as aiohttp_client_exceptions
-from re import DOTALL as re_DOTALL
-from openai import AsyncOpenAI
-import openai
-from cgitb import text
-from math import log
-from pydoc import doc
-import re
-import aiodocker.types
-import requests
-import time
+import base64
 import json
-import mimetypes
-from environs import Env
 import random
 import string
-import base64
+import time
+from cgitb import text
+from math import log
+from pprint import pformat
+from pydoc import doc
+from re import DOTALL as re_DOTALL
+
+import aiodocker
+import aiodocker.types
+import aiohttp.client_exceptions as aiohttp_client_exceptions
+import openai
+from environs import Env
+from mmpy_bot.driver import Driver
+from mmpy_bot.function import listen_to
+from mmpy_bot.plugins.base import Plugin, PluginManager
+from mmpy_bot.settings import Settings
+from mmpy_bot.wrappers import Message
+from openai import AsyncOpenAI
+
+# from redis_rate_limit import RateLimit, TooManyRequests
+
 from plugins import docker
+
+from .base import PluginLoader
+from .tools import Tool, ToolsManager
+
 env = Env()
 
 
@@ -155,58 +157,78 @@ class ChatGPT(PluginLoader):
         #       define this elsewhere. we don't want to define this in the chat function
         # configure tools
         download_webpage_tool = Tool(
-            name=self.helper.download_webpage,
+            function=self.helper.download_webpage,
             description="Download and extract content from a specific webpage URL. Use this when the user provides a direct URL or when you need to fetch content from a known webpage.",
             parameters=[
-                {"name": "url", "description": "URL of the webpage to download"}],
-            privilege_level="user"
+                {"name": "url", "description": "URL of the webpage to download"}
+            ],
+            privilege_level="user",
         )
 
         web_search_and_download_tool = Tool(
-            name=self.helper.web_search_and_download,
+            function=self.helper.web_search_and_download,
             description="Search the web AND download content from the best matching webpage. Use this when you need detailed information about a topic and want to provide accurate quotes and sources. IMPORTANT: Only use this when you need in-depth information, not for quick facts or simple searches.",
             parameters=["searchterm"],
-            privilege_level="user"
+            privilege_level="user",
         )
 
         web_search_tool = Tool(
-            name=self.helper.web_search,
+            function=self.helper.web_search,
             description="Quick web search that returns only titles and snippets of the top 10 results. Use this for general information, fact-checking, or when you need a broad overview of a topic. Does NOT download full webpage content.",
             parameters=["searchterm"],
-            privilege_level="user"
+            privilege_level="user",
         )
         generate_image_tool = Tool(
-            name=self.generate_image,
+            function=self.generate_image,
             description="Generate an image from a text prompt using DALL-E-3. Use this to create visual representations of your ideas or to illustrate concepts. DO NOT CHANGE THE PROMPT from the user. The function returns an revised prompt that was used to generate the image. The assistant will not get to see the image but it will be returned by the program afterwards. so don't mistake the missing image as it not being generated. the only reason for it not being generated is if the revised prompt contains 'Error:' if it returns the revised prompt print it for the user as revised prompt: \{revised_prompt\}",
             parameters=[
-                {"name": "prompt", "description": "The prompt to generate the image from. DO NOT CHANGE THE PROMPT from the user. maximum length is 4000 characters", "required": True},
-                {"name": "size", "description": "the size of the image to generate. default is 1024x1024. Must be one of 1024x1024, 1792x1024, or 1024x1792, allow for the user to say landscape or portrait or sqaure and return the correct size accordingly as the value", "required": False},
-                {"name": "style", "description": "the style of the image to generate. default is vivid. Must be one of vivid or natural", "required": False},
-                {"name": "quality", "description": "the quality of the image to generate. default is hd. Must be one of hd or standard", "required": False},
+                {
+                    "name": "prompt",
+                    "description": "The prompt to generate the image from. DO NOT CHANGE THE PROMPT from the user. maximum length is 4000 characters",
+                    "required": True,
+                },
+                {
+                    "name": "size",
+                    "description": "the size of the image to generate. default is 1024x1024. Must be one of 1024x1024, 1792x1024, or 1024x1792, allow for the user to say landscape or portrait or sqaure and return the correct size accordingly as the value",
+                    "required": False,
+                },
+                {
+                    "name": "style",
+                    "description": "the style of the image to generate. default is vivid. Must be one of vivid or natural",
+                    "required": False,
+                },
+                {
+                    "name": "quality",
+                    "description": "the quality of the image to generate. default is hd. Must be one of hd or standard",
+                    "required": False,
+                },
             ],
-            privilege_level="user"
+            privilege_level="user",
         )
         text_to_speech_tool = Tool(
-            name=self.text_to_speech_tool,
+            function=self.text_to_speech_tool,
             description="Convert text to speech using the openai api. The text will be converted to speech and returned to the user. Do not give out download links. these files are provided to the user via another post by the tool",
-            parameters=[{
-                "name": "text",
-                "description": "the text you want to convert to speech",
-                "required": True,
-            }, {
-                "name": "voice",
-                "description": "the voice you want to use to convert the text to speech. options are: alloy, echo, fable, onyx, nova, and shimmer. default is nova",
-                "required": False,
-            }]
+            parameters=[
+                {
+                    "name": "text",
+                    "description": "the text you want to convert to speech",
+                    "required": True,
+                },
+                {
+                    "name": "voice",
+                    "description": "the voice you want to use to convert the text to speech. options are: alloy, echo, fable, onyx, nova, and shimmer. default is nova",
+                    "required": False,
+                },
+            ],
         )
         assistant_to_the_regional_manager_tool = Tool(
-            name=self.assistant_to_the_regional_manager,
+            function=self.assistant_to_the_regional_manager,
             description="You can use this function to ask the assistant to solve something for you. The assistant will try to solve the problem and return the solution to you. The assistant will not be able to solve all problems but it will try its best to solve the problem. If the assistant is unable to solve the problem it will return an error message. only send what what context you feel absolutely necessary for the assistant to solve the problem.",
             parameters=["prompt", "context"],
-            privilege_level="user"
+            privilege_level="user",
         )
         docker_run_python_tool = Tool(
-            name=self.docker_run_python,
+            function=self.docker_run_python,
             description="Run python code in a docker container. the python version is 3.11. Do not create scripts that runs forever. Use this to run python code that may be unsafe or that you do not want to run on your local machine. The code will be run in a docker container and the stdout and stderr will be returned to you. Any files created should be saved in the current directory or /app The script then returns them to the user but you do not get the data unless the files created have a mimetype of text",
             parameters=[
                 {"name": "code", "required": True},
@@ -234,13 +256,13 @@ class ChatGPT(PluginLoader):
             privilege_level="admin",
         )
         base64_encode_tool = Tool(
-            name=self.base64_encode,
+            function=self.base64_encode,
             description="Encode a string or files content to base64",
             parameters=["string"],
             privilege_level="user",
         )
         base64_decode_tool = Tool(
-            name=self.base64_decode,
+            function=self.base64_decode,
             description="Decode a base64 string",
             parameters=["string"],
             privilege_level="user",
@@ -257,8 +279,8 @@ class ChatGPT(PluginLoader):
         # self.tools_manager.add_tool(base64_encode_tool)
         # self.tools_manager.add_tool(base64_decode_tool)
         # manager.add_tool(assistant_to_the_regional_manager_tool)
-        self.user_tools = self.tools_manager.get_tools("user")
-        self.admin_tools = self.tools_manager.get_tools("admin")
+        self.user_tools = self.tools_manager.get_tools_as_dict("user")
+        self.admin_tools = self.tools_manager.get_tools_as_dict("admin")
         self.helper.slog(f"User tools: {self.user_tools}")
         self.helper.slog(f"Admin tools: {self.admin_tools}")
 
@@ -571,8 +593,8 @@ if files:
                                     await self.helper.log(
                                         f"Error extracting file {filepath}: {str(e)}"
                                     )
-                        except json.JSONDecodeError as e:
-                            await self.helper.log(f"Error parsing file data: {str(e)}")
+                        except json.JSONDecodeError:
+                            await self.helper.log("Error parsing file data")
                     else:
                         await self.helper.log(
                             "No valid file data markers found in container output"
@@ -864,8 +886,10 @@ if files:
 
                 # Determine file type and content format
                 if extension in extension_types["image"]:
-                    from PIL import Image
                     from io import BytesIO
+
+                    from PIL import Image
+
                     # Check if the image is too large
                     image = Image.open(BytesIO(file_content))
                     width, height = image.size
@@ -1287,17 +1311,14 @@ if files:
                     if self.redis.hexists(call_key, tool_function["tool_call_id"]):
                         continue
                     function_name = tool_function["function_name"]
+                    await self.helper.log(f"function_name: {function_name}")
                     tool_call_id = tool_function["tool_call_id"]
                     # self.helper.slog(f"function_name: {function_name}")
                     # get function name from the tool manager
                     tool = self.tools_manager.get_tool(function_name)
-                    if tool:
-                        try:
-                            function = getattr(self, function_name)
-                        except AttributeError:
-                            await self.helper.log(f"Error: function not found: {function_name}")
-                            continue
-                    else:
+                    function = tool.function
+                    await self.helper.log(f"tool: {tool}")
+                    if not tool:
                         await self.helper.log(f"Error: function not found: {function_name}")
                         continue
                     # format the arguments as a pretty string for the status msg it is an dict with a arg and value pair
@@ -1311,7 +1332,9 @@ if files:
                     try:
                         arguments = json.loads(tool_function["arguments"])
                     except json.JSONDecodeError as e:
-                        await self.helper.log(f"Error parsing arguments: {tool_function['arguments']}")
+                        await self.helper.log(
+                            "Error parsing arguments: %s" % tool_function["arguments"]
+                        )
                         arguments = {}
 
                     # Execute the function

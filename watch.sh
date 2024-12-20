@@ -1,2 +1,2 @@
 #!/bin/bash
-find . -type f | entr -r make dev
+find plugins/ -type f | entr -r make dev

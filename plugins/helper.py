@@ -14,6 +14,7 @@ import ipaddress
 import re
 from environs import Env
 from mmpy_bot.wrappers import Message
+import bs4
 
 env = Env()
 
@@ -58,6 +59,19 @@ class Helper:
         else:
             self.log_to_channel = True
             self.log_channel = self.log_channel
+        self.USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0"
+
+        self.headers = {
+            "User-Agent": self.USER_AGENT,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.7,da;q=0.3",
+            "Accept-Encoding": "gzip, deflate, br",
+            "DNT": "1",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1",
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache",
+        }
 
     def redis_serialize_json(self, msg):
         """serialize a message to json"""
@@ -478,7 +492,6 @@ class Helper:
                 # html
                 if "html" in content_type:
                     # extract all text from the webpage
-                    import bs4
 
                     soup = bs4.BeautifulSoup(response_text, "html.parser")
                     # check if the soup could parse anything

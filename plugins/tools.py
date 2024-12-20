@@ -1,101 +1,48 @@
-# baseclass for openai tools
-# should be inherited by all tools to ensure a consistent interface
-"""
-        self.tools = [
-            {
-                "type": "function",
-                "function": {
-                    "name": "download_webpage",
-                    "description": "download a webpage to import as context and respond to the users query about the content and snippets from the webpage.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "url": {
-                                "type": "string",
-                                "description": "the url for the webpage",
-                            }
-                        },
-                        "required": ["url"],
-                    },
-                },
-            },{
-                "type": "function",
-                "function": {
-                    "name": "web_search_and_download",
-                    "description": "use this function if you think that it might be benificial with additional context to the conversation. This searches the web using duckduckgo and download the webpage to get the content and return the content always show the source for any statements made about the things downloaded.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "searchterm": {
-                                "type": "string",
-                                "description": "search term",
-                            }
-                        },
-                        "required": ["searchterm"],
-                    },
-                },
-            },{
-                "type": "function",
-                "function": {
-                    "name": "web_search",
-                    "description": "search the web using duckduckgo and return the top 10 results",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "searchterm": {
-                                "type": "string",
-                                "description": "search term",
-                            }
-                        },
-                        "required": ["searchterm"],
-                    },
-                },
-            }
-        ]
-"""
+"""baseclass for openai tools"""
 
+# should be inherited by all tools to ensure a consistent interface
+import json
+from typing import Literal
 
 class Tool:
-    def __init__(self, name, description, parameters, privilege_level="user", tool_type="function"):
-        self.validate_tool(name, description, parameters,
-                           privilege_level, tool_type)
-        self.name = name
+    """Tool function class used for ai tools"""
+
+    def __init__(
+        self,
+        function,
+        description,
+        parameters,
+        privilege_level="user",
+        tool_type="function",
+    ):
+        self.validate_tool(
+            function, description, parameters, privilege_level, tool_type
+        )
+        self.name = function.__name__
+        self.function = function
         self.description = description
         self.parameters = self.format_parameters(parameters)
         self.privilege_level = privilege_level
         self.type = tool_type
 
-    def get_tool_info(self):
+    def as_dict(self):
+        """Return the tool as a dictionary so it can be serialized"""
         return {
             "type": self.type,
             "function": {
-                "name": self.name.__name__,
+                "name": self.name,
                 "description": self.description,
                 "parameters": self.parameters,
                 "privilege_level": self.privilege_level,
-            }
+            },
         }
 
     @staticmethod
-    def from_object(obj):
-        Tool.validate_tool(
-            name=obj["function"]["name"],
-            description=obj["function"]["description"],
-            parameters=obj["function"]["parameters"],
-            privilege_level=obj.get("privilege_level", "user"),
-            tool_type=obj["type"]
-        )
-        return Tool(
-            name=obj["function"]["name"],
-            description=obj["function"]["description"],
-            parameters=obj["function"]["parameters"],
-            privilege_level=obj.get("privilege_level", "user"),
-            tool_type=obj["type"]
-        )
-
-    @staticmethod
-    def validate_tool(name, description, parameters, privilege_level, tool_type):
-        if not callable(name):
+    def validate_tool(
+        function, description, parameters, privilege_level, tool_type
+    ) -> None:
+        """Validate the tool"""
+        if not callable(function):
             raise ValueError("Tool name must be callable")
         if not isinstance(description, str) or not description:
             raise ValueError("Tool description must be a non-empty string")
@@ -108,6 +55,7 @@ class Tool:
 
     @staticmethod
     def format_parameters(parameters):
+        """Format parameters for the tool"""
         formatted_parameters = {
             "type": "object",
             "properties": {},
@@ -131,40 +79,47 @@ class Tool:
 
 
 class ToolsManager:
-    def __init__(self):
-        self.tools = []
-        self.disabled_tools = []
+    """Manager class for tools that is a collection of tools"""
 
-    def add_tool(self, tool: Tool):
-        self.tools.append(tool.get_tool_info())
+    def __init__(self) -> None:
+        self.tools = {}
+        self.disabled_tools = {}
 
-    def get_tool(self, function_name: str):
-        for tool in self.tools:
-            if tool["function"]["name"] == function_name:
-                return tool
-        return None
+    def add_tool(self, tool: Tool) -> Literal[True]:
+        """Add a tool to the tools manager"""
+        self.tools[tool.name] = tool
+        return True
 
-    def disable_tool(self, function_name: str) -> bool:
-        for i, tool in enumerate(self.tools):
-            if tool["function"]["name"] == function_name:
-                self.disabled_tools.append(self.tools.pop(i))
-                return True
+    def get_tool(self, tool: Tool) -> Tool | None:
+        """Get a tool from the tools manager"""
+        return self.tools.get(tool, None)
+
+    def disable_tool(self, tool: Tool) -> bool:
+        """Disable a tool from the tools manager"""
+        if tool.name in self.tools:
+            self.disabled_tools[tool.name] = self.tools.pop(tool.name)
+            return True
         return False
 
     def enable_tool(self, function_name: str) -> bool:
-        for i, tool in enumerate(self.disabled_tools):
-            if tool["function"]["name"] == function_name:
-                self.tools.append(self.disabled_tools.pop(i))
-                return True
+        """Enable a tool from the tools manager"""
+        if function_name in self.disabled_tools:
+            self.tools[function_name] = self.disabled_tools.pop(function_name)
+            return True
         return False
 
-    def get_tools(self, privilege_level="user", include_disabled=False):
-        if include_disabled:
-            all_tools = self.tools + self.disabled_tools
-            if privilege_level == "admin":
-                return all_tools
-            return [tool for tool in all_tools if tool["function"]["privilege_level"] == "user"]
-
+    def get_tools(self, privilege_level="user", include_disabled=False) -> dict[Tool]:
+        """Get all tools from the tools manager based on privilege level and include_disabled"""
+        # return all tools if privilege_level is admin
         if privilege_level == "admin":
             return self.tools
-        return [tool for tool in self.tools if tool["function"]["privilege_level"] == "user"]
+        # return all tools except disabled tools
+        if not include_disabled:
+            return self.tools
+        # return all tools including disabled tools
+        return {**self.tools, **self.disabled_tools}
+
+    def get_tools_as_dict(self, privilege_level="user", include_disabled=False):
+        """Return all tools as json so they can be sent to the ai client"""
+        tools: dict[Tool] = self.get_tools(privilege_level, include_disabled)
+        return [tool.as_dict() for tool in tools.values()]

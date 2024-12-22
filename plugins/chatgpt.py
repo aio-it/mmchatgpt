@@ -968,6 +968,12 @@ if files:
                 else:
                     # post is from user, set role to user
                     role = "user"
+                    # get the username from the user_id from the thread_post
+                    username = self.users.id2u(thread_post.user_id)
+                    # if the username is not None prepend it to the message
+                    if username:
+                        thread_post.text = f"@{username}: {thread_post.text}"
+
                 # create message object and append it to messages and redis
                 message = {"role": role, "content": thread_post.text}
                 messages.append(message)
@@ -1113,6 +1119,11 @@ if files:
             for file in message_files:
                 await self.helper.log(f"file: {file.get('filename')} type: {file.get('type')}")
             m = {"role": "user"}
+            # get username from user_id
+            username = self.users.id2u(message.user_id)
+            # if the username is not None prepend it to the message
+            if username:
+                user_text = f"@{username}: {user_text}"
             if message_files:
                 # we have files lets add them to the message to be sent to the model
                 txt_files = [

@@ -26,6 +26,7 @@ from PIL import Image
 
 from .base import PluginLoader
 from .tools import Tool, ToolsManager
+from .users import UserIsSystem
 
 # from redis_rate_limit import RateLimit, TooManyRequests
 
@@ -230,6 +231,35 @@ class ChatGPT(PluginLoader):
                 },
             ],
         )
+        custom_prompt_setter_tool = Tool(
+            function=self.set_custom_system_prompt,
+            description="Set a custom prompt for the chatgpt plugin. This prompt will be used for all subsequent chatgpt calls. This is useful for setting a specific context or theme for the chatgpt plugin.",
+            parameters=[
+                {
+                    "name": "prompt",
+                    "description": "The custom prompt to set for the chatgpt plugin.",
+                    "required": True,
+                },{
+                    "name": "tool_run", "required": True, "description": "this must always be true"
+                }
+            ],
+            needs_message_object=True,
+            returns_files=False,
+        )
+        custom_prompt_clear_tool = Tool(
+            function=self.clear_custom_system_prompt,
+            description="Clear the custom prompt for the chatgpt plugin. This will revert to the default prompt for all subsequent chatgpt calls.",
+            parameters=[{"name": "tool_run", "required": True, "description": "this must always be true"}],
+            needs_message_object=True,
+            returns_files=False,
+        )
+        custom_prompt_get_tool = Tool(
+            function=self.get_custom_system_prompt,
+            description="Get the current custom prompt for the chatgpt plugin.",
+            parameters=[{"name": "tool_run", "required": True, "description": "this must always be true"}],
+            needs_message_object=True,
+            returns_files=False,
+        )
         docker_run_python_tool = Tool(
             function=self.docker_run_python,
             description="Run python code in a docker container. the python version is 3.11. Do not create scripts that runs forever. Use this to run python code that may be unsafe or that you do not want to run on your local machine. The code will be run in a docker container and the stdout and stderr will be returned to you. Any files created should be saved in the current directory or /app The script then returns them to the user but you do not get the data unless the files created have a mimetype of text",
@@ -266,6 +296,9 @@ class ChatGPT(PluginLoader):
         self.tools_manager.add_tool(generate_image_tool)
         self.tools_manager.add_tool(docker_run_python_tool)
         self.tools_manager.add_tool(text_to_speech_tool)
+        self.tools_manager.add_tool(custom_prompt_setter_tool)
+        self.tools_manager.add_tool(custom_prompt_clear_tool)
+        self.tools_manager.add_tool(custom_prompt_get_tool)
 
         self.user_tools = self.tools_manager.get_tools_as_dict("user")
         self.admin_tools = self.tools_manager.get_tools_as_dict("admin")
@@ -967,6 +1000,17 @@ if files:
         thread_key = REDIS_PREPEND + thread_id
         self.redis.rpush(thread_key, self.helper.redis_serialize_json(message))
 
+    def update_system_prompt_in_thread(self, thread_id: str, prompt: str):
+        """update the system prompt in the thread in redis"""
+        thread_key = REDIS_PREPEND + thread_id
+        # find the message with the role = system and update it
+        messages = self.get_thread_messages_from_redis(thread_id)
+        for message in messages:
+            if message["role"] == "system":
+                # update the redis message with the new prompt
+                message["content"] = prompt
+                self.redis.set(thread_key, self.helper.redis_serialize_json(messages))
+                break
     def get_thread_messages(self, thread_id: str, force_fetch: bool = False):
         """get the message thread from the thread_id"""
         messages = []
@@ -1062,6 +1106,71 @@ if files:
         )
         self.helper.delete_downloaded_file(filename)
 
+    # function to set the custom channel system prompt
+    @listen_to(r"^\.gpt set channel system (.*)", regexp_flag=re_DOTALL)
+    async def set_custom_system_prompt(self, message: Message, prompt: str, tool_run=False):
+        """set the custom system prompt for a channel"""
+        # check if user is admin and its not a direct message
+        if not message.is_direct_message and not self.users.is_admin(message.sender_name):
+            return
+        # set the custom system prompt for the channel
+        self.redis.hset("custom_system_prompts", message.channel_id, prompt)
+        # update the system prompt in the thread
+        self.update_system_prompt_in_thread(message.root_id if message.root_id else message.reply_id, prompt)
+        if not tool_run:
+            self.driver.reply_to(
+                message, f"Set custom system prompt for channel {message.channel_id} to {prompt}"
+            )
+        return "Set custom system prompt for channel {message.channel_id} to {prompt}"
+    # function to reset the custom channel system prompt
+    @listen_to(r"^\.gpt clear channel system")
+    async def clear_custom_system_prompt(self, message: Message, tool_run=False):
+        """clear the custom system prompt for a channel"""
+        # check if user is admin
+        if not message.is_direct_message and not self.users.is_admin(message.sender_name):
+            return
+        # clear the custom system prompt for the specific channel and not all of them
+        channel_id = message.channel_id
+        self.redis.hdel("custom_system_prompts", channel_id)
+        if not tool_run:
+            self.driver.reply_to(
+                message, f"Cleared custom system prompt for channel {channel_id}"
+            )
+        return f"Cleared custom system prompt for channel {channel_id}"
+    # function to print the custom channel system prompt
+    @listen_to(r"^\.gpt get channel system")
+    async def get_custom_system_prompt_response(self, message: Message, tool_run=False):
+        """get the custom system prompt for a channel"""
+        # check if user is admin
+        if not message.is_direct_message and not self.users.is_admin(message.sender_name):
+            return
+        # get the custom system prompt for the channel
+        channel_id = message.channel_id
+        custom_prompt = self.redis.hget("custom_system_prompts", channel_id)
+        if custom_prompt:
+            response = f"Custom system prompt for channel {channel_id}: {custom_prompt}"
+            if not tool_run:
+                self.driver.reply_to(
+                    message, response
+                )
+        else:
+            response = f"No custom system prompt for channel {channel_id}. Using default prompt"
+            if not tool_run:
+                self.driver.reply_to(
+                    message, response,
+                )
+        return response
+    # function to get the custom prompt for a channel if it exists otherwise return the default prompt
+    def get_custom_system_prompt(self, channel_id):
+        """get the custom prompt for a channel if it exists otherwise return the default prompt"""
+        custom_prompt = self.redis.hget("custom_system_prompts", channel_id)
+        if custom_prompt:
+            return custom_prompt
+        # try and get the custom prompt configured in redis before returning the default prompt from the class
+        prompt = self.get_chatgpt_setting("system")
+        if prompt:
+            return prompt
+        return self.ChatGPT_DEFAULTS["system"]
     # soon to be deprecated
     # @listen_to(".+", needs_mention=True)
     # async def chat_moved(self, message: Message):
@@ -1165,10 +1274,7 @@ if files:
         date_template_string = "<date>"
         # model o1-preview does not support system messages
         if not model.startswith("o1"):
-            if self.get_chatgpt_setting("system") != "":
-                system_message = self.get_chatgpt_setting("system")
-            else:
-                system_message = self.ChatGPT_DEFAULTS["system"]
+            system_message = self.get_custom_system_prompt(message.channel_id)
             messages.insert(
                 0,
                 {
@@ -1352,14 +1458,24 @@ if files:
                             "Error parsing arguments: %s", tool_function["arguments"]
                         )
                         arguments = {}
-
-                    # Execute the function
-                    function_result, filename = await function(**arguments)
-                    if isinstance(filename, list):
-                        for file in filename:
-                            files.append(file)
-                    if isinstance(filename, str):
-                        files.append(filename)
+                    # if the tool has "needs_message_object" set to True, pass the message object to the function with the args
+                    if tool.needs_message_object:
+                        arguments["message"] = message
+                    if tool.needs_self:
+                        arguments["self"] = self
+                        await self.helper.log(f"tool: {tool}")
+                        await self.helper.log(f"a: {arguments}")
+                    if tool.returns_files:
+                        # Execute the function
+                        function_result, filename = await function(**arguments)
+                        if isinstance(filename, list):
+                            for file in filename:
+                                files.append(file)
+                        if isinstance(filename, str):
+                            files.append(filename)
+                    else:
+                        # Execute the function
+                        function_result = await function(**arguments)
 
                     if function_result is None:
                         function_result = "Error: function returned None"

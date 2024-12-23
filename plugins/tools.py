@@ -13,16 +13,33 @@ class Tool:
         parameters,
         privilege_level="user",
         tool_type="function",
+        needs_message_object=False,
+        direct_message_only=False,
+        channel_message_only=False,
+        returns_files=True,
+        needs_self=False,
     ):
         self.validate_tool(
             function, description, parameters, privilege_level, tool_type
         )
-        self.name = function.__name__
-        self.function = function
+        # if the type of the function is a MessageFunction then we need to set the name to the name of the function from the MessageFunction.func attribute
+        # this is because the MessageFunction class is a wrapper around the actual function and the actual function is stored in the func attribute of the MessageFunction class
+        self.needs_self = needs_self
+        if hasattr(function, "function"):
+            self.name = function.function.__name__
+            self.function = function.function
+            self.needs_self = True
+        else:
+            self.name = function.__name__
+            self.function = function
         self.description = description
         self.parameters = self.format_parameters(parameters)
         self.privilege_level = privilege_level
         self.type = tool_type
+        self.needs_message_object = needs_message_object
+        self.direct_message_only = direct_message_only
+        self.channel_message_only = channel_message_only
+        self.returns_files = returns_files
 
     def as_dict(self):
         """Return the tool as a dictionary so it can be serialized"""

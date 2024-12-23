@@ -32,6 +32,8 @@ class UserNotFound(Exception):
 
 class TooManyUsersFound(Exception):
     """too many users found exception"""
+class UserIsSystem(Exception):
+    """user is system exception and they dont have an id"""
 
 
 class Users(Plugin):
@@ -218,6 +220,8 @@ class Users(Plugin):
 
     def get_uid(self, username, force=False):
         """get uid from username"""
+        if username == "System":
+            raise UserIsSystem(f"User is system and does not have an id")
         # check if uid is cached in redis
         if not force and self.redis.exists(f"uid:{username}"):
             return self.redis.get(f"uid:{username}")

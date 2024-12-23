@@ -1083,8 +1083,11 @@ if files:
         tool_run = False
         if hasattr(message, "tool_run") and message.tool_run is True:
             tool_run = True
-        # if message is not from a user, ignore
-        if not self.users.is_user(message.sender_name):
+        try:
+            # if message is not from a user, ignore
+            if not self.users.is_user(message.sender_name):
+                return
+        except UserIsSystem:
             return
 
         # check if the user is and admin and set tools accordingly

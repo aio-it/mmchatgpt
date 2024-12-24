@@ -254,7 +254,7 @@ class ChatGPT(PluginLoader):
             returns_files=False,
         )
         custom_prompt_get_tool = Tool(
-            function=self.get_custom_system_prompt,
+            function=self.get_custom_system_prompt_response,
             description="Get the current custom prompt for the chatgpt plugin.",
             parameters=[{"name": "tool_run", "required": True, "description": "this must always be true"}],
             needs_message_object=True,

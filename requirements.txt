@@ -62,7 +62,7 @@ soupsieve==2.6; python_version >= '3.8'
 tiktoken==0.8.0; python_version >= '3.9'
 tqdm==4.67.1; python_version >= '3.7'
 typing-extensions==4.12.2; python_version >= '3.8'
-urllib3==2.2.3; python_version >= '3.8'
+urllib3==2.3.0; python_version >= '3.8'
 uuid==1.30
 validators==0.34.0; python_version >= '3.8'
 valkey[libvalkey]==6.0.2; python_version >= '3.8'

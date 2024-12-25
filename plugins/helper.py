@@ -46,15 +46,18 @@ class Helper:
     """helper class for the bot"""
     VALKEY_HOST = env.str("VALKEY_HOST", "localhost")
     VALKEY_DB = env.int("VALKEY_DB", 0)
-    """helper functions"""
-    VALKEY = valkey.Valkey(host=VALKEY_HOST, port=6379,
-                        db=VALKEY_DB, decode_responses=True, protocol=3)
+    REDIS_HOST = env.str("REDIS_HOST", "localhost")
+    REDIS_DB = env.int("REDIS_DB", 0)
 
     def __init__(self, driver, log_channel=None):
         self.driver = driver
-        self.valkey = self.VALKEY
-        self.valkey = self.valkey
-        self.valkey_pool = self.VALKEY.connection_pool
+        # fallback to REDIS instead of valkey if VALKEY_HOST is not set
+        if self.VALKEY_HOST == "localhost" and self.REDIS_HOST != "localhost":
+            self.VALKEY_HOST = self.REDIS_HOST
+            self.VALKEY_DB = self.REDIS_DB
+        self.valkey = valkey.Valkey(host=self.VALKEY_HOST, port=6379,
+                        db=self.VALKEY_DB, decode_responses=True, protocol=3)
+        self.valkey_pool = self.valkey.connection_pool
         self.log_channel = log_channel
         env_log_channel = env.str("MM_BOT_LOG_CHANNEL", None)
         if self.log_channel is None and env_log_channel is None:

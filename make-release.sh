@@ -5,6 +5,7 @@ tag=$(git describe --tags `git rev-list --tags --max-count=1`)
 # check if current commit is already tagged if so tell the user and exit
 if [ $(git describe --tags) == $tag ]; then
     echo "Current commit is already tagged with $tag"
+    echo "Did you forget to commit your changes?"
     exit 1
 fi
 # commit the requirements.txt file

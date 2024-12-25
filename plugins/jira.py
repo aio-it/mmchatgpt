@@ -32,8 +32,8 @@ class Jira(PluginLoader):
             del self.jira_sessions[uid]
 
     def get_jira_creds(self, uid):
-        """get jira creds from redis"""
-        creds = self.redis.hgetall(f"jira:{uid}:creds")
+        """get jira creds from valkey"""
+        creds = self.valkey.hgetall(f"jira:{uid}:creds")
         if len(creds) == 0:
             raise Exception("not logged in")
         server = creds.get("server")
@@ -122,11 +122,11 @@ class Jira(PluginLoader):
     async def jira_login(self, message: Message, server: str, username: str, token: str):
         """login to jira"""
         if self.users.is_user(message.sender_name):
-            # save token to redis
+            # save token to valkey
             uid = self.users.get_uid(message.sender_name)
-            self.redis.hset(f"jira:{uid}:creds", "server", server)
-            self.redis.hset(f"jira:{uid}:creds", "username", username)
-            self.redis.hset(f"jira:{uid}:creds", "token", token)
+            self.valkey.hset(f"jira:{uid}:creds", "server", server)
+            self.valkey.hset(f"jira:{uid}:creds", "username", username)
+            self.valkey.hset(f"jira:{uid}:creds", "token", token)
             # init jira
             try:
                 jira = self.get_jira_session(uid)

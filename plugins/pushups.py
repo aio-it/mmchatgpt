@@ -14,10 +14,10 @@ class Pushups(PluginLoader):
         """pushups reset for user"""
         if self.helper.is_admin(message.sender_name):
             # reset pushups for user
-            for key in self.redis.scan_iter(f"pushupsdaily:{user}:*"):
-                self.redis.delete(key)
-            for key in self.redis.scan_iter(f"pushupstotal:{user}"):
-                self.redis.delete(key)
+            for key in self.valkey.scan_iter(f"pushupsdaily:{user}:*"):
+                self.valkey.delete(key)
+            for key in self.valkey.scan_iter(f"pushupstotal:{user}"):
+                self.valkey.delete(key)
             messagetxt = f"{user} pushups reset"
             self.driver.reply_to(message, messagetxt)
             await self.helper.log(messagetxt)
@@ -27,10 +27,10 @@ class Pushups(PluginLoader):
         """pushups reset for self"""
         if self.users.is_user(message.sender_name):
             # reset pushups for self
-            for key in self.redis.scan_iter(f"pushupsdaily:{message.sender_name}:*"):
-                self.redis.delete(key)
-            for key in self.redis.scan_iter(f"pushupstotal:{message.sender_name}"):
-                self.redis.delete(key)
+            for key in self.valkey.scan_iter(f"pushupsdaily:{message.sender_name}:*"):
+                self.valkey.delete(key)
+            for key in self.valkey.scan_iter(f"pushupstotal:{message.sender_name}"):
+                self.valkey.delete(key)
             messagetxt = f"{message.sender_name} pushups reset"
             self.driver.reply_to(message, messagetxt)
             await self.helper.log(messagetxt)
@@ -39,12 +39,12 @@ class Pushups(PluginLoader):
         """return score string for user"""
         # get total pushups
         total = 0
-        for key in self.redis.scan_iter(f"pushupsdaily:{user}:*"):
-            total += int(self.redis.get(key))
+        for key in self.valkey.scan_iter(f"pushupsdaily:{user}:*"):
+            total += int(self.valkey.get(key))
         # get today pushups
         today = datetime.datetime.now().strftime("%Y-%m-%d")
         today_key = f"pushupsdaily:{user}:{today}"
-        today_pushups = int(self.redis.get(today_key))
+        today_pushups = int(self.valkey.get(today_key))
         return f"{user} has {today_pushups} pushups today and {total} pushups total"
 
     @listen_to(r"^\.pushups sub ([0-9]+)")  # pushups
@@ -54,7 +54,7 @@ class Pushups(PluginLoader):
             # check if we are substracting more than we have
             today = datetime.datetime.now().strftime("%Y-%m-%d")
             today_key = f"pushupsdaily:{message.sender_name}:{today}"
-            today_pushups = int(self.redis.get(today_key))
+            today_pushups = int(self.valkey.get(today_key))
             if int(pushups_sub) > today_pushups:
                 self.driver.reply_to(
                     message,
@@ -64,16 +64,16 @@ class Pushups(PluginLoader):
             pushups_sub = int(pushups_sub)
             messagetxt = f"{message.sender_name} substracted {pushups_sub} pushups\n"
             await self.helper.log(messagetxt)
-            # store pushups in redis per day
-            self.redis.decr(key, pushups_sub)
-            pushups_today = self.redis.get(today_key)
+            # store pushups in valkey per day
+            self.valkey.decr(key, pushups_sub)
+            pushups_today = self.valkey.get(today_key)
             messagetxt += (
                 f"{message.sender_name} has done {pushups_today} pushups today\n"
             )
-            # store pushups in redis total
+            # store pushups in valkey total
             key = f"pushupstotal:{message.sender_name}"
-            self.redis.decr(key, pushups_sub)
-            pushups_total = self.redis.get(key)
+            self.valkey.decr(key, pushups_sub)
+            pushups_total = self.valkey.get(key)
             messagetxt += f"{message.sender_name} has {pushups_total} pushups total\n"
             self.driver.reply_to(message, messagetxt)
 
@@ -105,16 +105,16 @@ class Pushups(PluginLoader):
                 return
             messagetxt = f"{message.sender_name} did {pushups_add} pushups\n"
             await self.helper.log(f"{message.sender_name} did {pushups_add} pushups")
-            # store pushups in redis per day
+            # store pushups in valkey per day
             today = datetime.datetime.now().strftime("%Y-%m-%d")
             key = f"pushupsdaily:{message.sender_name}:{today}"
-            self.redis.incr(key, pushups_add)
-            pushups = self.redis.get(key)
+            self.valkey.incr(key, pushups_add)
+            pushups = self.valkey.get(key)
             messagetxt += f"{message.sender_name} has done {pushups} pushups today\n"
-            # store pushups in redis per user
+            # store pushups in valkey per user
             key = f"pushupstotal:{message.sender_name}"
-            self.redis.incr(key, pushups_add)
-            pushups = self.redis.get(key)
+            self.valkey.incr(key, pushups_add)
+            pushups = self.valkey.get(key)
             messagetxt += f"{message.sender_name} has done {pushups} pushups total\n"
             self.driver.reply_to(message, messagetxt)
 
@@ -122,11 +122,11 @@ class Pushups(PluginLoader):
     async def pushups_scores(self, message: Message):
         """pushups scores for all users"""
         if self.users.is_user(message.sender_name):
-            # get pushups in redis per user
-            keys = self.redis.keys("pushupstotal:*")
+            # get pushups in valkey per user
+            keys = self.valkey.keys("pushupstotal:*")
             messagetxt = ""
             for key in keys:
-                pushups = self.redis.get(key)
+                pushups = self.valkey.get(key)
                 key = key.split(":")[1]
                 messagetxt += f"{key} has done {pushups} pushups total\n"
             self.driver.reply_to(message, messagetxt)
@@ -143,7 +143,7 @@ class Pushups(PluginLoader):
                 day = today - datetime.timedelta(days=i)
                 day = day.strftime("%Y-%m-%d")
                 key = f"pushupsdaily:{message.sender_name}:{day}"
-                pushups = self.redis.get(key)
+                pushups = self.valkey.get(key)
                 if pushups is None:
                     pushups = 0
                 totals_for_last_7_days += int(pushups)
@@ -155,8 +155,8 @@ class Pushups(PluginLoader):
             messagetxt += f"\nTotal for last 7 days: {totals_for_last_7_days}\n"
             # get total pushups
             total = 0
-            for key in self.redis.scan_iter(f"pushupsdaily:{message.sender_name}:*"):
-                total += int(self.redis.get(key))
+            for key in self.valkey.scan_iter(f"pushupsdaily:{message.sender_name}:*"):
+                total += int(self.valkey.get(key))
             messagetxt += f":weight_lifter: Alltime Total: {total}\n"
             self.driver.reply_to(message, messagetxt)
 
@@ -191,9 +191,9 @@ class Pushups(PluginLoader):
             scores = {}
             averages = {}
             days = {}
-            for key in self.redis.scan_iter("pushupsdaily:*"):
+            for key in self.valkey.scan_iter("pushupsdaily:*"):
                 user = key.split(":")[1]
-                score = int(self.redis.get(key))
+                score = int(self.valkey.get(key))
                 if user in scores:
                     scores[user] += score
                 else:
@@ -201,7 +201,7 @@ class Pushups(PluginLoader):
             # get averages
             for user in scores:
                 # get day count for user
-                userdays = self.redis.keys(f"pushupsdaily:{user}:*")
+                userdays = self.valkey.keys(f"pushupsdaily:{user}:*")
                 if len(userdays) > 0:
                     days[user] = len(userdays)
                     import math

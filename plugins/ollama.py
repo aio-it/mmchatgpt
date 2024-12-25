@@ -12,11 +12,11 @@ from pprint import pformat
 from environs import Env
 env = Env()
 
-REDIS_PREPEND = "ollama_"
+VALKEY_PREPEND = "ollama_"
 
 
 class Ollama(PluginLoader):
-    REDIS_PREFIX = "ollama_"
+    VALKEY_PREFIX = "ollama_"
     DEFAULT_MODEL = "mistral"
     URL = env.str("OLLAMA_URL", "http://localhost:11434/api")
     CHAT_ENDPOINT = "/chat"
@@ -33,23 +33,23 @@ class Ollama(PluginLoader):
     def initialize(self, driver: Driver, plugin_manager: PluginManager, settings: Settings):
         super().initialize(driver, plugin_manager, settings)
         self.name = "ollama"
-        if self.redis.get(self.REDIS_PREFIX + "model") is None:
-            self.redis.set(self.REDIS_PREFIX + "model", self.DEFAULT_MODEL)
-        self.model = self.redis.get(self.REDIS_PREFIX + "model")
-        if self.redis.get(self.REDIS_PREFIX + "stream") is None:
-            self.redis.set(
-                self.REDIS_PREFIX + "stream", 1 if self.DEFAULT_STREAM else 0
+        if self.valkey.get(self.valkey_PREFIX + "model") is None:
+            self.valkey.set(self.valkey_PREFIX + "model", self.DEFAULT_MODEL)
+        self.model = self.valkey.get(self.valkey_PREFIX + "model")
+        if self.valkey.get(self.valkey_PREFIX + "stream") is None:
+            self.valkey.set(
+                self.valkey_PREFIX + "stream", 1 if self.DEFAULT_STREAM else 0
             )
-        self.stream = self.redis.get(self.REDIS_PREFIX + "stream")
-        if self.redis.get(self.REDIS_PREFIX + "system_message") is None:
-            self.redis.set(self.REDIS_PREFIX + "system_message",
+        self.stream = self.valkey.get(self.valkey_PREFIX + "stream")
+        if self.valkey.get(self.valkey_PREFIX + "system_message") is None:
+            self.valkey.set(self.valkey_PREFIX + "system_message",
                            self.DEFAULT_SYSTEM_MESSAGE)
-        self.system_message = self.redis.get(
-            self.REDIS_PREFIX + "system_message")
-        if self.redis.get(self.REDIS_PREFIX + "stream_delay") is None:
-            self.redis.set(self.REDIS_PREFIX + "stream_delay",
+        self.system_message = self.valkey.get(
+            self.valkey_PREFIX + "system_message")
+        if self.valkey.get(self.valkey_PREFIX + "stream_delay") is None:
+            self.valkey.set(self.valkey_PREFIX + "stream_delay",
                            self.DEFAULT_STREAM_DELAY)
-        self.stream_delay = self.redis.get(self.REDIS_PREFIX + "stream_delay")
+        self.stream_delay = self.valkey.get(self.valkey_PREFIX + "stream_delay")
         self.helper.slog(f"model: {self.model}")
         self.helper.slog(f"stream: {self.stream}")
         self.helper.slog(f"system_message: {self.system_message}")
@@ -64,23 +64,23 @@ class Ollama(PluginLoader):
     @listen_to(r"^\.ollama stream disable")
     async def ollama_stream_disable(self, message: Message):
         if self.users.is_admin(message.sender_name):
-            self.redis.set(self.REDIS_PREFIX + "stream", 0)
+            self.valkey.set(self.valkey_PREFIX + "stream", 0)
             self.stream = 0
             self.driver.reply_to(message, f"streaming disabled")
 
     @listen_to(r"^\.ollama stream enable")
     async def ollama_stream_enable(self, message: Message):
         if self.users.is_admin(message.sender_name):
-            self.redis.set(self.REDIS_PREFIX + "stream", 1)
+            self.valkey.set(self.valkey_PREFIX + "stream", 1)
             self.stream = 1
-            delay = self.redis.get(self.REDIS_PREFIX + "stream_delay")
+            delay = self.valkey.get(self.valkey_PREFIX + "stream_delay")
             self.driver.reply_to(
                 message, f"streaming enabled. delay: {delay}ms")
 
     @listen_to(r"^\.ollama stream delay set ([\s\S]*)")
     async def ollama_stream_delay_set(self, message: Message, delay: str):
         if self.users.is_admin(message.sender_name):
-            self.redis.set(self.REDIS_PREFIX + "stream_delay", delay)
+            self.valkey.set(self.valkey_PREFIX + "stream_delay", delay)
             self.stream_delay = delay
             self.driver.reply_to(message, f"stream delay set to: {delay}ms")
 
@@ -152,7 +152,7 @@ class Ollama(PluginLoader):
     @listen_to(r"^\.ollama model set ([\s\S]*)")
     async def ollama_model_set(self, message: Message, model: str):
         if self.users.is_admin(message.sender_name):
-            self.redis.set(self.REDIS_PREFIX + "model", model)
+            self.valkey.set(self.valkey_PREFIX + "model", model)
             self.model = model
             self.driver.reply_to(message, f"model set to: {model}")
 
@@ -160,14 +160,14 @@ class Ollama(PluginLoader):
     async def ollama_model_get(self, message: Message):
         if self.users.is_admin(message.sender_name):
             self.driver.reply_to(
-                message, f"model: {self.redis.get(self.REDIS_PREFIX + 'model')}")
+                message, f"model: {self.valkey.get(self.valkey_PREFIX + 'model')}")
 
     def get_system_message(self, model):
         """get system message for model"""
         # if : is in model, get system message for model
         if ":" in model:
             model = model.split(":")[0]
-        message = self.redis.get(f"{self.REDIS_PREFIX}_{model}_system_message")
+        message = self.valkey.get(f"{self.valkey_PREFIX}_{model}_system_message")
         return "" if message is None else message
 
     def set_system_message(self, model, system_message):
@@ -175,8 +175,8 @@ class Ollama(PluginLoader):
         # if : is in model, set system message for model
         if ":" in model:
             model = model.split(":")[0]
-        self.redis.set(
-            f"{self.REDIS_PREFIX}_{model}_system_message", system_message)
+        self.valkey.set(
+            f"{self.valkey_PREFIX}_{model}_system_message", system_message)
 
     @listen_to(r"^\.ollama system_message set ([\s\S]*) ([\s\S]*)")
     async def ollama_system_message_set(self, message: Message, model: str, system_message: str):
@@ -219,11 +219,11 @@ class Ollama(PluginLoader):
         # if self.is_admin(message.sender_name):
         #    await self.helper.log(f"{message.sender_name}:  {pformat(message.body)}")
         thread_id = message.reply_id
-        thread_key = REDIS_PREPEND + thread_id
-        # check if thread exists in redis
+        thread_key = VALKEY_PREPEND + thread_id
+        # check if thread exists in valkey
         messages = []
         cache_thread = False
-        if self.redis.exists(thread_key) and cache_thread:
+        if self.valkey.exists(thread_key) and cache_thread:
             messages = self.append_chatlog(
                 thread_id, {"role": "user", "content": msg})
         else:
@@ -245,7 +245,7 @@ class Ollama(PluginLoader):
                     # post is from user, set role to user
                     role = "user"
 
-                    # self.redis.rpush(thread_key, self.helper.redis_serialize_json(
+                    # self.valkey.rpush(thread_key, self.helper.valkey_serialize_json(
                     #    {"role": role, "content": thread_post['message']}))
                     msg = {"role": role, "content": thread_post["message"]}
                 if cache_thread:
@@ -381,18 +381,18 @@ class Ollama(PluginLoader):
     def append_chatlog(self, thread_id, msg):
         """append a message to a chatlog"""
         expiry = 60 * 60 * 24 * 7
-        thread_key = REDIS_PREPEND + thread_id
-        self.redis.rpush(thread_key, self.helper.redis_serialize_json(msg))
-        self.redis.expire(thread_key, expiry)
-        messages = self.helper.redis_deserialize_json(
-            self.redis.lrange(thread_key, 0, -1))
+        thread_key = VALKEY_PREPEND + thread_id
+        self.valkey.rpush(thread_key, self.helper.valkey_serialize_json(msg))
+        self.valkey.expire(thread_key, expiry)
+        messages = self.helper.valkey_deserialize_json(
+            self.valkey.lrange(thread_key, 0, -1))
         return messages
 
-    def redis_serialize_json(self, msg):
+    def valkey_serialize_json(self, msg):
         """serialize a message to json"""
         return json.dumps(msg)
 
-    def redis_deserialize_json(self, msg):
+    def valkey_deserialize_json(self, msg):
         """deserialize a message from json"""
         if isinstance(msg, list):
             return [json.loads(m) for m in msg]

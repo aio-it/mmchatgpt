@@ -11,7 +11,8 @@ import urllib
 
 import bs4
 import dns.resolver
-import redis
+import valkey
+import valkey
 import requests
 import validators
 from duckduckgo_search import DDGS
@@ -43,16 +44,17 @@ Message.is_from_self = is_from_self
 
 class Helper:
     """helper class for the bot"""
-    REDIS_HOST = env.str("REDIS_HOST", "localhost")
-    REDIS_DB = env.int("REDIS_DB", 0)
+    VALKEY_HOST = env.str("VALKEY_HOST", "localhost")
+    VALKEY_DB = env.int("VALKEY_DB", 0)
     """helper functions"""
-    REDIS = redis.Redis(host=REDIS_HOST, port=6379,
-                        db=REDIS_DB, decode_responses=True)
+    VALKEY = valkey.Valkey(host=VALKEY_HOST, port=6379,
+                        db=VALKEY_DB, decode_responses=True, protocol=3)
 
     def __init__(self, driver, log_channel=None):
         self.driver = driver
-        self.redis = self.REDIS
-        self.redis_pool = self.REDIS.connection_pool
+        self.valkey = self.VALKEY
+        self.valkey = self.valkey
+        self.valkey_pool = self.VALKEY.connection_pool
         self.log_channel = log_channel
         env_log_channel = env.str("MM_BOT_LOG_CHANNEL", None)
         if self.log_channel is None and env_log_channel is None:
@@ -77,11 +79,11 @@ class Helper:
             "Pragma": "no-cache",
         }
 
-    def redis_serialize_json(self, msg):
+    def valkey_serialize_json(self, msg):
         """serialize a message to json"""
         return json.dumps(msg)
 
-    def redis_deserialize_json(self, msg):
+    def valkey_deserialize_json(self, msg):
         """deserialize a message from json"""
         if isinstance(msg, list):
             return [json.loads(m) for m in msg]
@@ -93,7 +95,7 @@ class Helper:
 
     async def wall(self, message):
         """send message to all admins"""
-        for admin_uid in self.redis.smembers("admins"):
+        for admin_uid in self.valkey.smembers("admins"):
             self.driver.direct_message(receiver_id=admin_uid, message=message)
 
     def get_caller_info(self):

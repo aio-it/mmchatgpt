@@ -19,7 +19,7 @@ class TTS(PluginLoader):
                     client=message.sender_name,
                     max_requests=1,
                     expire=5,
-                    redis_pool=self.redis_pool,
+                    valkey_pool=self.valkey_pool,
                 ):
                     # get the audio from dr tts website https://www.dr.dk/tjenester/tts?text=<text> using the requests module urlencode the text
                     self.helper.add_reaction(
@@ -68,7 +68,7 @@ class TTS(PluginLoader):
                     client=message.sender_name,
                     max_requests=1,
                     expire=5,
-                    redis_pool=self.redis_pool,
+                    valkey_pool=self.valkey_pool,
                 ):
                     self.helper.add_reaction(
                         message, "speaking_head_in_silhouette")

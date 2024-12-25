@@ -42,7 +42,7 @@ aclient = AsyncOpenAI(api_key=env.str("OPENAI_API_KEY"))
 # import tools and tools manager
 
 MODEL = "gpt-4-1106-preview"
-REDIS_PREPEND = "thread_"
+VALKEY_PREPEND = "thread_"
 
 # Custom Exceptions
 
@@ -125,15 +125,15 @@ class ChatGPT(PluginLoader):
         settings: Settings,
     ):
         super().initialize(driver, plugin_manager, settings)
-        # Apply default model to redis if not set and set self.model
-        self.model = self.redis.hget(self.SETTINGS_KEY, "model")
+        # Apply default model to valkey if not set and set self.model
+        self.model = self.valkey.hget(self.SETTINGS_KEY, "model")
         if self.model is None:
-            self.redis.hset(self.SETTINGS_KEY, "model", self.DEFAULT_MODEL)
+            self.valkey.hset(self.SETTINGS_KEY, "model", self.DEFAULT_MODEL)
             self.model = self.DEFAULT_MODEL
-        # Apply defaults to redis if not set
+        # Apply defaults to valkey if not set
         for key, value in self.ChatGPT_DEFAULTS.items():
-            if self.redis.hget(self.SETTINGS_KEY, key) is None:
-                self.redis.hset(self.SETTINGS_KEY, key, value)
+            if self.valkey.hget(self.SETTINGS_KEY, key) is None:
+                self.valkey.hset(self.SETTINGS_KEY, key, value)
         # emulate a browser and set all the relevant headers
         self.headers = {
             "User-Agent": self.USER_AGENT,
@@ -726,7 +726,7 @@ if files:
         """set the model"""
         if self.users.is_admin(message.sender_name):
             if model in self.allowed_models:
-                self.redis.hset(self.SETTINGS_KEY, "model", model)
+                self.valkey.hset(self.SETTINGS_KEY, "model", model)
                 self.model = model
                 self.driver.reply_to(message, f"Set model to {model}")
             else:
@@ -792,7 +792,7 @@ if files:
         settings_key = self.SETTINGS_KEY
         await self.helper.debug(f"set_chatgpt {key} {value}")
         if self.users.is_admin(message.sender_name):
-            self.redis.hset(settings_key, key, value)
+            self.valkey.hset(settings_key, key, value)
             self.driver.reply_to(message, f"Set {key} to {value}")
 
     @listen_to(r"^\.gpt reset ([a-zA-Z0-9_-]+)")
@@ -802,8 +802,8 @@ if files:
         if self.users.is_admin(message.sender_name) and key in self.ChatGPT_DEFAULTS:
             value = self.ChatGPT_DEFAULTS[key]
             await self.helper.debug(f"reset_chatgpt {key} {value}")
-            self.redis.hset(settings_key, key, self.ChatGPT_DEFAULTS[key])
-            self.redis.hdel(settings_key, key)
+            self.valkey.hset(settings_key, key, self.ChatGPT_DEFAULTS[key])
+            self.valkey.hdel(settings_key, key)
             self.driver.reply_to(message, f"Reset {key} to {value}")
 
     @listen_to(r"^\.gpt get ([a-zA-Z0-9_-])")
@@ -812,7 +812,7 @@ if files:
         settings_key = self.SETTINGS_KEY
         await self.helper.debug(f"get_chatgpt {key}")
         if self.users.is_admin(message.sender_name):
-            value = self.redis.hget(settings_key, key)
+            value = self.valkey.hget(settings_key, key)
             self.driver.reply_to(message, f"Set {key} to {value}")
 
     @listen_to(r"^\.gpt get")
@@ -821,19 +821,19 @@ if files:
         settings_key = self.SETTINGS_KEY
         await self.helper.debug("get_chatgpt_all")
         if self.users.is_admin(message.sender_name):
-            for key in self.redis.hkeys(settings_key):
+            for key in self.valkey.hkeys(settings_key):
                 if key in self.ChatGPT_DEFAULTS:
                     self.driver.reply_to(
-                        message, f"{key}: {self.redis.hget(settings_key, key)}"
+                        message, f"{key}: {self.valkey.hget(settings_key, key)}"
                     )
                 else:
                     # key not in defaults, delete it. unsupported key
-                    self.redis.hdel(settings_key, key)
+                    self.valkey.hdel(settings_key, key)
 
     def get_chatgpt_setting(self, key: str):
         """get the chatgpt key setting"""
         settings_key = self.SETTINGS_KEY
-        value = self.redis.hget(settings_key, key)
+        value = self.valkey.hget(settings_key, key)
         if value is None and key in self.ChatGPT_DEFAULTS:
             value = self.ChatGPT_DEFAULTS[key]
         return value
@@ -997,27 +997,27 @@ if files:
 
     def thread_append(self, thread_id, message) -> None:
         """append a message to a thread"""
-        thread_key = REDIS_PREPEND + thread_id
-        self.redis.rpush(thread_key, self.helper.redis_serialize_json(message))
+        thread_key = VALKEY_PREPEND + thread_id
+        self.valkey.rpush(thread_key, self.helper.valkey_serialize_json(message))
 
     def update_system_prompt_in_thread(self, thread_id: str, prompt: str):
-        """update the system prompt in the thread in redis"""
-        thread_key = REDIS_PREPEND + thread_id
+        """update the system prompt in the thread in valkey"""
+        thread_key = VALKEY_PREPEND + thread_id
         # find the message with the role = system and update it
-        messages = self.get_thread_messages_from_redis(thread_id)
+        messages = self.get_thread_messages_from_valkey(thread_id)
         for message in messages:
             if message["role"] == "system":
-                # update the redis message with the new prompt
+                # update the valkey message with the new prompt
                 message["content"] = prompt
-                self.redis.set(thread_key, self.helper.redis_serialize_json(messages))
+                self.valkey.set(thread_key, self.helper.valkey_serialize_json(messages))
                 break
     def get_thread_messages(self, thread_id: str, force_fetch: bool = False):
         """get the message thread from the thread_id"""
         messages = []
-        thread_key = REDIS_PREPEND + thread_id
-        if not force_fetch and self.redis.exists(thread_key):
-            # the thread exists in redis and we are running a tool.
-            messages = self.get_thread_messages_from_redis(thread_id)
+        thread_key = VALKEY_PREPEND + thread_id
+        if not force_fetch and self.valkey.exists(thread_key):
+            # the thread exists in valkey and we are running a tool.
+            messages = self.get_thread_messages_from_valkey(thread_id)
         else:
             # thread does not exist, fetch all posts in thread
             thread = self.driver.get_post_thread(thread_id)
@@ -1051,7 +1051,7 @@ if files:
                     if username:
                         thread_post.text = f"@{username}: {thread_post.text}"
 
-                # create message object and append it to messages and redis
+                # create message object and append it to messages and valkey
                 message = {"role": role, "content": thread_post.text}
                 messages.append(message)
                 self.thread_append(thread_id, message)
@@ -1095,8 +1095,8 @@ if files:
             return
         # set to root_id if set else use reply_id
         thread_id = message.root_id if message.root_id else message.reply_id
-        # thread_key = REDIS_PREPEND + thread_id
-        messages = self.get_thread_messages_from_redis(thread_id)
+        # thread_key = VALKEY_PREPEND + thread_id
+        messages = self.get_thread_messages_from_valkey(thread_id)
         # save messages to a file.
         filename = self.helper.save_content_to_tmp_file(
             json.dumps(messages, indent=4), "json"
@@ -1114,7 +1114,7 @@ if files:
         if not message.is_direct_message and not self.users.is_admin(message.sender_name):
             return
         # set the custom system prompt for the channel
-        self.redis.hset("custom_system_prompts", message.channel_id, prompt)
+        self.valkey.hset("custom_system_prompts", message.channel_id, prompt)
         # update the system prompt in the thread
         self.update_system_prompt_in_thread(message.root_id if message.root_id else message.reply_id, prompt)
         if not tool_run:
@@ -1131,7 +1131,7 @@ if files:
             return
         # clear the custom system prompt for the specific channel and not all of them
         channel_id = message.channel_id
-        self.redis.hdel("custom_system_prompts", channel_id)
+        self.valkey.hdel("custom_system_prompts", channel_id)
         if not tool_run:
             self.driver.reply_to(
                 message, f"Cleared custom system prompt for channel {channel_id}"
@@ -1146,7 +1146,7 @@ if files:
             return
         # get the custom system prompt for the channel
         channel_id = message.channel_id
-        custom_prompt = self.redis.hget("custom_system_prompts", channel_id)
+        custom_prompt = self.valkey.hget("custom_system_prompts", channel_id)
         if custom_prompt:
             response = f"Custom system prompt for channel {channel_id}: {custom_prompt}"
             if not tool_run:
@@ -1163,10 +1163,10 @@ if files:
     # function to get the custom prompt for a channel if it exists otherwise return the default prompt
     def get_custom_system_prompt(self, channel_id):
         """get the custom prompt for a channel if it exists otherwise return the default prompt"""
-        custom_prompt = self.redis.hget("custom_system_prompts", channel_id)
+        custom_prompt = self.valkey.hget("custom_system_prompts", channel_id)
         if custom_prompt:
             return custom_prompt
-        # try and get the custom prompt configured in redis before returning the default prompt from the class
+        # try and get the custom prompt configured in valkey before returning the default prompt from the class
         prompt = self.get_chatgpt_setting("system")
         if prompt:
             return prompt
@@ -1213,7 +1213,7 @@ if files:
             if message.text.lower().startswith(skip):
                 return
 
-        # This function checks if the thread exists in redis and if not, fetches all posts in the thread and adds them to redis
+        # This function checks if the thread exists in valkey and if not, fetches all posts in the thread and adds them to valkey
         thread_id = message.reply_id
         # keep a log of all status messages ( for tools )
         status_msgs = []
@@ -1265,7 +1265,7 @@ if files:
                     self.thread_append(thread_id, m)
             else:
                 m["content"] = user_text
-                # append to messages and redis
+                # append to messages and valkey
                 messages.append(m)
                 self.thread_append(thread_id, m)
 
@@ -1423,11 +1423,11 @@ if files:
                         {"message": "```\n" + "\n".join(status_msgs) + "\n```\n"},
                     )
 
-                call_key = f"{REDIS_PREPEND}_call_{thread_id}"
+                call_key = f"{VALKEY_PREPEND}_call_{thread_id}"
                 tool_results = []
 
                 for index, tool_function in functions_to_call.items():
-                    if self.redis.hexists(call_key, tool_function["tool_call_id"]):
+                    if self.valkey.hexists(call_key, tool_function["tool_call_id"]):
                         continue
                     function_name = tool_function["function_name"]
                     await self.helper.log(f"function_name: {function_name}")
@@ -1507,7 +1507,7 @@ if files:
                         thread_id, tool_function["tool_call_message"]
                     )
                     self.append_thread_and_get_messages(thread_id, tool_result)
-                    self.redis.hset(call_key, tool_call_id, "true")
+                    self.valkey.hset(call_key, tool_call_id, "true")
 
                     status_msg = f"Completed: {function_name}"
                     update_status(status_msg)
@@ -1779,10 +1779,10 @@ if files:
             "**.exec <code>** - run arbitrary python code and return the result to the chat",
             "**.s2t <text>**: convert text to token - convert a string to a tokens (for debugging)",
             "**.shell <command>**: run a shell command and return the result to the chat",
-            "**.redis search <key>**: search redis for a key",
-            "**.redis get <key>**: get a key from redis",
-            "**.redis set <key> <value>**: set a key in redis",
-            "**.redis del <key>**: delete a key from redis",
+            "**.valkey search <key>**: search valkey for a key",
+            "**.valkey get <key>**: get a key from valkey",
+            "**.valkey set <key> <value>**: set a key in valkey",
+            "**.valkey del <key>**: delete a key from valkey",
             "**.ban <username>** - ban a user from using the bot (permanent)",
             "**.ban <username> <days>** - ban a user from using the bot (for x days)"
             "**.unban <username>** - unban a user from using the bot",
@@ -1795,7 +1795,7 @@ if files:
         self.driver.reply_to(message, f"## :robot_face: Help:\n{txt}\n\n")
         if self.users.is_admin(message.sender_name):
             settings_key = self.SETTINGS_KEY
-            for key in self.redis.hkeys(settings_key):
+            for key in self.valkey.hkeys(settings_key):
                 commands_admin.append(f" - {key}")
             txt = "\n".join(commands_admin)
             self.driver.reply_to(message, f"\n\n{txt}\n", direct=True)
@@ -1804,41 +1804,41 @@ if files:
         """append a message to a chatlog"""
         # self.helper.slog(f"append_chatlog {thread_id} {msg}")
         expiry = 60 * 60 * 24 * 7
-        thread_key = REDIS_PREPEND + thread_id
-        self.redis.rpush(thread_key, self.redis_serialize_json(msg))
-        self.redis.expire(thread_key, expiry)
-        messages = self.helper.redis_deserialize_json(
-            self.redis.lrange(thread_key, 0, -1)
+        thread_key = VALKEY_PREPEND + thread_id
+        self.valkey.rpush(thread_key, self.valkey_serialize_json(msg))
+        self.valkey.expire(thread_key, expiry)
+        messages = self.helper.valkey_deserialize_json(
+            self.valkey.lrange(thread_key, 0, -1)
         )
         # messages = self.get_formatted_messages(messages)
         return messages
 
-    def get_thread_messages_from_redis(self, thread_id):
+    def get_thread_messages_from_valkey(self, thread_id):
         """get a chatlog"""
-        thread_key = REDIS_PREPEND + thread_id
-        messages = self.helper.redis_deserialize_json(
-            self.redis.lrange(thread_key, 0, -1)
+        thread_key = VALKEY_PREPEND + thread_id
+        messages = self.helper.valkey_deserialize_json(
+            self.valkey.lrange(thread_key, 0, -1)
         )
         # messages = self.get_formatted_messages(messages)
         return messages
 
-    def redis_serialize_json(self, msg):
+    def valkey_serialize_json(self, msg):
         """serialize a message to json, using a custom serializer for types not
         handled by the default json serialization"""
         # return json.dumps(msg)
-        return self.redis_serialize_jsonpickle(msg)
+        return self.valkey_serialize_jsonpickle(msg)
 
-    def redis_deserialize_json(self, msg):
+    def valkey_deserialize_json(self, msg):
         """deserialize a message from json"""
-        return self.redis_deserialize_jsonpickle(msg)
+        return self.valkey_deserialize_jsonpickle(msg)
 
-    def redis_serialize_jsonpickle(self, msg):
+    def valkey_serialize_jsonpickle(self, msg):
         """serialize a message to json, using a custom serializer for types not
         handled by the default json serialization"""
 
         return jsonpickle.encode(msg, unpicklable=False)
 
-    def redis_deserialize_jsonpickle(self, msg):
+    def valkey_deserialize_jsonpickle(self, msg):
         """deserialize a message from json"""
 
         if isinstance(msg, list):

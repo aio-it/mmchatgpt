@@ -32,7 +32,7 @@ aclient = AsyncAnthropic(
 )
 
 MODEL = "claude-3-opus-20240229"
-REDIS_PREPEND = "anthropic_thread_"
+VALKEY_PREPEND = "anthropic_thread_"
 
 # Custom Exceptions
 
@@ -82,15 +82,15 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         settings: Settings,
     ):
         super().initialize(driver, plugin_manager, settings)
-        # Apply default model to redis if not set and set self.model
-        self.model = self.redis.hget(self.SETTINGS_KEY, "model")
+        # Apply default model to valkey if not set and set self.model
+        self.model = self.valkey.hget(self.SETTINGS_KEY, "model")
         if self.model is None:
-            self.redis.hset(self.SETTINGS_KEY, "model", self.DEFAULT_MODEL)
+            self.valkey.hset(self.SETTINGS_KEY, "model", self.DEFAULT_MODEL)
             self.model = self.DEFAULT_MODEL
-        # Apply defaults to redis if not set
+        # Apply defaults to valkey if not set
         for key, value in self.ANTHROPIC_DEFAULTS.items():
-            if self.redis.hget(self.SETTINGS_KEY, key) is None:
-                self.redis.hset(self.SETTINGS_KEY, key, value)
+            if self.valkey.hget(self.SETTINGS_KEY, key) is None:
+                self.valkey.hset(self.SETTINGS_KEY, key, value)
         print(f"Allowed models: {self.ALLOWED_MODELS}")
 
     @listen_to(r"^\.ant model set ([a-zA-Z0-9_-]+)")
@@ -98,7 +98,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         """set the model"""
         if self.users.is_admin(message.sender_name):
             if True or model in self.ALLOWED_MODELS:
-                self.redis.hset(self.SETTINGS_KEY, "model", model)
+                self.valkey.hset(self.SETTINGS_KEY, "model", model)
                 self.model = model
                 self.driver.reply_to(message, f"Set model to {model}")
             else:
@@ -118,7 +118,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         settings_key = self.SETTINGS_KEY
         await self.helper.debug(f"set_anthropic {key} {value}")
         if self.users.is_admin(message.sender_name):
-            self.redis.hset(settings_key, key, value)
+            self.valkey.hset(settings_key, key, value)
             self.driver.reply_to(message, f"Set {key} to {value}")
 
     @listen_to(r"^\.ant reset ([a-zA-Z0-9_-]+)")
@@ -128,8 +128,8 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         if self.users.is_admin(message.sender_name) and key in self.ANTHROPIC_DEFAULTS:
             value = self.ANTHROPIC_DEFAULTS[key]
             await self.helper.debug(f"reset_anthropic {key} {value}")
-            self.redis.hset(settings_key, key, self.ANTHROPIC_DEFAULTS[key])
-            self.redis.hdel(settings_key, key)
+            self.valkey.hset(settings_key, key, self.ANTHROPIC_DEFAULTS[key])
+            self.valkey.hdel(settings_key, key)
             self.driver.reply_to(message, f"Reset {key} to {value}")
 
     @listen_to(r"^\.ant get ([a-zA-Z0-9_-])")
@@ -138,7 +138,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         settings_key = self.SETTINGS_KEY
         await self.helper.debug(f"get_anthropic {key}")
         if self.users.is_admin(message.sender_name):
-            value = self.redis.hget(settings_key, key)
+            value = self.valkey.hget(settings_key, key)
             self.driver.reply_to(message, f"Set {key} to {value}")
 
     @listen_to(r"^\.ant get$")
@@ -147,14 +147,14 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         settings_key = self.SETTINGS_KEY
         await self.helper.debug("get_anthropic_all")
         if self.users.is_admin(message.sender_name):
-            for key in self.redis.hkeys(settings_key):
+            for key in self.valkey.hkeys(settings_key):
                 if key in self.ANTHROPIC_DEFAULTS:
                     self.driver.reply_to(
-                        message, f"{key}: {self.redis.hget(settings_key, key)}"
+                        message, f"{key}: {self.valkey.hget(settings_key, key)}"
                     )
                 else:
                     # key not in defaults, delete it. unsupported key
-                    self.redis.hdel(settings_key, key)
+                    self.valkey.hdel(settings_key, key)
 
     @listen_to(r"^\.ant help")
     async def help(self, message: Message):
@@ -175,23 +175,23 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     def get_anthropic_setting(self, key: str):
         """get the anthropic key setting"""
         settings_key = self.SETTINGS_KEY
-        value = self.redis.hget(settings_key, key)
+        value = self.valkey.hget(settings_key, key)
         if value is None and key in self.ANTHROPIC_DEFAULTS:
             value = self.ANTHROPIC_DEFAULTS[key]
         return value
 
     def thread_append(self, thread_id, message) -> None:
         """append a message to a chatlog"""
-        thread_key = REDIS_PREPEND + thread_id
-        self.redis.rpush(thread_key, self.helper.redis_serialize_json(message))
+        thread_key = VALKEY_PREPEND + thread_id
+        self.valkey.rpush(thread_key, self.helper.valkey_serialize_json(message))
 
     def get_thread_messages(self, thread_id: str, force_fetch: bool = False):
         """get the message thread from the thread_id"""
         messages = []
-        thread_key = REDIS_PREPEND + thread_id
-        if not force_fetch and self.redis.exists(thread_key):
-            # the thread exists in redis and we are running a tool.
-            messages = self.get_thread_messages_from_redis(thread_id)
+        thread_key = VALKEY_PREPEND + thread_id
+        if not force_fetch and self.valkey.exists(thread_key):
+            # the thread exists in valkey and we are running a tool.
+            messages = self.get_thread_messages_from_valkey(thread_id)
         else:
             # thread does not exist, fetch all posts in thread
             thread = self.driver.get_post_thread(thread_id)
@@ -252,15 +252,15 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         """debug a chat thread"""
         # set to root_id if set else use reply_id
         thread_id = message.root_id if message.root_id else message.reply_id
-        # thread_key = REDIS_PREPEND + thread_id
-        messages = self.get_thread_messages_from_redis(thread_id)
+        # thread_key = VALKEY_PREPEND + thread_id
+        messages = self.get_thread_messages_from_valkey(thread_id)
         if len(messages) > 0:
             for msg in messages:
                 await self.helper.debug(f"message: {pformat(msg)}")
             # send all messages to the user in a single message
             # truncating the message if it's too long
         else:
-            await self.helper.debug("no messages in redis thread")
+            await self.helper.debug("no messages in valkey thread")
         self.driver.reply_to(message, json.dumps(messages, indent=4)[:4000])
 
     @listen_to(r"^@s .*", regexp_flag=re_DOTALL)
@@ -286,8 +286,8 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             if message.text.lower().startswith(skip):
                 return
 
-        # This function checks if the thread exists in redis and if not,
-        # fetches all posts in the thread and adds them to redis
+        # This function checks if the thread exists in valkey and if not,
+        # fetches all posts in the thread and adds them to valkey
         thread_id = message.reply_id
         messages = []
         messages = self.get_thread_messages(thread_id)
@@ -308,7 +308,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
                 messages[-1]["content"] += "\n" + message.text
             else:
                 message_append = {"role": "user", "content": message.text}
-                # append to messages and redis
+                # append to messages and valkey
                 messages.append(message_append)
                 self.thread_append(thread_id, message_append)
 
@@ -438,31 +438,31 @@ Exception {exception_type}: {pformat(anthropic_exception)}"
         """append a message to a chatlog"""
         # self.helper.slog(f"append_chatlog {thread_id} {msg}")
         expiry = 60 * 60 * 24 * 7
-        thread_key = REDIS_PREPEND + thread_id
-        self.redis.rpush(thread_key, self.redis_serialize_json(msg))
-        self.redis.expire(thread_key, expiry)
-        messages = self.helper.redis_deserialize_json(
-            self.redis.lrange(thread_key, 0, -1)
+        thread_key = VALKEY_PREPEND + thread_id
+        self.valkey.rpush(thread_key, self.valkey_serialize_json(msg))
+        self.valkey.expire(thread_key, expiry)
+        messages = self.helper.valkey_deserialize_json(
+            self.valkey.lrange(thread_key, 0, -1)
         )
         return messages
 
-    def get_thread_messages_from_redis(self, thread_id):
+    def get_thread_messages_from_valkey(self, thread_id):
         """get a chatlog"""
-        thread_key = REDIS_PREPEND + thread_id
-        messages = self.helper.redis_deserialize_json(
-            self.redis.lrange(thread_key, 0, -1)
+        thread_key = VALKEY_PREPEND + thread_id
+        messages = self.helper.valkey_deserialize_json(
+            self.valkey.lrange(thread_key, 0, -1)
         )
         return messages
 
     @staticmethod
-    def redis_serialize_json(msg):
+    def valkey_serialize_json(msg):
         """serialize a message to json, using a custom serializer for types not
         handled by the default json serialization"""
         # return json.dumps(msg)
         return jsonpickle.encode(msg, unpicklable=False)
 
     @staticmethod
-    def redis_deserialize_json(msg):
+    def valkey_deserialize_json(msg):
         """deserialize a message from json"""
         if isinstance(msg, list):
             return [jsonpickle.decode(m) for m in msg]

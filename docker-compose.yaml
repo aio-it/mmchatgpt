@@ -4,10 +4,10 @@ services:
     restart: unless-stopped
     #build: .
     environment:
-      REDIS_HOST: redis
-      REDIS_DB: 0
+      VALKEY_HOST: valkey
+      VALKEY_DB: 0
     links:
-      - redis
+      - valkey
     labels:
       com.centurylinklabs.watchtower.scope: mmchatgpt
     command: [ 'python', 'bot.py' ]
@@ -16,20 +16,11 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - app-data:/app-data
-  redis:
-    image: redis:7.2.5-alpine
+  valkey:
+    image: valkey/valkey:8.0.1-alpine
     restart: unless-stopped
     volumes:
       - redis-data:/data
-    command:
-      [
-        'redis-server',
-        '--save',
-        '60',
-        '1',
-        '--loglevel',
-        'warning'
-      ]
     expose:
       - "6379"
   #watchtower:

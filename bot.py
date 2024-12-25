@@ -16,7 +16,7 @@ from plugins.ntp import Ntp
 
 # from plugins.docker import Docker
 from plugins.pushups import Pushups
-from plugins.redistool import RedisTool
+from plugins.valkeytool import ValkeyTool
 from plugins.shellcmds import ShellCmds
 from plugins.tts import TTS
 from plugins.users import Users
@@ -53,7 +53,7 @@ bot = Bot(
         Pushups(),
         TTS(),
         ShellCmds(),
-        RedisTool(),
+        ValkeyTool(),
         # Ollama(),
         HIPB(),
         Calc(),

@@ -15,8 +15,8 @@ class PluginLoader(Plugin):
         self.helper = None
         self.driver = None
         self.settings = None
-        self.redis_pool = None
-        self.redis = None
+        self.valkey_pool = None
+        self.valkey = None
         self.users = None
 
     def initialize(self,
@@ -28,8 +28,8 @@ class PluginLoader(Plugin):
         self.settings = settings
         self.plugin_manager = plugin_manager
         self.helper = Helper(self.driver)
-        self.redis = self.helper.redis
-        self.redis_pool = self.helper.redis_pool
+        self.valkey = self.helper.valkey
+        self.valkey_pool = self.helper.valkey_pool
         # load plugins into helper should be moved to a better place
         self.helper.plugins = {}
         for plugin in self.plugin_manager.plugins:

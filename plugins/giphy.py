@@ -42,7 +42,7 @@ class Giphy(PluginLoader):
                     client=message.sender_name,
                     max_requests=1,
                     expire=5,
-                    redis_pool=self.redis_pool,
+                    valkey_pool=self.valkey_pool,
                 ):
                     self.helper.add_reaction(message, "frame_with_picture")
                     # get the gif from giphy api

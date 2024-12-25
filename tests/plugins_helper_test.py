@@ -67,19 +67,19 @@ def test_urlencode_text(helper_instance):
     assert result == expected
 
 
-def test_redis_serialize_json(helper_instance):
-    """Test redis_serialize_json"""
+def test_valkey_serialize_json(helper_instance):
+    """Test valkey_serialize_json"""
     data = {"key": "value"}
     expected = '{"key": "value"}'
-    result = helper_instance.redis_serialize_json(data)
+    result = helper_instance.valkey_serialize_json(data)
     assert result == expected
 
 
-def test_redis_deserialize_json(helper_instance):
-    """Test redis_deserialize_json"""
+def test_valkey_deserialize_json(helper_instance):
+    """Test valkey_deserialize_json"""
     data = '{"key": "value"}'
     expected = {"key": "value"}
-    result = helper_instance.redis_deserialize_json(data)
+    result = helper_instance.valkey_deserialize_json(data)
     assert result == expected
 
 

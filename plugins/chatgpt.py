@@ -295,13 +295,24 @@ class ChatGPT(PluginLoader):
         )
         enable_disable_memories = Tool(
             function=self.enable_disable_memories,
-            description="Enable/Disable Memories for the bot. This will enable or disable the bot from using memories for the bot. This is useful for when you want to disable memories for a specific context.",
+            description="GLOBALLY Enable/Disable Memories for the bot. This will enable or disable the bot from using memories for the bot. This is useful for when you want to disable memories for a specific context.",
             parameters = [
                 {"name": "action", "required": True, "description": "MUST BE: enable or disable"},
-                {"name": "context", "required": False, "description": "The context to enable or disable memories for. default is \"any\" allowed values: channel, direct, any"},
+                {"name": "context", "required": True, "description": "The context to enable or disable memories for. allowed values: channel or direct"},
                 {"name": "tool_run", "required": True, "description": "this must always be true"}
             ],
             privilege_level="admin",
+            needs_message_object=True,
+            returns_files=False,
+        )
+        enable_disable_memories_user = Tool(
+            function=self.enable_disable_memories_user,
+            description="Enable/Disable Memories for the user. This will enable or disable the bot from using memories for the user. This is useful for when you want to disable memories for a specific user.",
+            parameters = [
+                {"name": "action", "required": True, "description": "MUST BE: enable or disable"},
+                {"name": "context", "required": True, "description": "The context to enable or disable memories for. allowed values: channel or direct"},
+                {"name": "tool_run", "required": True, "description": "this must always be true"}
+            ],
             needs_message_object=True,
             returns_files=False,
         )
@@ -348,8 +359,8 @@ class ChatGPT(PluginLoader):
         self.tools_manager.add_tool(save_user_memory)
         self.tools_manager.add_tool(get_user_memories)
         self.tools_manager.add_tool(search_user_memories)
-        self.tools_manager.add_tool(enable_disable_memories)
-
+        #self.tools_manager.add_tool(enable_disable_memories)
+        self.tools_manager.add_tool(enable_disable_memories_user)
         self.user_tools = self.tools_manager.get_tools_as_dict("user")
         self.admin_tools = self.tools_manager.get_tools_as_dict("admin")
         # print the tools
@@ -359,14 +370,19 @@ class ChatGPT(PluginLoader):
         self.helper.slog(
             "Admin tools: " + ", ".join(self.tools_manager.get_tools("admin").keys())
         )
+
     @listen_to("^.gpt memories get")
     async def get_user_memories(self, message: Message, tool_run=False):
         """Get all memories for the user"""
         if message.is_direct_message:
             usage_context = self.usage_context.DIRECT
+            source_type = "direct"
+            source = message.user_id
         else:
             usage_context = self.usage_context.CHANNEL
-        memories = self.vectordb.get_all_memories_for_user_for_context(message.user_id, usage_context)
+            source_type = "channel"
+            source = message.channel_id
+        memories = self.vectordb.get_all_memories_for_user_for_context(message.user_id, usage_context, source_type, source)
         # Convert datetime objects to strings
         for memory in memories:
             if 'created_at' in memory:
@@ -377,9 +393,13 @@ class ChatGPT(PluginLoader):
         """Search memories for the user"""
         if message.is_direct_message:
             usage_context = self.usage_context.DIRECT
+            source_type = "direct"
+            source = message.user_id
         else:
             usage_context = self.usage_context.CHANNEL
-        memories = self.vectordb.get_memories(user=message.user_id, usage_context=usage_context, query=search)
+            source_type = "channel"
+            source = message.channel_id
+        memories = self.vectordb.get_memories(user=message.user_id, usage_context=usage_context, query=search, source_type=source_type, source=source)
         # Convert datetime objects to strings
         for memory in memories:
             if 'created_at' in memory:
@@ -390,10 +410,28 @@ class ChatGPT(PluginLoader):
         """Save a memory for the user"""
         if message.is_direct_message:
             usage_context = self.usage_context.DIRECT
+            source_type = "direct"
+            source = message.user_id
         else:
             usage_context = self.usage_context.CHANNEL
-        self.vectordb.store_memory(usage_context=usage_context, content=memory, user=message.user_id)
+            source_type = "channel"
+            source = message.channel_id
+        self.vectordb.store_memory(usage_context=usage_context, content=memory, user=message.user_id, source_type=source_type, source=source)
         return "Memory saved"
+    async def enable_disable_memories_user(self, message: Message, action: str, context: str = "any", tool_run=False):
+        """Enable/Disable memories for the user"""
+        if action.lower() not in ["enable", "disable"]:
+            return "Error: action must be either enable or disable"
+        if context.lower() not in ["any", "channel", "direct"]:
+            return "Error: context must be any, channel, or direct"
+        if context.lower() == "channel":
+            context = f"channel_{message.channel_id}"
+        key = f"chatgpt_memories_{message.user_id}_{context}"
+        if action.lower() == "enable":
+            await self.set_chatgpt(message, key, True, allow_user=True)
+        else:
+            await self.set_chatgpt(message, key, False, allow_user=True)
+        return f"Memories {action}d for {context} context"
     @listen_to("^.gpt memories (enable|disable) (any|channel|direct)")
     async def enable_disable_memories(self, message: Message, action: str, context: str = "any", tool_run=False):
         """Enable/Disable memories for the bot"""
@@ -883,11 +921,15 @@ if files:
             return f"Error: {e}", None
 
     @listen_to(r"^\.gpt set ([a-zA-Z0-9_-]+) (.*)", regexp_flag=re_DOTALL)
-    async def set_chatgpt(self, message: Message, key: str, value: str):
+    async def set_chatgpt(self, message: Message, key: str, value: str, allow_user=False):
         """set the chatgpt key"""
         settings_key = self.SETTINGS_KEY
-        await self.helper.debug(f"set_chatgpt {key} {value}")
-        if self.users.is_admin(message.sender_name):
+        await self.helper.log(f"set_chatgpt {key} {value}")
+        if value is True:
+            value = "true"
+        elif value is False:
+            value = "false"
+        if allow_user or self.users.is_admin(message.sender_name):
             self.valkey.hset(settings_key, key, value)
             self.driver.reply_to(message, f"Set {key} to {value}")
 
@@ -909,6 +951,11 @@ if files:
         await self.helper.debug(f"get_chatgpt {key}")
         if self.users.is_admin(message.sender_name):
             value = self.valkey.hget(settings_key, key)
+            if value == "true":
+                value = True
+            elif value == "false":
+                value = False
+                
             self.driver.reply_to(message, f"Set {key} to {value}")
 
     @listen_to(r"^\.gpt get")
@@ -1267,6 +1314,18 @@ if files:
         if prompt:
             return prompt
         return self.ChatGPT_DEFAULTS["system"]
+    async def is_memories_enabled(self, message: Message):
+        it_is_true = ["true", "True", "", None, True]
+        if self.get_chatgpt_setting("chatgpt_memories_direct") and message.is_direct_message:
+            if self.get_chatgpt_setting(f"chatgpt_memories_{message.user_id}_direct") in it_is_true:
+                await self.helper.log(f"memories_enabled: {True} for {message.user_id} in direct")
+                return True
+        if self.get_chatgpt_setting("chatgpt_memories_channel") and not message.is_direct_message :
+            if self.get_chatgpt_setting(f"chatgpt_memories_{message.user_id}_channel_{message.channel_id}") in it_is_true:
+                await self.helper.log(f"memories_enabled: {True} for {message.user_id} in channel {message.channel_id}")
+                return True
+        await self.helper.log(f"memories_enabled: {False} for {message.user_id} in channel {message.channel_id} and direct is {message.is_direct_message}")
+        return False
     # soon to be deprecated
     # @listen_to(".+", needs_mention=True)
     # async def chat_moved(self, message: Message):
@@ -1319,14 +1378,17 @@ if files:
             rag_source_type = "channel"
             rag_source = message.channel_id
         memories_enabled = False
-        if self.get_chatgpt_setting(f"chatgpt_memories_{rag_usage_context.value.lower()}") == "true":
+        if await self.is_memories_enabled(message):
             memories_enabled = True
-
+            memories = []
             # get memories from vectordb
-            memories = self.vectordb.get_memories(
-                query=message.text, user=message.user_id, usage_context=rag_usage_context
-            )
-            await self.helper.log(f"memories: {memories}")
+            if self.vectordb.user_has_memories(
+                user=message.user_id, usage_context=rag_usage_context, source=rag_source, source_type=rag_source_type
+            ):
+                memories = self.vectordb.get_memories(
+                    query=message.text, user=message.user_id, usage_context=rag_usage_context, source=rag_source, source_type=rag_source_type
+                )
+            #await self.helper.log(f"memories: {memories}")
             # store memory in vectordb
             #self.vectordb.store_memory(
             #    content=message.text,

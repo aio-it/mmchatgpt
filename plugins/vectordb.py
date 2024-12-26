@@ -28,6 +28,7 @@ class VectorDb(PluginLoader):
     VECTOR_DIMENSIONS = 1536
     EMBEDDING_MODEL = "text-embedding-3-small"
     DEFAULT_TABLE = "rag_content"
+    DEFAULT_DISTANCE = 1.5
     FIELDS = [
         "id",
         "source_type",
@@ -151,23 +152,29 @@ CREATE TABLE IF NOT EXISTS {table_name} (
     is_deleted boolean DEFAULT FALSE
 );
 """
-    def check_if_memory_exists(self, usage_context: UsageContext, content, user: str):
-        """Check if a memory exists."""
-        result = self.conn.execute(SQL("SELECT id FROM {} WHERE content = %s AND created_by = %s AND usage_context = %s").format(Identifier(self.DEFAULT_TABLE)), (content, user, usage_context.value.lower()))
+    def user_has_memories(self, user: str, usage_context: UsageContext, source_type: str, source: str):
+        """Check if a user has memories."""
+        result = self.conn.execute(SQL("SELECT id FROM {} WHERE created_by = %s AND usage_context = %s AND source_type = %s AND source = %s").format(Identifier(self.DEFAULT_TABLE)), (user, usage_context.value.lower(), source_type, source))
         if len(result.fetchall()) > 0:
             return True
         return False
-    def store_memory(self, usage_context: UsageContext, content, user: str):
+    def check_if_memory_exists(self, usage_context: UsageContext, content, user: str, source_type: str, source: str):
+        """Check if a memory exists."""
+        result = self.conn.execute(SQL("SELECT id FROM {} WHERE content = %s AND created_by = %s AND usage_context = %s AND source_type = %s and source = %s").format(Identifier(self.DEFAULT_TABLE)), (content, user, usage_context.value.lower(), source_type, source))
+        if len(result.fetchall()) > 0:
+            return True
+        return False
+    def store_memory(self, usage_context: UsageContext, content, user: str, source_type: str, source: str):
         """Store a memory."""
-        if self.check_if_memory_exists(usage_context, content, user):
+        if self.check_if_memory_exists(usage_context, content, user, source_type, source):
             return False
-        return self.store(self.DEFAULT_TABLE, user, "user", usage_context, "memory", ["memory", user], content, {}, user)
-    def get_memories(self, query: str, usage_context: UsageContext, user: str, limit: int = 5):
+        return self.store(self.DEFAULT_TABLE, source_type, source, usage_context, "memory", ["memory", user], content, {}, user)
+    def get_memories(self, query: str, usage_context: UsageContext, user: str, source_type:str, source:str, limit: int = 5):
         """Get a memory."""
-        return self.search(self.DEFAULT_TABLE, query=query, usage_context=usage_context, category="memory", user=user, limit=limit)
-    def get_all_memories_for_user_for_context(self, user: str, usage_context: UsageContext):
+        return self.search(self.DEFAULT_TABLE, query=query, usage_context=usage_context, category="memory", user=user, source_type=source_type, source=source, limit=limit)
+    def get_all_memories_for_user_for_context(self, user: str, usage_context: UsageContext, source_type: str, source: str):
         """Get all memories for a user."""
-        return self.conn.execute(SQL("SELECT id, created_at, tags, content FROM {} WHERE created_by = %s AND usage_context = %s").format(Identifier(self.DEFAULT_TABLE)), (user,usage_context.value.lower())).fetchall()
+        return self.conn.execute(SQL("SELECT id, created_at, tags, content FROM {} WHERE created_by = %s AND usage_context = %s AND source_type = %s AND source = %s").format(Identifier(self.DEFAULT_TABLE)), (user,usage_context.value.lower(), source_type, source)).fetchall()
 
     def store(self, table: str, source_type: str, source: str, usage_context: UsageContext, category: str, tags: list, content: str, metadata: dict, created_by: str):
         """Store a memory."""
@@ -184,39 +191,19 @@ CREATE TABLE IF NOT EXISTS {table_name} (
         if result:
             return True
 
-    def search(self, table: str | None, query: str, user: str, usage_context: UsageContext, category: str, limit: int = 5, max_distance: float = 2.0):
+    def search(self, table: str | None, query: str, user: str, usage_context: UsageContext, category: str, source_type:str, source:str, limit: int = 5, max_distance: float = 1.5):
         """Search for a memory."""
         if table is None:
             table = self.DEFAULT_TABLE
+        if max_distance is None:
+            max_distance = self.DEFAULT_DISTANCE
         embedding = self.get_embeddings(query)
         result = self.conn.execute(
             SQL("""SELECT id, tags, metadata, category, source, source_type, created_at, content, embedding <-> %s::vector as distance FROM {}
                 WHERE
                     (embedding <-> %s::vector) < %s AND
                     (usage_context = %s OR usage_context = 'any')
-                    AND (created_by = %s OR source_type = 'chat' AND source =  %s)
+                    AND (created_by = %s AND source_type = %s AND source = %s)
                 ORDER BY distance, created_at LIMIT %s"""
-            ).format(Identifier(table)), (embedding, embedding, max_distance, usage_context.value.lower(), user, user, limit))
+            ).format(Identifier(table)), (embedding, embedding, max_distance, usage_context.value.lower(), user, source_type, source, limit))
         return result.fetchall()
-
-    def get_all(self, table: str):
-        """Get all memories."""
-        result = self.conn.execute(SQL("SELECT id, tags, content FROM {}").format(Identifier(table)))
-        return result.fetchall()
-
-    def delete(self, table: str, id: int):
-        """Delete a memory."""
-        result = self.conn.execute(SQL("DELETE FROM {} WHERE id = %s").format(Identifier(table)), (id,))
-        return result
-
-    def add_tags(self, table: str, id: int, tags: list):
-        """Add tags to a memory."""
-        tags = json.dumps(tags)
-        result = self.conn.execute(SQL("UPDATE {} SET tags = tags || %s WHERE id = %s").format(Identifier(table)), (tags, id))
-        return result
-
-    def remove_tags(self, table: str, id: int, tags: list):
-        """Remove tags from a memory."""
-        tags = json.dumps(tags)
-        result = self.conn.execute(SQL("UPDATE {} SET tags = tags - %s WHERE id = %s").format(Identifier(table)), (tags, id))
-        return result

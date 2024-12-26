@@ -460,9 +460,9 @@ class ChatGPT(PluginLoader):
             context = f"channel_{message.channel_id}"
         key = f"chatgpt_memories_{message.user_id}_{context}"
         if action.lower() == "enable":
-            await self.set_chatgpt(message, key, True, allow_user=True)
+            await self.set_chatgpt_setting(key, True)
         else:
-            await self.set_chatgpt(message, key, False, allow_user=True)
+            await self.set_chatgpt_setting(key, False)
         return f"Memories {action}d for {context} context"
     @listen_to("^.gpt memories (enable|disable) (any|channel|direct)")
     async def enable_disable_memories(self, message: Message, action: str, context: str = "any", tool_run=False):
@@ -472,9 +472,9 @@ class ChatGPT(PluginLoader):
         if context.lower() not in ["any", "channel", "direct"]:
             return "Error: context must be any, channel, or direct"
         if action.lower() == "enable":
-            self.set_chatgpt(message,f"chatgpt_memories_{context}", True)
+            self.set_chatgpt_setting(f"chatgpt_memories_{context}", True)
         else:
-            self.set_chatgpt(message,f"chatgpt_memories_{context}", False)
+            self.set_chatgpt_setting(f"chatgpt_memories_{context}", False)
         return f"Memories {action}d for {context} context"
     async def text_to_speech_tool(self, prompt: str, voice: str = "nova"):
         """Convert text to speech using the openai api"""
@@ -964,6 +964,16 @@ if files:
         if allow_user or self.users.is_admin(message.sender_name):
             self.valkey.hset(settings_key, key, value)
             self.driver.reply_to(message, f"Set {key} to {value}")
+
+    async def set_chatgpt_setting(self, key: str, value: str):
+        """set the chatgpt key"""
+        settings_key = self.SETTINGS_KEY
+        await self.helper.log(f"set_chatgpt {key} {value}")
+        if value is True:
+            value = "true"
+        elif value is False:
+            value = "false"
+        self.valkey.hset(settings_key, key, value)
 
     @listen_to(r"^\.gpt reset ([a-zA-Z0-9_-]+)")
     async def reset_chatgpt(self, message: Message, key: str):

@@ -154,13 +154,13 @@ CREATE TABLE IF NOT EXISTS {table_name} (
 """
     def user_has_memories(self, user: str, usage_context: UsageContext, source_type: str, source: str):
         """Check if a user has memories."""
-        result = self.conn.execute(SQL("SELECT id FROM {} WHERE created_by = %s AND usage_context = %s AND source_type = %s AND source = %s").format(Identifier(self.DEFAULT_TABLE)), (user, usage_context.value.lower(), source_type, source))
+        result = self.conn.execute(SQL("SELECT id FROM {} WHERE created_by = %s AND usage_context = %s AND source_type = %s AND source = %s AND is_deleted is FALSE").format(Identifier(self.DEFAULT_TABLE)), (user, usage_context.value.lower(), source_type, source))
         if len(result.fetchall()) > 0:
             return True
         return False
     def check_if_memory_exists(self, usage_context: UsageContext, content, user: str, source_type: str, source: str):
         """Check if a memory exists."""
-        result = self.conn.execute(SQL("SELECT id FROM {} WHERE content = %s AND created_by = %s AND usage_context = %s AND source_type = %s and source = %s").format(Identifier(self.DEFAULT_TABLE)), (content, user, usage_context.value.lower(), source_type, source))
+        result = self.conn.execute(SQL("SELECT id FROM {} WHERE content = %s AND created_by = %s AND usage_context = %s AND source_type = %s and source = %s AND is_deleted = FALSE").format(Identifier(self.DEFAULT_TABLE)), (content, user, usage_context.value.lower(), source_type, source))
         if len(result.fetchall()) > 0:
             return True
         return False
@@ -174,8 +174,19 @@ CREATE TABLE IF NOT EXISTS {table_name} (
         return self.search(self.DEFAULT_TABLE, query=query, usage_context=usage_context, category="memory", user=user, source_type=source_type, source=source, limit=limit)
     def get_all_memories_for_user_for_context(self, user: str, usage_context: UsageContext, source_type: str, source: str):
         """Get all memories for a user."""
-        return self.conn.execute(SQL("SELECT id, created_at, tags, content FROM {} WHERE created_by = %s AND usage_context = %s AND source_type = %s AND source = %s").format(Identifier(self.DEFAULT_TABLE)), (user,usage_context.value.lower(), source_type, source)).fetchall()
-
+        return self.conn.execute(SQL("SELECT id, created_at, tags, content FROM {} WHERE created_by = %s AND usage_context = %s AND source_type = %s AND source = %s AND is_deleted = FALSE").format(Identifier(self.DEFAULT_TABLE)), (user,usage_context.value.lower(), source_type, source)).fetchall()
+    def user_delete_memory_by_id(self, memory_id: int, user: str, usage_context: UsageContext, source_type: str, source: str):
+        """Delete a memory."""
+        result = self.conn.execute(SQL("UPDATE {} SET is_deleted = TRUE WHERE id = %s AND created_by = %s AND usage_context = %s AND source_type = %s AND source = %s").format(Identifier(self.DEFAULT_TABLE)), (memory_id, user, usage_context.value.lower(), source_type, source))
+        return result
+    def user_delete_all_memories_in_context(self, user: str, usage_context: UsageContext, source_type: str, source: str):
+        """Delete all memories for a user in a context."""
+        result = self.conn.execute(SQL("UPDATE {} SET is_deleted = TRUE WHERE created_by = %s AND usage_context = %s AND source_type = %s AND source = %s").format(Identifier(self.DEFAULT_TABLE)), (user, usage_context.value.lower(), source_type, source))
+        return result
+    def user_delete_all_memories(self, user: str):
+        """Delete all memories for a user."""
+        result = self.conn.execute(SQL("UPDATE {} SET is_deleted = TRUE WHERE created_by = %s").format(Identifier(self.DEFAULT_TABLE)), (user,))
+        return result
     def store(self, table: str, source_type: str, source: str, usage_context: UsageContext, category: str, tags: list, content: str, metadata: dict, created_by: str):
         """Store a memory."""
         # create table if not exists
@@ -201,6 +212,7 @@ CREATE TABLE IF NOT EXISTS {table_name} (
         result = self.conn.execute(
             SQL("""SELECT id, tags, metadata, category, source, source_type, created_at, content, embedding <-> %s::vector as distance FROM {}
                 WHERE
+                    is_deleted = FALSE AND
                     (embedding <-> %s::vector) < %s AND
                     (usage_context = %s OR usage_context = 'any')
                     AND (created_by = %s AND source_type = %s AND source = %s)

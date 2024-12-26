@@ -293,6 +293,17 @@ class ChatGPT(PluginLoader):
             needs_message_object=True,
             returns_files=False,
         )
+        delete_user_memory_or_memories = Tool(
+            function=self.delete_user_memory_or_memories,
+            description="Delete a memory or memories for the user. If you want to delete a specific memory or memories for the user, activate this tool to delete the memory or memories. This is useful for when you want to delete a specific memory or memories for a specific user.",
+            parameters=[
+                {"name": "memory_id", "required": False, "description": "The memory or memories to delete for the user. This can be a memory id"},
+                {"name": "mode", "required": True, "description": "The mode to delete the memory or memories. allowed values: ALL, ID or CONTEXT. If id is used, the memory_id parameter must be set, all will delete ALL memories created by the user in all contexts. context will delete all memories for the user in the current context"},
+                {"name": "tool_run", "required": True, "description": "this must always be true"}
+            ],
+            needs_message_object=True,
+            returns_files=False,
+        )
         enable_disable_memories = Tool(
             function=self.enable_disable_memories,
             description="GLOBALLY Enable/Disable Memories for the bot. This will enable or disable the bot from using memories for the bot. This is useful for when you want to disable memories for a specific context.",
@@ -361,6 +372,7 @@ class ChatGPT(PluginLoader):
         self.tools_manager.add_tool(search_user_memories)
         #self.tools_manager.add_tool(enable_disable_memories)
         self.tools_manager.add_tool(enable_disable_memories_user)
+        self.tools_manager.add_tool(delete_user_memory_or_memories)
         self.user_tools = self.tools_manager.get_tools_as_dict("user")
         self.admin_tools = self.tools_manager.get_tools_as_dict("admin")
         # print the tools
@@ -370,7 +382,27 @@ class ChatGPT(PluginLoader):
         self.helper.slog(
             "Admin tools: " + ", ".join(self.tools_manager.get_tools("admin").keys())
         )
-
+    async def delete_user_memory_or_memories(self, message: Message, mode: str, memory_id: str = None, tool_run=False):
+        """Delete a memory or memories for the user"""
+        if message.is_direct_message:
+            usage_context = self.usage_context.DIRECT
+            source_type = "direct"
+            source = message.user_id
+        else:
+            usage_context = self.usage_context.CHANNEL
+            source_type = "channel"
+            source = message.channel_id
+        if mode.lower() not in ["all", "id", "context"]:
+            return "Error: mode must be all, id, or context"
+        if mode.lower() == "id":
+            if memory_id is None:
+                return "Error: memory_id must be set when mode is id"
+            self.vectordb.user_delete_memory_by_id(memory_id, message.user_id, usage_context, source_type, source)
+        elif mode.lower() == "all":
+            self.vectordb.user_delete_all_memories(message.user_id)
+        else:
+            self.vectordb.user_delete_all_memories_in_context(message.user_id, usage_context, source_type, source)
+        return f"Memory or memories deleted for {mode} mode"
     @listen_to("^.gpt memories get")
     async def get_user_memories(self, message: Message, tool_run=False):
         """Get all memories for the user"""

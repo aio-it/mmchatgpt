@@ -8,6 +8,7 @@ services:
       VALKEY_DB: 0
     links:
       - valkey
+      - pg
     labels:
       com.centurylinklabs.watchtower.scope: mmchatgpt
     command: [ 'python', 'bot.py' ]
@@ -23,6 +24,14 @@ services:
       - redis-data:/data
     expose:
       - "6379"
+  pg:
+    image: pgvector/pgvector:pg17
+    env_file:
+      - .env
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    expose:
+      - "5432"
   #watchtower:
   #  image: containrrr/watchtower:1.7.1
   #  volumes:
@@ -32,3 +41,4 @@ services:
 volumes:
   redis-data:
   app-data:
+  pg-data:

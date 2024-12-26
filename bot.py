@@ -21,6 +21,7 @@ from plugins.shellcmds import ShellCmds
 from plugins.tts import TTS
 from plugins.users import Users
 from plugins.version import Version
+from plugins.vectordb import VectorDb
 
 env = Env()
 log_channel = env.str("MM_BOT_LOG_CHANNEL")
@@ -60,6 +61,7 @@ bot = Bot(
         Giphy(),
         Ntp(),
         Jira(),
+        VectorDb(),
         Version(),
     ],
     enable_logging=True,

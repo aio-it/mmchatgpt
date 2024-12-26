@@ -35,6 +35,9 @@ brotli = "*"
 python-magic = "*"
 pillow = "*"
 valkey = {extras = ["libvalkey"], version = "*"}
+numpy = "*"
+pgvector = "*"
+psycopg = {extras = ["pool", "binary"], version = "*"}
 
 [dev-packages]
 autopep8 = "*"

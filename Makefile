@@ -6,10 +6,11 @@ clean:
 	docker compose rm -f
 	docker volume prune --all -f
 # make dev
-dev: dev-stop docker-build
+dev: docker-build
 	cp .env-dev .env
 	docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d --build --remove-orphans
 	make logs
+dev-restart: dev-stop dev
 dev-stop:
 	docker compose -f docker-compose.yaml -f docker-compose.dev.yaml down
 	docker compose rm -f 

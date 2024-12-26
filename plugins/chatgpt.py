@@ -22,6 +22,7 @@ from mmpy_bot.plugins.base import PluginManager
 from mmpy_bot.settings import Settings
 from mmpy_bot.wrappers import Message
 from openai import AsyncOpenAI
+from .vectordb import VectorDb, UsageContext
 from PIL import Image
 
 from .base import PluginLoader
@@ -103,6 +104,9 @@ class ChatGPT(PluginLoader):
         "moderation": "false",
         "stream": "true",
         "stream_update_delay_ms": 200,
+        "chatgpt_memories_channel": "true",
+        "chatgpt_memories_direct": "true",
+        "chatgpt_memories_any": "true",
     }
     SETTINGS_KEY = "chatgpt_settings"
 
@@ -134,6 +138,8 @@ class ChatGPT(PluginLoader):
         for key, value in self.ChatGPT_DEFAULTS.items():
             if self.valkey.hget(self.SETTINGS_KEY, key) is None:
                 self.valkey.hset(self.SETTINGS_KEY, key, value)
+        self.vectordb = VectorDb()
+        self.usage_context = UsageContext
         # emulate a browser and set all the relevant headers
         self.headers = {
             "User-Agent": self.USER_AGENT,
@@ -260,6 +266,46 @@ class ChatGPT(PluginLoader):
             needs_message_object=True,
             returns_files=False,
         )
+        get_user_memories = Tool(
+            function=self.get_user_memories,
+            description="Get All Memories for the user. This will return all memories for the user. This is useful for when you want to see all the memories for a specific user.",
+            parameters=[{"name": "tool_run", "required": True, "description": "this must always be true"}],
+            needs_message_object=True,
+            returns_files=False,
+        )
+        search_user_memories = Tool(
+            function=self.search_user_memories,
+            description="Search Memories for the user. This will search all memories for the user. This is useful for when you want to search for a specific memory for a specific user.", 
+            parameters = [
+                {"name": "search", "required": True, "description": "The search term to search for in the memories."},
+                {"name": "tool_run", "required": True, "description": "this must always be true"}
+            ],
+            needs_message_object=True,
+            returns_files=False
+        )
+        save_user_memory = Tool(
+            function=self.save_user_memory,
+            description="Save a memory for the user. If you find the message from the user unique or personal, activate this tool to save a memory that can be used at a later point in time. This is stored in a database and will be provided as context in the future based on it's distance in the vector database.",
+            parameters=[
+                {"name": "memory", "required": True, "description": "The memory to save for the user."},
+                {"name": "tool_run", "required": True, "description": "this must always be true"}
+            ],
+            needs_message_object=True,
+            returns_files=False,
+        )
+        enable_disable_memories = Tool(
+            function=self.enable_disable_memories,
+            description="Enable/Disable Memories for the bot. This will enable or disable the bot from using memories for the bot. This is useful for when you want to disable memories for a specific context.",
+            parameters = [
+                {"name": "action", "required": True, "description": "MUST BE: enable or disable"},
+                {"name": "context", "required": False, "description": "The context to enable or disable memories for. default is \"any\" allowed values: channel, direct, any"},
+                {"name": "tool_run", "required": True, "description": "this must always be true"}
+            ],
+            privilege_level="admin",
+            needs_message_object=True,
+            returns_files=False,
+        )
+
         docker_run_python_tool = Tool(
             function=self.docker_run_python,
             description="Run python code in a docker container. the python version is 3.11. Do not create scripts that runs forever. Use this to run python code that may be unsafe or that you do not want to run on your local machine. The code will be run in a docker container and the stdout and stderr will be returned to you. Any files created should be saved in the current directory or /app The script then returns them to the user but you do not get the data unless the files created have a mimetype of text",
@@ -299,6 +345,10 @@ class ChatGPT(PluginLoader):
         self.tools_manager.add_tool(custom_prompt_setter_tool)
         self.tools_manager.add_tool(custom_prompt_clear_tool)
         self.tools_manager.add_tool(custom_prompt_get_tool)
+        self.tools_manager.add_tool(save_user_memory)
+        self.tools_manager.add_tool(get_user_memories)
+        self.tools_manager.add_tool(search_user_memories)
+        self.tools_manager.add_tool(enable_disable_memories)
 
         self.user_tools = self.tools_manager.get_tools_as_dict("user")
         self.admin_tools = self.tools_manager.get_tools_as_dict("admin")
@@ -309,7 +359,53 @@ class ChatGPT(PluginLoader):
         self.helper.slog(
             "Admin tools: " + ", ".join(self.tools_manager.get_tools("admin").keys())
         )
-
+    @listen_to("^.gpt memories get")
+    async def get_user_memories(self, message: Message, tool_run=False):
+        """Get all memories for the user"""
+        if message.is_direct_message:
+            usage_context = self.usage_context.DIRECT
+        else:
+            usage_context = self.usage_context.CHANNEL
+        memories = self.vectordb.get_all_memories_for_user_for_context(message.user_id, usage_context)
+        # Convert datetime objects to strings
+        for memory in memories:
+            if 'created_at' in memory:
+                memory['created_at'] = memory['created_at'].isoformat()
+        return json.dumps(memories, indent=4)
+    @listen_to("^.gpt memories search (.*)")
+    async def search_user_memories(self, message: Message, search: str, tool_run=False):
+        """Search memories for the user"""
+        if message.is_direct_message:
+            usage_context = self.usage_context.DIRECT
+        else:
+            usage_context = self.usage_context.CHANNEL
+        memories = self.vectordb.get_memories(user=message.user_id, usage_context=usage_context, query=search)
+        # Convert datetime objects to strings
+        for memory in memories:
+            if 'created_at' in memory:
+                memory['created_at'] = memory['created_at'].isoformat()
+        return json.dumps(memories, indent=4)
+    @listen_to("^.gpt memories save (.*)")
+    async def save_user_memory(self, message: Message, memory: str, tool_run=False):
+        """Save a memory for the user"""
+        if message.is_direct_message:
+            usage_context = self.usage_context.DIRECT
+        else:
+            usage_context = self.usage_context.CHANNEL
+        self.vectordb.store_memory(usage_context=usage_context, content=memory, user=message.user_id)
+        return "Memory saved"
+    @listen_to("^.gpt memories (enable|disable) (any|channel|direct)")
+    async def enable_disable_memories(self, message: Message, action: str, context: str = "any", tool_run=False):
+        """Enable/Disable memories for the bot"""
+        if action.lower() not in ["enable", "disable"]:
+            return "Error: action must be either enable or disable"
+        if context.lower() not in ["any", "channel", "direct"]:
+            return "Error: context must be any, channel, or direct"
+        if action.lower() == "enable":
+            self.set_chatgpt(message,f"chatgpt_memories_{context}", True)
+        else:
+            self.set_chatgpt(message,f"chatgpt_memories_{context}", False)
+        return f"Memories {action}d for {context} context"
     async def text_to_speech_tool(self, prompt: str, voice: str = "nova"):
         """Convert text to speech using the openai api"""
         try:
@@ -1212,13 +1308,47 @@ if files:
         for skip in skips:
             if message.text.lower().startswith(skip):
                 return
+        # vectordb stuff
+        # set the usage context
+        if message.is_direct_message:
+            rag_usage_context = UsageContext.DIRECT
+            rag_source_type = "direct"
+            rag_source = message.user_id
+        else:
+            rag_usage_context = UsageContext.CHANNEL
+            rag_source_type = "channel"
+            rag_source = message.channel_id
+        memories_enabled = False
+        if self.get_chatgpt_setting(f"chatgpt_memories_{rag_usage_context.value.lower()}") == "true":
+            memories_enabled = True
 
+            # get memories from vectordb
+            memories = self.vectordb.get_memories(
+                query=message.text, user=message.user_id, usage_context=rag_usage_context
+            )
+            await self.helper.log(f"memories: {memories}")
+            # store memory in vectordb
+            #self.vectordb.store_memory(
+            #    content=message.text,
+            #    user=message.user_id,
+            #    usage_context=rag_usage_context,
+            #)
+        await self.helper.log(f"memories_enabled: {memories_enabled}")
+        # add memories context just before the user message
         # This function checks if the thread exists in valkey and if not, fetches all posts in the thread and adds them to valkey
         thread_id = message.reply_id
         # keep a log of all status messages ( for tools )
         status_msgs = []
         messages = []
         messages = self.get_thread_messages(thread_id)
+        if memories_enabled and memories:
+            memory_string = f"{self.users.get_user_by_user_id(message.user_id)['username']}'s Memories:\n"
+            m = {"role": "user"}
+            for memory in memories:
+                memory_string += f"{memory['created_at']}{memory['content']}\n"
+            m["content"] = memory_string
+            messages.append(m)
+            self.thread_append(thread_id, m)
         if True or not tool_run and len(messages) != 1:
             # we don't need to append if length = 1 because then it is already fetched via the mattermost api so we don't need to append it to the thread
             # append message to threads

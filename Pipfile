@@ -13,7 +13,6 @@ aiohttp = "*"
 tiktoken = "*"
 asyncio = "*"
 uuid = "*"
-requests = "*"
 pyttsx3 = "*"
 wheel = "*"
 validators = "*"
@@ -32,12 +31,15 @@ mattermostautodriver = "*"
 httpx = "=0.27.2"
 duckduckgo-search = {extras = ["lxml"], version = "*"}
 brotli = "*"
-python-magic = "*"
 pillow = "*"
 valkey = {extras = ["libvalkey"], version = "*"}
 numpy = "*"
 pgvector = "*"
 psycopg = {extras = ["pool", "binary"], version = "*"}
+python-magic = "*"
+pytest-asyncio = "*"
+certifi = "*"
+requests = {extras = ["security"], version = "*"}
 
 [dev-packages]
 autopep8 = "*"

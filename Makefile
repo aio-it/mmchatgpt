@@ -41,7 +41,7 @@ requirements:
 logs:
 	docker compose logs -f
 test:
-	pipenv run coverage run -m pytest tests
+	pipenv run coverage run -m pytest -vv -s tests
 	pipenv run coverage report
 release-patch: requirements
 	./make-release.sh patch

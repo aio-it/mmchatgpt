@@ -4,23 +4,24 @@ import inspect
 import ipaddress
 import json
 import logging
+import mimetypes
 import os
 import re
 import tempfile
 import urllib
 
 import bs4
+import certifi
 import dns.resolver
-import valkey
-import valkey
+import magic
 import requests
 import validators
+import valkey
 from duckduckgo_search import DDGS
 from environs import Env
 from mmpy_bot.wrappers import Message
 
 env = Env()
-
 
 # logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -404,6 +405,40 @@ class Helper:
             "error": f"invalid input: {input_val} (no matches) for types {', '.join(types)}"
         }
 
+    def get_content_type_and_ext(self, content_type):
+        """Find the type and extension of the content using mimetypes and magic"""
+        # Get the base content type without parameters
+        if ';' in content_type:
+            content_type = content_type.split(';', 1)[0].strip()
+        
+        # Get the main type and subtype
+        main_type = content_type.split('/', 1)[0].lower() if '/' in content_type else 'unknown'
+        
+        # Get extension from mimetype
+        ext = mimetypes.guess_extension(content_type, strict=False)
+        if ext:
+            # Remove the leading dot
+            ext = ext[1:]
+        else:
+            ext = 'unknown'
+        
+        # Special cases first
+        if content_type.lower() == 'text/html':
+            return 'html', 'txt'
+        if content_type.lower() in ['application/json', 'application/xml']:
+            return 'text', ext
+        
+        # Map main types to our categories
+        type_mapping = {
+            'text': 'text',
+            'video': 'video',
+            'image': 'image',
+            'audio': 'audio',
+            'application': 'documents'
+        }
+        
+        return type_mapping.get(main_type, 'unknown'), ext
+
     async def download_webpage(self, url):
         """download a webpage and return the content"""
         # pylint: disable=attribute-defined-outside-init
@@ -451,63 +486,20 @@ class Helper:
                     None,
                 )
         response_text = content.decode("utf-8")
-        # find the file extension from the content type
-        content_types = {
-            # text types use txt for html since we are extracting text
-            "html": {"text/html": "txt"},
-            "text": {
-                "application/xml": "xml",
-                "application/json": "json",
-                "text/plain": "txt",
-            },
-            "video": {"video/mp4": "mp4", "video/webm": "webm", "video/ogg": "ogg"},
-            "image": {
-                "image/jpeg": "jpg",
-                "image/png": "png",
-                "image/gif": "gif",
-                "image/svg+xml": "svg",
-            },
-            "audio": {"audio/mpeg": "mp3", "audio/ogg": "ogg", "audio/wav": "wav"},
-            "documents": {
-                "application/pdf": "pdf",
-                "application/msword": "doc",
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
-                "application/vnd.ms-excel": "xls",
-            },
-            "compressed": {
-                "application/zip": "zip",
-                "application/x-rar-compressed": "rar",
-                "application/x-tar": "tar",
-                "application/x-7z-compressed": "7z",
-            },
-        }
         # save response_text to a tmp fil
-        blacklisted_tags = ["script", "style", "head", "title", "noscript"]
-
-        # debug response
-        # await self.debug(f"response: {pformat(response.text[:500])}")
-        # mattermost limit is 4000 characters
-        def get_content_type_and_ext(content_type):
-            """find the type and extension of the content"""
-            for content_type, content_types_arr in content_types.items():
-                if ";" in content_type:
-                    if content_type.split(";", maxsplit=1)[0] in content_types_arr:
-                        return (
-                            content_type,
-                            content_types_arr[content_type.split(";", maxsplit=1)[0]],
-                        )
-                else:
-                    if content_type in content_types_arr:
-                        return content_type, content_types_arr[content_type]
-            return "unknown", "unknown"
+        blacklisted_tags = ["script", "style", "noscript"]
 
         try:
             if response.status_code == 200:
-                # check what type of content we got
-                content_type, ext = get_content_type_and_ext(
-                    response.headers.get("content-type")
-                )
-                # await self.log(f"content_type: {url} {content_type}")
+                # Detect content type from headers, falling back to magic if needed
+                content_type = response.headers.get('content-type', '')
+                if not content_type:
+                    # Use python-magic to detect content type from the content
+                    content_type = magic.from_buffer(content[:1024], mime=True)
+                
+                await self.log(f"content type header: {url} {content_type}")
+                content_type, ext = self.get_content_type_and_ext(content_type)
+                await self.log(f"content_type: {url} {content_type}")
                 # html
                 if "html" in content_type:
                     # extract all text from the webpage
@@ -529,8 +521,10 @@ class Helper:
                             # check if title exists and set it to a variable
                             title = soup.title.string if soup.title else ""
                             # extract all text from the body
-                            text = soup.body.get_text(
-                                separator=" ", strip=True)
+                            text = "Error getting body text from webpage"
+                            if soup.body:
+                                text = soup.body.get_text(
+                                    separator=" ", strip=True)
                             text_full = soup.body.get_text()
                             # trim all newlines to 2 spaces
                             text = text.replace("\n", "  ")

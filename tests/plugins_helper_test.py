@@ -1,8 +1,10 @@
 """ Tests for the helper plugin """
 
 from unittest.mock import Mock, patch
-
 import pytest
+import pytest_asyncio
+import urllib3
+import certifi
 
 from plugins import helper
 
@@ -24,7 +26,7 @@ def test_strip_self_username(helper_instance):
 
 
 @pytest.mark.parametrize(
-    "input, expected_result, validate_type",
+    "input_val, expected_result, validate_type",
     [
         ("example.com", True, "domain"),
         ("1.1.1.1", True, "ip"),
@@ -91,3 +93,86 @@ def test_create_tmp_filename(helper_instance):
     result = helper_instance.create_tmp_filename(extension)
     # the result should start with /tmp/ and end with .png
     assert result.startswith(begin) and result.endswith(end)
+
+
+@pytest.mark.parametrize(
+    "content_type,expected_type,expected_ext,test_description",
+    [
+        # HTML types
+        ("text/html", "html", "txt", "basic HTML"),
+        ("text/html;charset=utf-8", "html", "txt", "HTML with charset"),
+        
+        # Text types
+        ("text/plain", "text", "txt", "plain text"),
+        ("application/json", "text", "json", "JSON content"),
+        ("application/xml", "text", "xml", "XML content"),
+        
+        # Image types
+        ("image/jpeg", "image", "jpg", "JPEG image"),
+        ("image/png", "image", "png", "PNG image"),
+        ("image/gif", "image", "gif", "GIF image"),
+        ("image/svg+xml", "image", "svg", "SVG image"),
+        
+        # Document types
+        ("application/pdf", "documents", "pdf", "PDF document"),
+        ("application/msword", "documents", "doc", "Word document"),
+        
+        # Audio/Video types
+        ("audio/mpeg", "audio", "mp3", "MP3 audio"),
+        ("video/mp4", "video", "mp4", "MP4 video"),
+        
+        # Edge cases
+        ("invalid/type", "unknown", "unknown", "invalid content type"),
+        ("", "unknown", "unknown", "empty content type"),
+        ("text/html;charset=UTF-8", "html", "txt", "HTML with charset case insensitive"),
+    ]
+)
+@patch('mimetypes.guess_extension')  # Add mock for mimetypes
+def test_get_content_type_and_ext(mock_guess_extension, helper_instance, content_type, expected_type, expected_ext, test_description):
+    """Test get_content_type_and_ext method with various content types"""
+    # Configure mock to return appropriate extensions
+    def mock_guess_ext(mime_type, strict=False):
+        ext_map = {
+            'text/plain': '.txt',
+            'application/json': '.json',
+            'application/xml': '.xml',
+            'image/jpeg': '.jpg',
+            'image/png': '.png',
+            'image/gif': '.gif',
+            'image/svg+xml': '.svg',
+            'application/pdf': '.pdf',
+            'application/msword': '.doc',
+            'audio/mpeg': '.mp3',
+            'video/mp4': '.mp4',
+        }
+        return ext_map.get(mime_type, None)
+    
+    mock_guess_extension.side_effect = mock_guess_ext
+    
+    content_group, ext = helper_instance.get_content_type_and_ext(content_type)
+    assert content_group == expected_type, f"Failed: {test_description} - got {content_group} expected {expected_type}"
+    assert ext == expected_ext, f"Failed: {test_description} - got {ext} expected {expected_ext}"
+
+
+@pytest.mark.asyncio
+@patch("requests.get")
+async def test_download_webpage(mock_get, helper_instance):
+    """Test download_webpage"""
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    
+    url = "https://example.com"
+    content = "<html><head><title>Example Domain</title></head><body><h1>Example Domain</h1></body></html>"
+    mock_response = Mock()
+    mock_response.status_code = 200
+    mock_response.headers = {"Content-Type": "text/html"}
+    mock_response.iter_content = Mock(return_value=[content.encode("utf-8")])
+    mock_get.return_value = mock_response
+
+    with patch("requests.get", return_value=mock_response):
+        result, filename = await helper_instance.download_webpage(url)
+    
+    expected_result = "links:|title:Example Domain|body:Example Domain"
+    assert result == expected_result
+    assert filename is not None
+    assert filename.startswith("/tmp/")
+    assert filename.endswith(".txt")

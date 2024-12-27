@@ -1435,9 +1435,36 @@ if files:
             if self.vectordb.user_has_memories(
                 user=message.user_id, usage_context=rag_usage_context, source=rag_source, source_type=rag_source_type
             ):
-                memories = self.vectordb.get_memories(
-                    query=message.text, user=message.user_id, usage_context=rag_usage_context, source=rag_source, source_type=rag_source_type
-                )
+                # lets check if we already have any memories loaded in this thread_id
+                memkey = f"memories_loaded_{message.reply_id}"
+                memory_ids = self.valkey.lrange(memkey, 0, -1)
+                # convert them all into integers
+                memory_ids = [int(memory_id) for memory_id in memory_ids]
+                await self.helper.log(f"memory_ids: {memory_ids}")
+                if memory_ids:
+                    # fetch the memories from vectordb with a not_ids filter
+                    memories = self.vectordb.get_memories(
+                        query=message.text, user=message.user_id, usage_context=rag_usage_context, source=rag_source, source_type=rag_source_type, not_ids=memory_ids
+                    )
+                    # we have memories in this thread_id lets filter out the ones we already have
+                    memories = [memory for memory in memories if memory["id"] not in memory_ids]
+                    # we have memories after excluding the ones we already have
+                    if memories:
+                        # lets store the id's of the memories in a list so we can make sure we don't load them in next time save them in valkey for the thread_id in a list
+                        new_memory_ids = [memory["id"] for memory in memories]
+                        await self.helper.log(f"new_memory_ids: {new_memory_ids}")
+                        # save them with the thread_id as the key
+                        self.valkey.rpush(memkey, *new_memory_ids)
+                else:
+                    memories = self.vectordb.get_memories(
+                        query=message.text, user=message.user_id, usage_context=rag_usage_context, source=rag_source, source_type=rag_source_type
+                    )
+                    # we don't have any memories in this thread_id so lets save all the memory id's that we get
+                    memory_ids = [memory['id'] for memory in memories]
+                    if memory_ids:
+                        await self.helper.log(f"memory_ids (first time pushing): {memory_ids}")
+                        self.valkey.rpush(memkey, *memory_ids)
+
             # TODO: search shared memories. this is scary allows users to inject context into the model for other users.
             #shared_content = self.vectordb.search_shared(
             #    query=message.text
@@ -2066,7 +2093,7 @@ if files:
         # messages = self.get_formatted_messages(messages)
         return messages
 
-    def get_thread_messages_from_valkey(self, thread_id):
+    def get_thread_messages_from_valkey(self, thread_id:str):
         """get a chatlog"""
         thread_key = VALKEY_PREPEND + thread_id
         messages = self.helper.valkey_deserialize_json(

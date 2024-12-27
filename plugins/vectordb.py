@@ -173,9 +173,11 @@ CREATE TABLE IF NOT EXISTS {table_name} (
             return False
         memory_tags = ["memory", user] + tags
         return self.store(self.DEFAULT_TABLE, source_type, source, usage_context, "memory", memory_tags, content, {}, user)
-    def get_memories(self, query: str, usage_context: UsageContext, user: str, source_type:str, source:str, limit: int = 5):
+    def get_memories(self, query: str, usage_context: UsageContext, user: str, source_type:str, source:str, limit: int = 5, not_ids: list | None = None):
         """Get a memory."""
-        return self.search(self.DEFAULT_TABLE, query=query, usage_context=usage_context, category="memory", user=user, source_type=source_type, source=source, limit=limit)
+        if not_ids is None:
+            not_ids = []
+        return self.search(self.DEFAULT_TABLE, query=query, usage_context=usage_context, category="memory", user=user, source_type=source_type, source=source, limit=limit, not_ids=not_ids)
     def get_all_memories_for_user_for_context(self, user: str, usage_context: UsageContext, source_type: str, source: str):
         """Get all memories for a user."""
         return self.conn.execute(SQL("SELECT id, created_at, tags, content FROM {} WHERE created_by = %s AND usage_context = %s AND source_type = %s AND source = %s AND is_deleted = FALSE").format(Identifier(self.DEFAULT_TABLE)), (user,usage_context.value.lower(), source_type, source)).fetchall()
@@ -210,41 +212,85 @@ CREATE TABLE IF NOT EXISTS {table_name} (
         # verify
         if result:
             return True
-    # TODO: think this through. should we limited this on created_by as well so it's only shared/global for the user?
-    # this requires a rework of the delete functions as well
-    def search_shared(self, table: str | None, query: str, limit: int = 5, max_similarity: float | None= None):
-        """Search for a shared memory."""
-        if table is None:
-            table = self.DEFAULT_TABLE
-        if max_similarity is None:
-            max_similarity = self.DEFAULT_MAX_SIMILARITY
-        embedding = self.get_embeddings(query)
-        result = self.conn.execute(
-            SQL("""SELECT id, tags, metadata, category, source, source_type, created_at, created_by, content, embedding <-> %s::vector as distance FROM {}
-                WHERE
-                    is_deleted = FALSE AND
-                    (embedding <-> %s::vector) < %s AND
-                    usage_context = %s
-                ORDER BY distance, created_at LIMIT %s"""
-            ).format(Identifier(table)), (embedding, embedding, max_similarity, UsageContext.ANY.value.lower(), limit))
-        return result.fetchall()
 
-    def search(self, table: str | None, query: str, user: str, usage_context: UsageContext, category: str, source_type:str, source:str, limit: int = 5, max_similarity: float | None = None):
+    def _build_search_query(self, table: str, conditions: list, params: list) -> tuple[SQL, list]:
+        """Build a search query dynamically."""
+        base_query = """SELECT id, tags, metadata, category, source, source_type, created_at, content, 
+                       embedding <=> %s::vector as distance 
+                       FROM {}
+                       WHERE is_deleted = FALSE"""
+        
+        if conditions:
+            base_query += " AND " + " AND ".join(conditions)
+            
+        base_query += " ORDER BY distance, created_at"
+        
+        if params and isinstance(params[-1], int):
+            base_query += " LIMIT %s"
+            
+        return SQL(base_query).format(Identifier(table)), params
+
+    def search(self, table: str | None, query: str, user: str, usage_context: UsageContext, 
+              category: str, source_type: str, source: str, limit: int = 5, 
+              max_similarity: float | None = None, not_ids: list | None = None):
         """Search for a memory."""
         if table is None:
             table = self.DEFAULT_TABLE
         if max_similarity is None:
             max_similarity = self.DEFAULT_MAX_SIMILARITY
+
         embedding = self.get_embeddings(query)
-        result = self.conn.execute(
-            SQL("""SELECT id, tags, metadata, category, source, source_type, created_at, content, embedding <=> %s::vector as distance FROM {}
-                WHERE
-                    is_deleted = FALSE AND
-                    (embedding <=> %s::vector) < %s AND
-                    usage_context = %s AND
-                    created_by = %s AND
-                    source_type = %s AND
-                    source = %s
-                ORDER BY distance, created_at LIMIT %s"""
-            ).format(Identifier(table)), (embedding, embedding, max_similarity, usage_context.value.lower(), user, source_type, source, limit))
+        conditions = [
+            "(embedding <=> %s::vector) < %s",
+            "usage_context = %s",
+            "created_by = %s",
+            "source_type = %s",
+            "source = %s"
+        ]
+        
+        params = [
+            embedding,                          # For distance calculation
+            embedding,                          # For where clause
+            max_similarity,
+            usage_context.value.lower(),
+            user,
+            source_type,
+            source
+        ]
+
+        if not_ids:
+            conditions.append("NOT id = ANY(%s)")
+            params.append(not_ids)
+
+        params.append(limit)  # For LIMIT clause
+        
+        sql_query, final_params = self._build_search_query(table, conditions, params)
+        result = self.conn.execute(sql_query, final_params)
+        return result.fetchall()
+
+    def search_shared(self, table: str | None, query: str, limit: int = 5, 
+                     max_similarity: float | None = None):
+        """Search for a shared memory."""
+        if table is None:
+            table = self.DEFAULT_TABLE
+        if max_similarity is None:
+            max_similarity = self.DEFAULT_MAX_SIMILARITY
+
+        embedding = self.get_embeddings(query)
+        conditions = [
+            "(embedding <-> %s::vector) < %s",
+            "usage_context = %s"
+        ]
+        
+        params = [
+            embedding,                          # For distance calculation
+            embedding,                          # For where clause
+            max_similarity,
+            UsageContext.ANY.value.lower()
+        ]
+
+        params.append(limit)  # For LIMIT clause
+        
+        sql_query, final_params = self._build_search_query(table, conditions, params)
+        result = self.conn.execute(sql_query, final_params)
         return result.fetchall()

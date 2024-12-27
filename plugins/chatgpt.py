@@ -275,7 +275,7 @@ class ChatGPT(PluginLoader):
         )
         search_user_memories = Tool(
             function=self.search_user_memories,
-            description="Search Memories for the user. This will search all memories for the user. This is useful for when you want to search for a specific memory for a specific user.", 
+            description="Search Memories for the user. This will search all memories for the user. always write the distance and the memory and tags from the result to the user. share others if the user asks for it", 
             parameters = [
                 {"name": "search", "required": True, "description": "The search term to search for in the memories."},
                 {"name": "tool_run", "required": True, "description": "this must always be true"}
@@ -288,6 +288,7 @@ class ChatGPT(PluginLoader):
             description="Save a memory for the user. If you find the message from the user unique or personal, activate this tool to save a memory that can be used at a later point in time. This is stored in a database and will be provided as context in the future based on it's distance in the vector database.",
             parameters=[
                 {"name": "memory", "required": True, "description": "The memory to save for the user."},
+                {"name": "tags", "required": True, "description": "comma seperated list of tags to save for the memory. This is useful for when you want to search for a specific memory later. based on the memory generate some tags. that is related to the memory"},
                 {"name": "tool_run", "required": True, "description": "this must always be true"}
             ],
             needs_message_object=True,
@@ -438,8 +439,15 @@ class ChatGPT(PluginLoader):
                 memory['created_at'] = memory['created_at'].isoformat()
         return json.dumps(memories, indent=4)
     @listen_to("^.gpt memories save (.*)")
-    async def save_user_memory(self, message: Message, memory: str, tool_run=False):
+    async def save_user_memory(self, message: Message, memory: str, tags:list | str | None = None, tool_run=False):
         """Save a memory for the user"""
+        # if tags is a string, convert it to a list
+        if isinstance(tags, str):
+            tags = tags.split(",")
+            # remove any whitespace from the tags
+            tags = [tag.strip() for tag in tags]
+        if tags is None:
+            tags = []
         if message.is_direct_message:
             usage_context = self.usage_context.DIRECT
             source_type = "direct"
@@ -448,7 +456,7 @@ class ChatGPT(PluginLoader):
             usage_context = self.usage_context.CHANNEL
             source_type = "channel"
             source = message.channel_id
-        self.vectordb.store_memory(usage_context=usage_context, content=memory, user=message.user_id, source_type=source_type, source=source)
+        self.vectordb.store_memory(usage_context=usage_context, content=memory, user=message.user_id, source_type=source_type, source=source, tags=tags)
         return "Memory saved"
     async def enable_disable_memories_user(self, message: Message, action: str, context: str = "any", tool_run=False):
         """Enable/Disable memories for the user"""
@@ -1430,7 +1438,13 @@ if files:
                 memories = self.vectordb.get_memories(
                     query=message.text, user=message.user_id, usage_context=rag_usage_context, source=rag_source, source_type=rag_source_type
                 )
+            # TODO: search shared memories. this is scary allows users to inject context into the model for other users.
+            #shared_content = self.vectordb.search_shared(
+            #    query=message.text
+            #)
             #await self.helper.log(f"memories: {memories}")
+
+            # TODO: maybe store the automaticly might not be a good idea. it could result in a lot of noise
             # store memory in vectordb
             #self.vectordb.store_memory(
             #    content=message.text,
@@ -1445,11 +1459,16 @@ if files:
         status_msgs = []
         messages = []
         messages = self.get_thread_messages(thread_id)
+        # add memories to the messages if enabled. important that this is done before the user message
+        # as we don't want the memories to be the last message in the thread
+        # TODO: this is hidden from the user, maybe we could show it to the user somehow. maybe inject it as a message in the post thread before the response.
         if memories_enabled and memories:
             memory_string = f"{self.users.get_user_by_user_id(message.user_id)['username']}'s Memories:\n"
             m = {"role": "user"}
             for memory in memories:
-                memory_string += f"{memory['created_at']}{memory['content']}\n"
+                if "created_at" in memory:
+                    memory['created_at'] = memory['created_at'].isoformat()
+            memory_string += json.dumps(memories, indent=4)
             m["content"] = memory_string
             messages.append(m)
             self.thread_append(thread_id, m)

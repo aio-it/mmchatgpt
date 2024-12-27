@@ -29,6 +29,7 @@ class VectorDb(PluginLoader):
     EMBEDDING_MODEL = "text-embedding-3-small"
     DEFAULT_TABLE = "rag_content"
     DEFAULT_DISTANCE = 1.5
+    DEFAULT_MAX_SIMILARITY = 0.8
     FIELDS = [
         "id",
         "source_type",
@@ -164,11 +165,14 @@ CREATE TABLE IF NOT EXISTS {table_name} (
         if len(result.fetchall()) > 0:
             return True
         return False
-    def store_memory(self, usage_context: UsageContext, content, user: str, source_type: str, source: str):
+    def store_memory(self, usage_context: UsageContext, content, user: str, source_type: str, source: str, tags: list | None):
         """Store a memory."""
+        if tags is None:
+            tags = []
         if self.check_if_memory_exists(usage_context, content, user, source_type, source):
             return False
-        return self.store(self.DEFAULT_TABLE, source_type, source, usage_context, "memory", ["memory", user], content, {}, user)
+        memory_tags = ["memory", user] + tags
+        return self.store(self.DEFAULT_TABLE, source_type, source, usage_context, "memory", memory_tags, content, {}, user)
     def get_memories(self, query: str, usage_context: UsageContext, user: str, source_type:str, source:str, limit: int = 5):
         """Get a memory."""
         return self.search(self.DEFAULT_TABLE, query=query, usage_context=usage_context, category="memory", user=user, source_type=source_type, source=source, limit=limit)
@@ -187,6 +191,11 @@ CREATE TABLE IF NOT EXISTS {table_name} (
         """Delete all memories for a user."""
         result = self.conn.execute(SQL("UPDATE {} SET is_deleted = TRUE WHERE created_by = %s").format(Identifier(self.DEFAULT_TABLE)), (user,))
         return result
+    def store_shared_memory(self, content, user: str, source_type: str, source: str, tags: list = [], metadata: dict = {}):
+        """Store a shared memory."""
+        shared_tags = ["shared", user] + tags
+        return self.store(self.DEFAULT_TABLE, source_type, source, UsageContext.ANY, "shared", shared_tags, content, metadata, user)
+
     def store(self, table: str, source_type: str, source: str, usage_context: UsageContext, category: str, tags: list, content: str, metadata: dict, created_by: str):
         """Store a memory."""
         # create table if not exists
@@ -201,21 +210,41 @@ CREATE TABLE IF NOT EXISTS {table_name} (
         # verify
         if result:
             return True
-
-    def search(self, table: str | None, query: str, user: str, usage_context: UsageContext, category: str, source_type:str, source:str, limit: int = 5, max_distance: float = 1.5):
-        """Search for a memory."""
+    # TODO: think this through. should we limited this on created_by as well so it's only shared/global for the user?
+    # this requires a rework of the delete functions as well
+    def search_shared(self, table: str | None, query: str, limit: int = 5, max_similarity: float | None= None):
+        """Search for a shared memory."""
         if table is None:
             table = self.DEFAULT_TABLE
-        if max_distance is None:
-            max_distance = self.DEFAULT_DISTANCE
+        if max_similarity is None:
+            max_similarity = self.DEFAULT_MAX_SIMILARITY
         embedding = self.get_embeddings(query)
         result = self.conn.execute(
-            SQL("""SELECT id, tags, metadata, category, source, source_type, created_at, content, embedding <-> %s::vector as distance FROM {}
+            SQL("""SELECT id, tags, metadata, category, source, source_type, created_at, created_by, content, embedding <-> %s::vector as distance FROM {}
                 WHERE
                     is_deleted = FALSE AND
                     (embedding <-> %s::vector) < %s AND
-                    (usage_context = %s OR usage_context = 'any')
-                    AND (created_by = %s AND source_type = %s AND source = %s)
+                    usage_context = %s
                 ORDER BY distance, created_at LIMIT %s"""
-            ).format(Identifier(table)), (embedding, embedding, max_distance, usage_context.value.lower(), user, source_type, source, limit))
+            ).format(Identifier(table)), (embedding, embedding, max_similarity, UsageContext.ANY.value.lower(), limit))
+        return result.fetchall()
+
+    def search(self, table: str | None, query: str, user: str, usage_context: UsageContext, category: str, source_type:str, source:str, limit: int = 5, max_similarity: float | None = None):
+        """Search for a memory."""
+        if table is None:
+            table = self.DEFAULT_TABLE
+        if max_similarity is None:
+            max_similarity = self.DEFAULT_MAX_SIMILARITY
+        embedding = self.get_embeddings(query)
+        result = self.conn.execute(
+            SQL("""SELECT id, tags, metadata, category, source, source_type, created_at, content, embedding <=> %s::vector as distance FROM {}
+                WHERE
+                    is_deleted = FALSE AND
+                    (embedding <=> %s::vector) < %s AND
+                    usage_context = %s AND
+                    created_by = %s AND
+                    source_type = %s AND
+                    source = %s
+                ORDER BY distance, created_at LIMIT %s"""
+            ).format(Identifier(table)), (embedding, embedding, max_similarity, usage_context.value.lower(), user, source_type, source, limit))
         return result.fetchall()

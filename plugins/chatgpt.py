@@ -113,7 +113,7 @@ class ChatGPT(PluginLoader):
     def __init__(self):
         super().__init__()
         self.name = "ChatGPT"
-        self.names = ["chatgpt", "@gpt4", "@gpt3", "@gpt"]
+        self.names = ["chatgpt", "@gpt4", "@gpt3", "@gpt", "@o1", "@o1mini"]
         self.openai_api_key = env.str("OPENAI_API_KEY")
         self.model = None
         self.headers = None
@@ -383,6 +383,10 @@ class ChatGPT(PluginLoader):
         self.helper.slog(
             "Admin tools: " + ", ".join(self.tools_manager.get_tools("admin").keys())
         )
+
+    def add_name(self, name):
+        self.names.append(name)
+
     async def delete_user_memory_or_memories(self, message: Message, mode: str, memory_id: str = None, tool_run=False):
         """Delete a memory or memories for the user"""
         if message.is_direct_message:
@@ -1564,6 +1568,22 @@ if files:
                     ),
                 },
             )
+        if model.startswith("o1"):
+            # filter out any images in the messages
+            new_messages = []
+            for single_message in messages:
+                if "content" in single_message:
+                    if type(single_message["content"]) is list:
+                        # loop through the content to find the text one and add it to the new_messages
+                        for content in single_message["content"]:
+                            if "text" in content:
+                                single_message["content"] = content["text"]
+                                new_messages.append(single_message)
+                                continue
+                    else:
+                        new_messages.append(single_message)
+            messages = new_messages
+                    
 
         # add thought balloon to show assistant is thinking
         self.driver.react_to(message, "thought_balloon")
@@ -1952,24 +1972,37 @@ if files:
     @listen_to(r"^@o1[ \n]+.+", regexp_flag=re_DOTALL)
     async def chat_o1(self, message: Message):
         """listen to everything and respond when mentioned"""
+        name = "@o1"
+        if name not in self.names:
+            self.add_name(name)
         await self.helper.log(f"User: {message.sender_name} used o1 keyword")
         await self.chat(message, model="o1-preview")
 
     @listen_to(r"^@o1mini[ \n]+.+", regexp_flag=re_DOTALL)
     async def chat_o1_mini(self, message: Message):
         """listen to everything and respond when mentioned"""
-        await self.helper.log(f"User: {message.sender_name} used o1 keyword")
+        name = "@o1mini"
+        if name not in self.names:
+            self.add_name(name)
+        await self.helper.log(f"User: {message.sender_name} used o1mini keyword")
         await self.chat(message, model="o1-mini")
 
     @listen_to(r"^@gpt3[ \n]+.+", regexp_flag=re_DOTALL)
     async def chat_gpt3(self, message: Message):
         """listen to everything and respond when mentioned"""
+        name = "@gpt3"
+        if name not in self.names:
+            self.add_name(name)
         await self.helper.log(f"User: {message.sender_name} used gpt3 keyword")
         await self.chat(message, model="gpt-3.5-turbo")
 
     @listen_to(r"^@gpt4{0,1}[ \n]+.+", regexp_flag=re_DOTALL)
     async def chat_gpt4(self, message: Message):
         """listen to everything and respond when mentioned"""
+        names = ["@gpt4o", "@gpt4"]
+        for name in names:
+            if name not in self.names:
+                self.add_name(name)
         if "4" not in self.model:
             await self.chat(message, "gpt-4o")
         else:

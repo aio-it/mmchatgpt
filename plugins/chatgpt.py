@@ -1580,10 +1580,15 @@ if files:
                                 single_message["content"] = content["text"]
                                 new_messages.append(single_message)
                                 continue
-                    else:
+                    elif type(single_message["content"]) is str:
+                        if single_message['role'] == 'tool':
+                            new_message = {}
+                            new_message['role'] = 'assistant'
+                            new_message['content'] = f"Tool call results ({single_message['name']}): "+single_message['content']
+                            new_messages.append(new_message)
+                            continue
                         new_messages.append(single_message)
             messages = new_messages
-                    
 
         # add thought balloon to show assistant is thinking
         self.driver.react_to(message, "thought_balloon")

@@ -11,7 +11,7 @@ from mmpy_bot.wrappers import Message
 from dateutil import parser
 
 from plugins.base import PluginLoader
-
+import schedule
 
 class IntervalsIcu(PluginLoader):
     def __init__(self):
@@ -22,12 +22,53 @@ class IntervalsIcu(PluginLoader):
         self.valkey = self.helper.valkey
         self.intervals_prefix = "INTERVALSICU"
         self.api_url = "https://app.intervals.icu/api/v1"
+
+        # get all athletes and opted in athletes
         self.athletes = self.valkey.smembers(f"{self.intervals_prefix}_athletes") or set()
-        for uid in self.athletes:
-            # cleanup broken athletes
-            if not self.verify_api_key(uid):
-                self.remove_athlete(uid)
         self.opted_in = self.valkey.smembers(f"{self.intervals_prefix}_athletes_opted_in") or set()
+
+        # jobs
+        self.jobs = {}
+        self.jobs['refresh_all_athletes'] = schedule.every(60).seconds.do(self.refresh_all_athletes)
+        self.jobs['cleanup_duplicates'] = schedule.every(1).days.do(self.cleanup_duplicates_for_all_athletes)
+        self.jobs['cleanup_broken_athletes'] = schedule.every(1).days.do(self.cleanup_broken_athletes)
+
+        # check if the key auto_refresh is set if not set it to true
+        if not self.valkey.exists(f"{self.intervals_prefix}_auto_refresh"):
+            self.valkey.set(f"{self.intervals_prefix}_auto_refresh", "true")
+            self.valkey.set(f"{self.intervals_prefix}_refresh_interval", "900")
+
+        # clear refresh lock
+        self.clear_lock("refresh_all_athletes")
+
+        # run the jobs on startup
+        self.refresh_all_athletes()
+        self.cleanup_duplicates_for_all_athletes()
+        self.cleanup_broken_athletes()
+
+    def cleanup_broken_athletes(self):
+        for athlete in self.athletes:
+            if not self.verify_api_key(athlete):
+                self.remove_athlete(athlete)
+
+    def cleanup_duplicates_for_all_athletes(self):
+        for athlete in self.athletes:
+            self.cleanup_duplicates(athlete)
+
+    def cleanup_duplicates(self, uid: str):
+        activities = self.get_activities(uid)
+        wellness = self.get_wellnesses(uid)
+        if activities:
+            activities = sorted(activities, key=lambda x: x.get("id"))
+            for i in range(1, len(activities)):
+                if activities[i].get("id") == activities[i-1].get("id"):
+                    self.remove_activity(uid, activities[i])
+        if wellness:
+            wellness = sorted(wellness, key=lambda x: x.get("id"))
+            for i in range(1, len(wellness)):
+                if wellness[i].get("id") == wellness[i-1].get("id"):
+                    self.helper.log(f"Removing duplicate wellness for user {self.users.id2u(uid)} - {wellness[i].get('id')}")
+                    self.remove_wellness(uid, wellness[i])
 
     def return_pretty_activities(self, activities: list):
         """return pretty activities"""
@@ -35,51 +76,117 @@ class IntervalsIcu(PluginLoader):
         for activity in activities:
             pretty.append(f"{activity.get('start_date_local')} {activity.get('type')} {activity.get('name')} {activity.get('distance')} {activity.get('duration')} {activity.get('calories')}")
         return pretty
+
     def add_athlete(self, uid: str):
         self.valkey.sadd(f"{self.intervals_prefix}_athletes", uid)
         if uid not in self.athletes:
             self.athletes.add(uid)
+
     def remove_athlete(self, uid: str):
         self.valkey.srem(f"{self.intervals_prefix}_athletes", uid)
         if uid in self.athletes:
             self.athletes.remove(uid)
+
     def add_athlete_opted_in(self, uid: str):
         self.valkey.sadd(f"{self.intervals_prefix}_athletes_opted_in", uid)
         if uid not in self.opted_in:
             self.opted_in.add(uid)
+
     def remove_athlete_opted_in(self, uid: str):
         self.valkey.srem(f"{self.intervals_prefix}_athletes_opted_in", uid)
         if uid in self.opted_in:
             self.opted_in.remove(uid)
-    def add_activity(self, uid: str, activity: dict):
+
+    def add_activity(self, uid: str, activity: dict) -> str:
+        # we need to account for updated activities
+        # get the id of the activity
+        activity_id = activity.get("id")
+        activities = self.get_activities(uid)
+        if activities:
+            for i, act in enumerate(activities):
+                if act.get("id") == activity_id:
+                    # compare the whole object as json
+                    if json.dumps(act) == json.dumps(activity):
+                        return "alreadyexists"
+                    # remove the old activity
+                    self.remove_activity(uid, act)
+                    # add the new activity
+                    self.valkey.lpush(f"{self.intervals_prefix}_athlete_{uid}_activities", json.dumps(activity))
+                    return "changed"
         # check if the list exists
         if self.valkey.exists(f"{self.intervals_prefix}_athlete_{uid}_activities"):                
             # check if activity already exists
-            self.helper.slog(self.return_pretty_activities([activity]))
+            #self.helper.slog(self.return_pretty_activities([activity]))
             if json.dumps(activity) in self.valkey.lrange(f"{self.intervals_prefix}_athlete_{uid}_activities", 0, -1):
-                return
+                return "alreadyexists"
 
         self.valkey.lpush(f"{self.intervals_prefix}_athlete_{uid}_activities", json.dumps(activity))
+        return "added"
+
     def remove_activity(self, uid: str, activity: dict):
-        self.valkey.lrem(f"{self.intervals_prefix}_athlete_{uid}_activities", 0, activity)
+        self.valkey.lrem(f"{self.intervals_prefix}_athlete_{uid}_activities", 0, json.dumps(activity))
+
     def get_activities(self, uid: str):
         activities = self.valkey.lrange(f"{self.intervals_prefix}_athlete_{uid}_activities", 0, -1)
-        self.helper.slog("Got activities")
-        if activities:
-            for activity in activities:
-                self.helper.slog(self.return_pretty_activities([json.loads(activity)]))
+        # if activities:
+        #     for activity in activities:
+        #         activity = json.loads(activity)
+        #         start_date = activity.get("start_date")
+        #         id = activity.get("id")
+        #         self.helper.slog(f"{uid} - activity: {start_date} {id} len: {len(json.dumps(activity))}")
         # decode the json
         if activities:
             return [json.loads(activity) for activity in activities]
         return []
 
+    def add_wellness(self, uid: str, wellness: dict) -> str:
+        """add wellness"""
+        # we need to account for updated wellness since wellness's id is the date we cant and we need to compare the whole object
+        # get the id of the wellness
+        wellness_id = wellness.get("id")
+        wellnesses = self.get_wellnesses(uid)
+        if wellnesses:
+            for i, well in enumerate(wellnesses):
+                if well.get("id") == wellness_id:
+                    # compare the whole object as json
+                    if json.dumps(well) == json.dumps(wellness):
+                        return "alreadyexists"
+                    # remove the old wellness
+                    self.remove_wellness(uid, well)
+                    # add the new wellness
+                    self.valkey.lpush(f"{self.intervals_prefix}_athlete_{uid}_wellness", json.dumps(wellness))
+                    return "changed"
+        # check if the list exists
+        if self.valkey.exists(f"{self.intervals_prefix}_athlete_{uid}_wellness"):
+            # check if wellness already exists
+            if json.dumps(wellness) in self.valkey.lrange(f"{self.intervals_prefix}_athlete_{uid}_wellness", 0, -1):
+                return "alreadyexists"
+        self.valkey.lpush(f"{self.intervals_prefix}_athlete_{uid}_wellness", json.dumps(wellness))
+        return "added"
+
+    def remove_wellness(self, uid: str, wellness: dict):
+        """remove wellness"""
+        self.valkey.lrem(f"{self.intervals_prefix}_athlete_{uid}_wellness", 0, json.dumps(wellness))
+
+    def get_wellnesses(self, uid: str, oldest: str | None = None, newest: str | None = None):
+        """get wellness"""
+        wellnesses = self.valkey.lrange(f"{self.intervals_prefix}_athlete_{uid}_wellness", 0, -1)
+        # decode the json
+        if wellnesses:
+            # sort wellness by id (date)
+            wellnesses = sorted(wellnesses, key=lambda x: json.loads(x).get("id"))
+            # for wellness in wellnesses:
+            #     wellness = json.loads(wellness)
+            #     id = wellness.get("id")
+            #     self.helper.slog(f"{uid} - wellness: {id} len: {len(json.dumps(wellness))}")
+            return [json.loads(wellness) for wellness in wellnesses]
+        return []
     def _headers(self, uid: str):
         """Basic authorization headers"""
         username ="API_KEY"
         api_key = self.valkey.get(f"{self.intervals_prefix}_{uid}_apikey")
         encoded = base64.b64encode(f"{username}:{api_key}".encode("utf-8")).decode("utf-8")
         return {"Authorization": f"Basic {encoded}", "Content-Type": "application/json", "Accept": "application/json"}
-
 
     def _endpoint(self, endpoint: str):
         return f"{self.api_url}/athlete/0/{endpoint}"
@@ -90,6 +197,7 @@ class IntervalsIcu(PluginLoader):
             headers = self._headers(uid)
         if headers is None:
             headers = {}
+            raise Exception("No headers provided")
         if data is None:
             data = {}
         if method == "GET":
@@ -107,36 +215,78 @@ class IntervalsIcu(PluginLoader):
                 self.helper.slog(response.text())
                 return False
         return False
-    async def _scrape_activities(self, uid: str, oldest: str | None = None, newest: str | None = None):
-        """scrape activities from intervals"""
+
+    def _scrape_athlete(self, uid: str, force_all: bool = False):
+        """scrape all things from intervals"""
         # date format is YYYY-MM-DD
         # oldest set it to the previous month
         # newest set it to the current month and day + 1
         today = datetime.datetime.now()
-        if newest is None:
-            newest = (today + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-        if oldest is None:
-            # first lets try and get the oldest activity from the user
-            activities = self.get_activities(uid)
-            if activities:
-                oldest = parser.parse(activities[-1].get("start_date")).strftime("%Y-%m-%d")
-            else:
-                oldest = (today - datetime.timedelta(days=30)).strftime("%Y-%m-%d")
-        data = {"oldest": oldest, "newest": newest}
+        newest = (today + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+        # first lets try and get the oldest activity from the user
+        activities = self.get_activities(uid)
+        wellness = self.get_wellnesses(uid)
+        wellnesses_added = 0
+        activities_added = 0
+        wellnesses_changed = 0
+        activities_changed = 0
+        if activities:
+            oldest_activity = parser.parse(activities[-1].get("start_date")).strftime("%Y-%m-%d")
+            # substract 3 days from the oldest activity
+            oldest_activity = (parser.parse(oldest_activity) - datetime.timedelta(days=3)).strftime("%Y-%m-%d")
+        else:
+            oldest_activity = (today - datetime.timedelta(days=30)).strftime("%Y-%m-%d")
+        if wellness:
+            oldest_wellness = parser.parse(wellness[-1].get("id")).strftime("%Y-%m-%d")
+            # substract 3 days from the oldest wellness
+            oldest_wellness = (parser.parse(oldest_wellness) - datetime.timedelta(days=3)).strftime("%Y-%m-%d")
+        else:
+            oldest_wellness = (today - datetime.timedelta(days=10*365)).strftime("%Y-%m-%d")
+        if force_all:
+            oldest_activity = "2010-01-01"
+            oldest_wellness = "2010-01-01"
+        params_activity = {"oldest": oldest_activity, "newest": newest}
+        params_wellness = {"oldest": oldest_wellness, "newest": newest}
         try:
-            await self.helper.log(f"Getting activities from intervals {oldest} to {newest}")
-            response = self._request("activities", "GET", uid=uid, data=data)
+            # get activities
+            self.helper.slog(f"Getting activities from intervals {oldest_activity} to {newest}")
+            response = self._request("activities", "GET", uid=uid, data=params_activity)
             if response.status_code == 200:
                 activities = response.json()
                 for activity in activities:
-                    await self.helper.log("Got activity")
-                    await self.helper.log(self.return_pretty_activities([activity]))
-                    self.add_activity(uid, activity)
+                    self.helper.slog(f"Got activity: {self.users.id2u(uid)} - {activity.get('start_date')} - {activity.get('id')}")
+                    result = self.add_activity(uid, activity)
+                    if result == "added":
+                        activities_added += 1
+                    elif result == "changed":
+                        activities_changed += 1
             else:
-                await self.helper.log("Failed to get activities")
-                await self.helper.log(response.status_code)
+                self.helper.slog("Failed to get activities")
+                self.helper.slog(response.status_code)
+            # update last refresh time for the athlete using Unix timestamp
+
+            # get wellness
+            self.helper.slog(f"Getting wellness from intervals {oldest_wellness} to {newest}")
+            response = self._request("wellness", "GET", uid=uid, data=params_wellness)
+            if response.status_code == 200:
+                wellness = response.json()
+                for wellness in wellness:
+                    self.helper.slog(f"Got wellness: {self.users.id2u(uid)} - {wellness.get('id')}")
+                    result = self.add_wellness(uid, wellness)
+                    if result == "added":
+                        wellnesses_added += 1
+                    elif result == "changed":
+                        wellnesses_changed += 1
+            else:
+                self.helper.slog("Failed to get wellness")
+                self.helper.slog(response.status_code)
+
+            # update last refresh time for the athlete using Unix timestamp
+            self.valkey.set(f"{self.intervals_prefix}_{uid}_last_refresh", str(int(datetime.datetime.now().timestamp())))
         except Exception:
             return False
+        return {"activities_added": activities_added, "activities_changed": activities_changed, "wellnesses_added": wellnesses_added, "wellnesses_changed": wellnesses_changed}
+
     def verify_api_key(self, uid: str):
         """this uses the athlete endpoint to verify the api key"""
         try:
@@ -202,22 +352,51 @@ class IntervalsIcu(PluginLoader):
         #await self._scrape_activities(uid)
         activities = self.get_activities(uid)
         if activities:
+            # sort activities by date
+            activities = sorted(activities, key=lambda x: x.get("start_date"))
             activities_str = "\n".join(self.return_pretty_activities(activities))
             self.driver.reply_to(message, activities_str)
         else:
-            self.driver.reply_to(message, "No activities found try .intervals refresh activities")
-
-    @listen_to(r"^\.intervals refresh activities")
+            self.driver.reply_to(message, "No activities found try .intervals refresh data")
+    @listen_to(r"^.intervals refresh data force")
+    async def refresh_force(self, message: Message):
+        """force refresh activities"""
+        uid = message.user_id
+        result = self._scrape_athlete(uid, force_all=True)
+        # count the number of activities and wellness
+        wellness_count_new = len(self.get_wellnesses(uid))
+        activities_count_new = len(self.get_activities(uid))
+        if result:
+            self.driver.reply_to(message, f"Refreshed activities newly total:{activities_count_new} new:{result.get('activities_added')} changed:{result.get('activities_changed')} & wellness total:{wellness_count_new} new:{result.get('wellnesses_added')} changed:{result.get('wellnesses_changed')}")
+        else:
+            self.driver.reply_to(message, "No new activities & wellness found")
+    @listen_to(r"^\.intervals refresh data$")
     async def refresh(self, message: Message):
         """refresh activities"""
         uid = message.user_id
-        await self._scrape_activities(uid)
-    @listen_to(r"^\.intervals reset activities")
+        # check if the last refresh was too recent
+        refresh_interval = int(self.valkey.get(f"{self.intervals_prefix}_refresh_interval")) or 900  # 15 minutes default
+        current_time = int(datetime.datetime.now().timestamp())
+        last_refresh = self.valkey.get(f"{self.intervals_prefix}_{uid}_last_refresh")
+        if last_refresh:
+            if current_time - int(float(last_refresh)) < 900:
+                self.driver.reply_to(message, f"Refresh too recent wait {refresh_interval - (current_time - int(float(last_refresh)))} seconds")
+                return
+        result = self._scrape_athlete(uid)
+        # get counts of activities and wellness
+        wellness_count_new = len(self.get_wellnesses(uid))
+        activities_count_new = len(self.get_activities(uid))
+        if result:
+            self.driver.reply_to(message, f"Refreshed activities newly total:{activities_count_new} new:{result.get('activities_added')} changed:{result.get('activities_changed')} & wellness total:{wellness_count_new} new:{result.get('wellnesses_added')} changed:{result.get('wellnesses_changed')}")
+        else:
+            self.driver.reply_to(message, "No new activities & wellness found")
+    @listen_to(r"^\.intervals reset data")
     async def reset(self, message: Message):
         """reset activities"""
         uid = message.user_id
         self.valkey.delete(f"{self.intervals_prefix}_athlete_{uid}_activities")
-        self.driver.reply_to(message, "Activities reset")
+        self.valkey.delete(f"{self.intervals_prefix}_athlete_{uid}_wellness")
+        self.driver.reply_to(message, "Activities & Wellness reset")
     @listen_to(r"^\.intervals athletes")
     async def athletes_cmd(self, message: Message):
         """get athletes"""
@@ -244,19 +423,173 @@ class IntervalsIcu(PluginLoader):
         athletes = ["@" + self.users.id2unhl(uid) for uid in athletes]
         athletes = "\n".join(athletes)
         self.driver.reply_to(message, athletes)
+    @listen_to(r"^\.intervals profile")
+    async def profile(self, message: Message):
+        """get profile"""
+        uid = message.user_id
+        # valkey stored profile
+        profile = self.valkey.hgetall(f"{self.intervals_prefix}_profiles", uid)
+        if profile:
+            self.driver.reply_to(message, profile)
+            return
+    @listen_to(r"^\.intervals profile set ([\s\S]*) ([\s\S]*)")
+    async def profile_set(self, message: Message, key: str, value: str):
+        """set profile key value"""
+        uid = message.user_id
+        self.valkey.hset(f"{self.intervals_prefix}_profiles", uid, {key: value})
+        self.driver.reply_to(message, f"Set {key} to {value}")
+    @listen_to(r"^\.intervals admin set auto_refresh ([\s\S]*)")
+    async def set_auto_refresh(self, message: Message, value: str):
+        """set auto refresh"""
+        if not self.users.is_admin(message.sender_name):
+            self.driver.reply_to(message, "You need to be an admin to use this command")
+            return
+        self.valkey.set(f"{self.intervals_prefix}_auto_refresh", value)
+        self.driver.reply_to(message, f"Set auto refresh to {value}")
+    @listen_to(r"^\.intervals admin set refresh_interval ([\s\S]*)")
+    async def set_refresh_interval(self, message: Message, value: str):
+        """set refresh interval"""
+        if not self.users.is_admin(message.sender_name):
+            self.driver.reply_to(message, "You need to be an admin to use this command")
+            return
+        self.valkey.set(f"{self.intervals_prefix}_refresh_interval", value)
+        self.driver.reply_to(message, f"Set refresh interval to {value}")
+    @listen_to(r"^\.intervals admin refresh all")
+    async def refresh_all(self, message: Message):
+        """refresh all data"""
+        if not self.users.is_admin(message.sender_name):
+            self.driver.reply_to(message, "You need to be an admin to use this command")
+            return
+        self.refresh_all_athletes()
+        self.driver.reply_to(message, "Refreshed all activities")
     @listen_to(r"^\.intervals help")
     async def help(self, message: Message):
         """help"""
         help_str = """
+        Login commands:
         .intervals login [api_key] - login
         .intervals opt-in - opt in to public usage
         .intervals opt-out - opt out of public usage
         .intervals logout - logout
         .intervals verify - verify the api key
+
+        Personal Information commands:
+        .intervals profile - get profile
+        .intervals profile set [profile_key] [value] - set profile key value
+
+        Personal Activity & wellness commands:
         .intervals activities - get activities
-        .intervals refresh activities - refresh activities
-        .intervals reset activities - reset activities
-        .intervals athletes - get athletes (admin only)
-        .intervals participants - get participants
+        .intervals refresh data force - force refresh activities & wellness (use with caution)
+        .intervals refresh data - refresh activities & wellness
+        .intervals reset data - reset activities & wellness
+        .intervals stats* - get stats (distance, duration, calories, steps, activity count)
+        .intervals pb* - get personal bests (distance, duration, calories, steps, activity count)
+
+        Personal goals commands:*
+        .intervals goals - get goals
+        .intervals goals create absolute [metric] [goal] [enddate] [startdate(optional earlist found metric entry)] - set goal for metric
+        .intervals goals create recurring [metric] [goal] [recurring_period] - set recurring goal for metric
+        .intervals goals delete [metric] - delete goal for metric
+        .intervals goals update [metric] [goal] [enddate] [startdate(optional defaults to now)] - update goal for metric
+        .intervals goals history [metric] - get goal history for metric
+        .intervals goals progress [metric] - get goal progress for metric
+
+        Public commands (opt-in required):
+        .intervals participants - get participants (athletes who opted in)
+        .intervals leaderboard* - get leaderboards
+        .intervals stats all* - get stats for all participants
+        .intervals pb all* - get personal bests for all participants
+
+        Competitions commands:*
+        .intervals competitions - get competitions
+        .intervals competitions create [name] [recurring_period] [metric] - create competition
+        .intervals competitions delete [name] - delete competition
+
+        Other commands:*
+        .intervals compare pb [username] - compare personal bests with another user
+        .intervals compare stats [username] - compare stats with another user
+        .intervals compare goals [username] - compare goals with another user
+        .intervals compare activities [username] - compare activities with another user
+
+        Help:
+        .intervals help - get help
+
+       * MEANS NOT IMPLEMENTED YET (and might not be implemented let me know if you need it)
+
+        Parameters:
+        [metric] - distance, duration, calories, steps, count, weight
+        [goal] - number
+        [enddate] - YYYY-MM-DD
+        [startdate] - YYYY-MM-DD
+        [profile_key] - height, weight(only for starting reference will be used for goals)
+        [recurring_period] - daily, weekly, monthly, yearly
+        [name] - string
+        [username] - mattermost username
+ 
+        Admin only commands
+        .intervals admin athletes - get athletes (admin only)
+        .intervals admin refresh all
+        .intervals admin verify all
+        .intervals admin set auto_refresh [true/false]
+        .intervals admin set refresh_interval [interval in seconds]
         """
         self.driver.reply_to(message, help_str)
+    def clear_lock(self, lockname: str):
+        self.valkey.delete(f"{self.intervals_prefix}_locks_{lockname}")
+    def get_lock(self, lockname: str):
+        lock = self.helper.str2bool(self.valkey.get(f"{self.intervals_prefix}_locks_{lockname}"))
+        if lock:
+            return True
+        return False
+    def refresh_all_athletes(self):
+        """refresh all from all athletes"""
+        self.helper.slog("Refreshing all athletes initiated")
+        # create a lock in valkey to prevent multiple refreshes running at the same time
+        if self.helper.str2bool(self.get_lock("refresh_all_athletes")):
+            self.helper.slog("Refresh lock is on")
+            return
+        auto_refresh = self.helper.str2bool(self.valkey.get(f"{self.intervals_prefix}_auto_refresh"))
+        self.helper.slog(f"Auto refresh is {auto_refresh}")
+        if not auto_refresh:
+            self.helper.slog(f"Auto refresh is off")
+            self.clear_lock("refresh_all_athletes")
+            return
+
+        refresh_interval = int(self.valkey.get(f"{self.intervals_prefix}_refresh_interval")) or 3*3600  # 3 hours default
+        current_time = int(datetime.datetime.now().timestamp())
+        
+        # Check global refresh time
+        last_refresh = self.valkey.get(f"{self.intervals_prefix}_last_refresh")
+        if not last_refresh:
+            last_refresh = str(current_time - 7*24*3600)  # 7 days ago
+        
+        if current_time - int(float(last_refresh)) < refresh_interval:
+            self.helper.slog(f"Global refresh too recent. Next refresh in {refresh_interval - (current_time - int(float(last_refresh)))} seconds")
+            self.clear_lock("refresh_all_athletes")
+            return
+
+        try:
+            for athlete in self.athletes:
+                athlete_last_refresh = self.valkey.get(f"{self.intervals_prefix}_{athlete}_last_refresh")
+                if not athlete_last_refresh:
+                    athlete_last_refresh = str(current_time - 7*24*3600)  # 7 days ago
+
+                if current_time - int(float(athlete_last_refresh)) < refresh_interval:
+                    self.helper.slog(f"Skipping {self.users.id2u(athlete)} - refreshed too recently")
+                    continue
+
+                self.helper.slog(f"Refreshing data for {self.users.id2u(athlete)}")
+                result = self._scrape_athlete(athlete)
+                if result:
+                    self.helper.slog(f"Refreshed data for {self.users.id2u(athlete)} total:{result.get('activities_added') + result.get('activities_changed')} new:{result.get('activities_added')} changed:{result.get('activities_changed')} & wellness total:{result.get('wellnesses_added') + result.get('wellnesses_changed')} new:{result.get('wellnesses_added')} changed:{result.get('wellnesses_changed')}")
+                else:
+                    self.helper.slog(f"Failed to refresh activities for {self.users.id2u(athlete)}")
+
+        except Exception as e:
+            self.helper.slog(f"Failed to refresh all activities: {str(e)}")
+            self.clear_lock("refresh_all_athletes")
+            return
+
+        self.valkey.set(f"{self.intervals_prefix}_last_refresh", str(current_time))
+        self.helper.slog("Refreshed all activities successfully")
+        self.clear_lock("refresh_all_athletes")

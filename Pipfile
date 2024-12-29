@@ -41,6 +41,7 @@ pytest-asyncio = "*"
 certifi = "*"
 requests = {extras = ["security"], version = "*"}
 python-dateutil = "*"
+schedule = "*"
 
 [dev-packages]
 autopep8 = "*"

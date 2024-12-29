@@ -659,3 +659,13 @@ class Helper:
         except Exception as e:
             await self.log(f"Error: {e}")
             return f"Error: {e}", None
+    def str2bool(self, string: str | None):
+        if type(string) == bool:
+            return string
+        if type(string) == int:
+            return bool(string)
+        if string is None:
+            return False
+        if string.lower() == "true" or string.lower() == "t" or string.lower() == "1" or string.lower() == "yes" or string.lower() == "y":
+            return True
+        return False

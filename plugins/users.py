@@ -156,7 +156,9 @@ class Users(Plugin):
     def id2u(self, user_id):
         """convert uid to username"""
         return self.get_user_by_user_id(user_id)["username"]
-
+    def id2unhl(self, user_id):
+        """convert uid to username without highlighting"""
+        return self.nohl(self.get_user_by_user_id(user_id)["username"])
     def check_if_username_or_id(self, username_or_id):
         """check if username or id"""
         try:

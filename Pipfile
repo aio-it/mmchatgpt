@@ -40,6 +40,7 @@ python-magic = "*"
 pytest-asyncio = "*"
 certifi = "*"
 requests = {extras = ["security"], version = "*"}
+python-dateutil = "*"
 
 [dev-packages]
 autopep8 = "*"

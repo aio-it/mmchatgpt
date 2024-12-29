@@ -22,6 +22,7 @@ from plugins.tts import TTS
 from plugins.users import Users
 from plugins.version import Version
 from plugins.vectordb import VectorDb
+from plugins.intervalsicu import IntervalsIcu
 
 env = Env()
 log_channel = env.str("MM_BOT_LOG_CHANNEL")
@@ -62,6 +63,7 @@ bot = Bot(
         Ntp(),
         Jira(),
         VectorDb(),
+        IntervalsIcu(),
         Version(),
     ],
     enable_logging=True,

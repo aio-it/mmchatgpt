@@ -122,11 +122,22 @@ class IntervalsIcu(PluginLoader):
 
         self.valkey.lpush(f"{self.intervals_prefix}_athlete_{uid}_activities", json.dumps(activity))
         return "added"
-
+    def generate_metric_to_table_mapping(self, metric: str):
+        """generate metric to table mapping"""
+        mapping = {
+            "distance": "activities",
+            "duration": "activities",
+            "calories": "activities",
+            "steps": "wellness",
+            "weight": "wellness",
+            "sleep": "wellness",
+            "hr": "wellness"
+        }
+        return mapping.get(metric)
     def remove_activity(self, uid: str, activity: dict):
         self.valkey.lrem(f"{self.intervals_prefix}_athlete_{uid}_activities", 0, json.dumps(activity))
 
-    def get_activities(self, uid: str):
+    def get_activities(self, uid: str, oldest: str | None = None, newest: str | None = None):
         activities = self.valkey.lrange(f"{self.intervals_prefix}_athlete_{uid}_activities", 0, -1)
         # if activities:
         #     for activity in activities:
@@ -136,6 +147,10 @@ class IntervalsIcu(PluginLoader):
         #         self.helper.slog(f"{uid} - activity: {start_date} {id} len: {len(json.dumps(activity))}")
         # decode the json
         if activities:
+            # sort activities by start_date
+            activities = sorted(activities, key=lambda x: json.loads(x).get("start_date"))
+            if oldest and newest:
+                return [json.loads(activity) for activity in activities if parser.parse(oldest) <= parser.parse(json.loads(activity).get("start_date")) <= parser.parse(newest)]
             return [json.loads(activity) for activity in activities]
         return []
 
@@ -179,6 +194,8 @@ class IntervalsIcu(PluginLoader):
             #     wellness = json.loads(wellness)
             #     id = wellness.get("id")
             #     self.helper.slog(f"{uid} - wellness: {id} len: {len(json.dumps(wellness))}")
+            if oldest and newest:
+                return [json.loads(wellness) for wellness in wellnesses if parser.parse(oldest) <= parser.parse(json.loads(wellness).get("id")) <= parser.parse(newest)]
             return [json.loads(wellness) for wellness in wellnesses]
         return []
     def _headers(self, uid: str):
@@ -462,6 +479,140 @@ class IntervalsIcu(PluginLoader):
             return
         self.refresh_all_athletes()
         self.driver.reply_to(message, "Refreshed all activities")
+    async def get_athlete_metrics(self, uid: str, table: str, metric: str|list, date_from: str, date_to: str)->list[dict]:
+        """get athlete metrics"""
+        # check if we are doing wellness or activities
+        if type(metric) == str:
+            metric = [metric]
+        if table == "wellness":
+            data = self.get_wellnesses(uid, date_from, date_to)
+            date_field = "id"
+        elif table == "activities":
+            data = self.get_activities(uid)
+            date_field = "start_date"
+        if not data:
+            return []
+        # get the metric and return the date and metric
+        metrics_rows = []
+        for entry in data:
+            metrics_vals = {}
+            metrics_vals["date"] = entry.get(date_field)
+            for m in metric:
+                if m in entry:
+                    val = entry.get(m)
+                    if val is not None:
+                        metrics_vals[m] = entry.get(m)
+            # check if we have any values exluding the date
+            if len(metrics_vals) > 1:
+                metrics_rows.append(metrics_vals)
+        return metrics_rows
+    def parse_period(self, period: str):
+        """parse period returns start_date and end_date"""
+        """takes in one or more digits + [d, w, m, y]"""
+        """d - day, w - week, m - month, y - year"""
+        # get the last character
+        period_type = period[-1]
+        # get the number
+        period_number = int(period[:-1])
+        # get the current date
+        today = datetime.datetime.now()
+        end_date = today.strftime("%Y-%m-%d")
+        if period_type == "d":
+            start_date = (today - datetime.timedelta(days=period_number)).strftime("%Y-%m-%d")
+
+        elif period_type == "w":
+            start_date = (today - datetime.timedelta(weeks=period_number)).strftime("%Y-%m-%d")
+        elif period_type == "m":
+            start_date = (today - datetime.timedelta(days=30*period_number)).strftime("%Y-%m-%d")
+        elif period_type == "y":
+            start_date = (today - datetime.timedelta(days=365*period_number)).strftime("%Y-%m-%d")
+        else:
+            raise Exception("Invalid period")
+        return start_date, end_date
+
+    def get_template_for_metrics(self, metrics: list, limit: int = 5) -> str:
+        """get template for metrics to be displayed MAKE IT PRETTY check if there is an actual value"""
+        template = []
+        # reverse the metrics
+        metrics = metrics[::-1]
+        for metric in metrics:
+            template.append(f"Date: {metric.get('date')}")
+            for key, value in metric.items():
+                if key != "date":
+                    if value:
+                        template.append(f"{value} {self.get_units_for_metric(key)}")
+        # limit the metrics
+        template = template[:limit]
+        return "\n".join(template)
+    def get_units_for_metric(self, metric: str) -> str:
+        """get units for metric"""
+        units = {
+            "distance": "km",
+            "duration": "minutes",
+            "calories": "cal",
+            "steps": "steps",
+            "weight": "kg",
+            "sleep": "hours",
+            "hr": "bpm"
+        }
+        if metric in units:
+            return units.get(metric)
+        return ""
+    @listen_to(r"^\.intervals (steps|weight|distance|hr) ([0-9]+[ymdw])")
+    async def get_user_metrics(self, message: Message, metric: str, period: str):
+        """get steps"""
+        uid = message.user_id
+        # parse the period
+        try:
+            date_from, date_to = self.parse_period(period)
+        except Exception:
+            self.driver.reply_to(message, "Invalid period")
+            return
+        metrics_table = self.generate_metric_to_table_mapping(metric)
+        metrics = await self.get_athlete_metrics(uid, metrics_table, metric, date_from=date_from, date_to=date_to)
+        msg = ""
+
+        if metrics:
+            # do some calculations
+            metric_sum = 0
+            for met in metrics:
+                metric_sum += int(met.get(metric) or 0)
+            # dont show hr and weight totals
+            if metric not in ["hr", "weight"]:
+                msg += f"\nTotal {metric} {metric_sum}"
+            # lets calculate two averages. one for the period and one for the active days
+            active_days = len(metrics)
+            total_days = (parser.parse(date_to) - parser.parse(date_from)).days
+            inactive_days = total_days - active_days
+            if active_days:
+                msg += f"\nAverage {metric} for the period on active days {metric_sum/active_days}"
+                msg += f"\nActive days {active_days}"
+            if total_days:
+                msg += f"\nAverage {metric} for the total period {metric_sum/total_days}"
+                msg += f"\nTotal days {total_days}"
+            if inactive_days:
+                msg += f"\nInactive days {inactive_days}"
+            # lets get the median
+            metric_median = 0
+            metric_vals = [int(met.get(metric) or 0) for met in metrics]
+            if metric_vals:
+                metric_vals.sort()
+                if len(metric_vals) % 2 == 0:
+                    metric_median = (metric_vals[len(metric_vals)//2] + metric_vals[len(metric_vals)//2 - 1]) / 2
+                else:
+                    metric_median = metric_vals[len(metric_vals)//2]
+                msg += f"\nMedian {metric} {metric_median}"
+            # lets get the min and max
+            metric_min =   min([int(met.get(metric) or 0) for met in metrics])
+            metric_max =   max([int(met.get(metric) or 0) for met in metrics])
+            msg += f"\nMin {metric} {metric_min}"
+            msg += f"\nMax {metric} {metric_max}"
+            msg += "\n\nData (Limited to latest 100):\n"
+            limit = 100
+            msg += self.get_template_for_metrics(metrics, limit=limit)
+            self.driver.reply_to(message, msg)
+        else:
+            self.driver.reply_to(message, f"No {metric} found")
     @listen_to(r"^\.intervals help")
     async def help(self, message: Message):
         """help"""
@@ -479,6 +630,11 @@ class IntervalsIcu(PluginLoader):
 
         Personal Activity & wellness commands:
         .intervals activities - get activities
+        .intervals wellness - get wellness
+        .intervals steps - get steps
+        .intervals weight - get weight
+        .intervals sleep - get sleep
+        .intervals hr - get heart rate
         .intervals refresh data force - force refresh activities & wellness (use with caution)
         .intervals refresh data - refresh activities & wellness
         .intervals reset data - reset activities & wellness

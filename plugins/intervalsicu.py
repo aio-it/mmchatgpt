@@ -529,21 +529,33 @@ class IntervalsIcu(PluginLoader):
         else:
             raise Exception("Invalid period")
         return start_date, end_date
-
+    def generate_markdown_table(self, headers, rows):
+        # Create the header row
+        header_row = "| " + " | ".join(headers) + " |"
+        # Create the separator row with appropriate dashes for each header
+        separator_row = "|-" + "-|-".join(['-' * len(header) for header in headers]) + "-|"
+        # Create the data rows
+        data_rows = ["| " + " | ".join(map(str, row)) + " |" for row in rows]
+        
+        # Combine all parts into a full table
+        table = "\n" + "\n".join([header_row, separator_row] + data_rows) + "\n"
+        return table
     def get_template_for_metrics(self, metrics: list, limit: int = 5) -> str:
-        """get template for metrics to be displayed MAKE IT PRETTY check if there is an actual value"""
-        template = []
-        # reverse the metrics
-        metrics = metrics[::-1]
-        for metric in metrics:
-            template.append(f"Date: {metric.get('date')}")
-            for key, value in metric.items():
-                if key != "date":
-                    if value:
-                        template.append(f"{value} {self.get_units_for_metric(key)}")
+        """format a table for metrics in a mattermost format"""
+        # get the headers
+        headers = list(metrics[0].keys())
+        # generate the list of data rows
+        rows = [[metric.get(header) for header in headers] for metric in metrics]
+
+        # reverse the rows
+        rows = rows[::-1]
+        # limit the rows
+        rows = rows[:limit]
+
+        # generate the table
+        table = self.generate_markdown_table(headers, rows)
         # limit the metrics
-        template = template[:limit]
-        return "\n".join(template)
+        return table
     def get_units_for_metric(self, metric: str) -> str:
         """get units for metric"""
         units = {
@@ -571,7 +583,7 @@ class IntervalsIcu(PluginLoader):
         metrics_table = self.generate_metric_to_table_mapping(metric)
         metrics = await self.get_athlete_metrics(uid, metrics_table, metric, date_from=date_from, date_to=date_to)
         msg = ""
-
+        msg += f"Showing {metric} for {self.users.id2unhl(uid)} from {str(date_from)} to {str(date_to)}"
         if metrics:
             # do some calculations
             metric_sum = 0
@@ -605,10 +617,13 @@ class IntervalsIcu(PluginLoader):
             # lets get the min and max
             metric_min =   min([int(met.get(metric) or 0) for met in metrics])
             metric_max =   max([int(met.get(metric) or 0) for met in metrics])
-            msg += f"\nMin {metric} {metric_min}"
-            msg += f"\nMax {metric} {metric_max}"
-            msg += "\n\nData (Limited to latest 100):\n"
+            # find the date for the min and max
+            metric_min_date = [met.get("date") for met in metrics if int(met.get(metric) or 0) == metric_min]
+            metric_max_date = [met.get("date") for met in metrics if int(met.get(metric) or 0) == metric_max]
+            msg += f"\nMin {metric} {metric_min} on {metric_min_date}"
+            msg += f"\nMax {metric} {metric_max} on {metric_max_date}"
             limit = 100
+            msg += "\n\nData (Limited to showing only the latest {limit} entries calculations are performed in the entire period):\n"
             msg += self.get_template_for_metrics(metrics, limit=limit)
             self.driver.reply_to(message, msg)
         else:

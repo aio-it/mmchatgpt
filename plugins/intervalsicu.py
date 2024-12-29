@@ -645,47 +645,18 @@ class IntervalsIcu(PluginLoader):
 
         Personal Activity & wellness commands:
         .intervals activities - get activities
-        .intervals wellness - get wellness
-        .intervals steps - get steps
-        .intervals weight - get weight
-        .intervals sleep - get sleep
-        .intervals hr - get heart rate
         .intervals refresh data force - force refresh activities & wellness (use with caution)
         .intervals refresh data - refresh activities & wellness
         .intervals reset data - reset activities & wellness
-        .intervals stats* - get stats (distance, duration, calories, steps, activity count)
-        .intervals pb* - get personal bests (distance, duration, calories, steps, activity count)
-
-        Personal goals commands:*
-        .intervals goals - get goals
-        .intervals goals create absolute [metric] [goal] [enddate] [startdate(optional earlist found metric entry)] - set goal for metric
-        .intervals goals create recurring [metric] [goal] [recurring_period] - set recurring goal for metric
-        .intervals goals delete [metric] - delete goal for metric
-        .intervals goals update [metric] [goal] [enddate] [startdate(optional defaults to now)] - update goal for metric
-        .intervals goals history [metric] - get goal history for metric
-        .intervals goals progress [metric] - get goal progress for metric
+        .intervals (steps|weight|distance|hr) [period] - get metrics for the specified period (e.g., 7d, 1m, 1y)
 
         Public commands (opt-in required):
         .intervals participants - get participants (athletes who opted in)
-        .intervals leaderboard* - get leaderboards
-        .intervals stats all* - get stats for all participants
-        .intervals pb all* - get personal bests for all participants
-
-        Competitions commands:*
-        .intervals competitions - get competitions
-        .intervals competitions create [name] [recurring_period] [metric] - create competition
-        .intervals competitions delete [name] - delete competition
-
-        Other commands:*
-        .intervals compare pb [username] - compare personal bests with another user
-        .intervals compare stats [username] - compare stats with another user
-        .intervals compare goals [username] - compare goals with another user
-        .intervals compare activities [username] - compare activities with another user
 
         Help:
         .intervals help - get help
 
-       * MEANS NOT IMPLEMENTED YET (and might not be implemented let me know if you need it)
+           * MEANS NOT IMPLEMENTED YET (and might not be implemented let me know if you need it)
 
         Parameters:
         [metric] - distance, duration, calories, steps, count, weight
@@ -696,13 +667,12 @@ class IntervalsIcu(PluginLoader):
         [recurring_period] - daily, weekly, monthly, yearly
         [name] - string
         [username] - mattermost username
- 
-        Admin only commands
+     
+        Admin only commands:
         .intervals admin athletes - get athletes (admin only)
-        .intervals admin refresh all
-        .intervals admin verify all
-        .intervals admin set auto_refresh [true/false]
-        .intervals admin set refresh_interval [interval in seconds]
+        .intervals admin refresh all - refresh all data (admin only)
+        .intervals admin set auto_refresh [true/false] - set auto refresh (admin only)
+        .intervals admin set refresh_interval [interval in seconds] - set refresh interval (admin only)
         """
         self.driver.reply_to(message, help_str)
     def clear_lock(self, lockname: str):

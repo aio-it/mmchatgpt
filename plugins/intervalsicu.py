@@ -562,6 +562,8 @@ Parameters:
                         data.append([key, value])
                 activities_str += self.generate_markdown_table(["Field", "Value"], data)
                 activities_str += "--------------------------------\n"
+            # limit to 14000 characters
+            activities_str = activities_str[:14000]
             self.driver.reply_to(message, activities_str)
         else:
             self.driver.reply_to(message, "No activities found try .intervals refresh data")

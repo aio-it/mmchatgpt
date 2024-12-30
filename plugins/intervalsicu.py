@@ -882,15 +882,15 @@ Parameters:
 
     def refresh_all_athletes(self):
         """refresh all from all athletes"""
-        self.helper.slog("Refreshing all athletes initiated")
+        #self.helper.slog("Refreshing all athletes initiated")
         # create a lock in valkey to prevent multiple refreshes running at the same time
         if self.helper.str2bool(self.get_lock("refresh_all_athletes")):
-            self.helper.slog("Refresh lock is on")
+            #self.helper.slog("Refresh lock is on")
             return
         auto_refresh = self.helper.str2bool(self.valkey.get(f"{self.intervals_prefix}_auto_refresh"))
-        self.helper.slog(f"Auto refresh is {auto_refresh}")
+        #self.helper.slog(f"Auto refresh is {auto_refresh}")
         if not auto_refresh:
-            self.helper.slog(f"Auto refresh is off")
+            #self.helper.slog(f"Auto refresh is off")
             self.clear_lock("refresh_all_athletes")
             return
 
@@ -903,7 +903,7 @@ Parameters:
             last_refresh = str(current_time - 7*24*3600)  # 7 days ago
         
         if current_time - int(float(last_refresh)) < refresh_interval:
-            self.helper.slog(f"Global refresh too recent. Next refresh in {refresh_interval - (current_time - int(float(last_refresh)))} seconds")
+            #self.helper.slog(f"Global refresh too recent. Next refresh in {refresh_interval - (current_time - int(float(last_refresh)))} seconds")
             self.clear_lock("refresh_all_athletes")
             return
 

@@ -545,10 +545,23 @@ Parameters:
     )
     async def activities(self, message: Message):
         uid = message.user_id
+        # only return the last 10 activities
         activities = self.get_activities(uid)
+        # reverse the list
+        activities = activities[::-1][:10]
         if activities:
-            activities = sorted(activities, key=lambda x: x.start_date)
-            activities_str = "\n".join(self.return_pretty_activities(activities))
+            activities = sorted(activities, key=lambda x: x.start_date, reverse=True)
+            activities_str = ""
+            for activity in activities:
+                # only print fields that are not None
+                # print the header
+                activities_str += f"Activity: {activity.start_date} - {activity.type} - {activity.name}\n"
+                data = []
+                for key, value in activity.to_dict().items():
+                    if value:
+                        data.append([key, value])
+                activities_str += self.generate_markdown_table(["Field", "Value"], data)
+                activities_str += "--------------------------------\n"
             self.driver.reply_to(message, activities_str)
         else:
             self.driver.reply_to(message, "No activities found try .intervals refresh data")

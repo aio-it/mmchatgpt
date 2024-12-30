@@ -12,6 +12,8 @@ from dateutil import parser
 
 from plugins.base import PluginLoader
 import schedule
+from plugins.models.intervals_activity import IntervalsActivity
+from plugins.models.intervals_wellness import IntervalsWellness, SportInfo
 
 class IntervalsIcu(PluginLoader):
     """IntervalsIcu plugin"""
@@ -61,22 +63,22 @@ class IntervalsIcu(PluginLoader):
         activities = self.get_activities(uid)
         wellness = self.get_wellnesses(uid)
         if activities:
-            activities = sorted(activities, key=lambda x: x.get("id"))
+            activities = sorted(activities, key=lambda x: x.id)
             for i in range(1, len(activities)):
-                if activities[i].get("id") == activities[i-1].get("id"):
-                    self.remove_activity(uid, activities[i])
+                if activities[i].id == activities[i-1].id:
+                    self.remove_activity(uid, activities[i].to_dict())
         if wellness:
-            wellness = sorted(wellness, key=lambda x: x.get("id"))
+            wellness = sorted(wellness, key=lambda x: x.id)
             for i in range(1, len(wellness)):
-                if wellness[i].get("id") == wellness[i-1].get("id"):
-                    self.helper.log(f"Removing duplicate wellness for user {self.users.id2u(uid)} - {wellness[i].get('id')}")
-                    self.remove_wellness(uid, wellness[i])
+                if wellness[i].id == wellness[i-1].id:
+                    self.helper.log(f"Removing duplicate wellness for user {self.users.id2u(uid)} - {wellness[i].id}")
+                    self.remove_wellness(uid, wellness[i].to_dict())
 
-    def return_pretty_activities(self, activities: list):
+    def return_pretty_activities(self, activities: list[IntervalsActivity]):
         """return pretty activities"""
         pretty = []
         for activity in activities:
-            pretty.append(f"{activity.get('start_date_local')} {activity.get('type')} {activity.get('name')} {activity.get('distance')} {activity.get('duration')} {activity.get('calories')}")
+            pretty.append(f"{activity.start_date_local} {activity.type} {activity.name} {activity.distance} {activity.moving_time} {activity.calories}")
         return pretty
 
     def add_athlete(self, uid: str):
@@ -99,31 +101,25 @@ class IntervalsIcu(PluginLoader):
         if uid in self.opted_in:
             self.opted_in.remove(uid)
 
-    def add_activity(self, uid: str, activity: dict) -> str:
-        # we need to account for updated activities
-        # get the id of the activity
-        activity_id = activity.get("id")
+    def add_activity(self, uid: str, activity: IntervalsActivity) -> str:
+        """Add an activity to storage"""
+        activity_id = activity.id
         activities = self.get_activities(uid)
         if activities:
             for i, act in enumerate(activities):
-                if act.get("id") == activity_id:
-                    # compare the whole object as json
-                    if json.dumps(act) == json.dumps(activity):
+                if act.id == activity_id:
+                    if act == activity:
                         return "alreadyexists"
-                    # remove the old activity
-                    self.remove_activity(uid, act)
-                    # add the new activity
-                    self.valkey.lpush(f"{self.intervals_prefix}_athlete_{uid}_activities", json.dumps(activity))
+                    self.remove_activity(uid, act.to_dict())
+                    self.valkey.lpush(f"{self.intervals_prefix}_athlete_{uid}_activities", activity.to_json())
                     return "changed"
-        # check if the list exists
         if self.valkey.exists(f"{self.intervals_prefix}_athlete_{uid}_activities"):                
-            # check if activity already exists
-            #self.helper.slog(self.return_pretty_activities([activity]))
-            if json.dumps(activity) in self.valkey.lrange(f"{self.intervals_prefix}_athlete_{uid}_activities", 0, -1):
+            if activity.to_json() in self.valkey.lrange(f"{self.intervals_prefix}_athlete_{uid}_activities", 0, -1):
                 return "alreadyexists"
 
-        self.valkey.lpush(f"{self.intervals_prefix}_athlete_{uid}_activities", json.dumps(activity))
+        self.valkey.lpush(f"{self.intervals_prefix}_athlete_{uid}_activities", activity.to_json())
         return "added"
+
     def generate_and_set_metric_lookup_table(self) -> dict:
         """generate and set the metric table from wellness and activities"""
         mappings = {}
@@ -157,66 +153,54 @@ class IntervalsIcu(PluginLoader):
     def remove_activity(self, uid: str, activity: dict):
         self.valkey.lrem(f"{self.intervals_prefix}_athlete_{uid}_activities", 0, json.dumps(activity))
 
-    def get_activities(self, uid: str, oldest: str | None = None, newest: str | None = None):
+    def get_activities(self, uid: str, oldest: str | None = None, newest: str | None = None) -> list[IntervalsActivity]:
+        """get activities"""
         activities = self.valkey.lrange(f"{self.intervals_prefix}_athlete_{uid}_activities", 0, -1)
-        # if activities:
-        #     for activity in activities:
-        #         activity = json.loads(activity)
-        #         start_date = activity.get("start_date")
-        #         id = activity.get("id")
-        #         self.helper.slog(f"{uid} - activity: {start_date} {id} len: {len(json.dumps(activity))}")
-        # decode the json
         if activities:
-            # sort activities by start_date
-            activities = sorted(activities, key=lambda x: json.loads(x).get("start_date"))
+            # Convert JSON strings to IntervalsActivity objects
+            activities = [IntervalsActivity.from_dict(json.loads(activity)) for activity in activities]
+            # Sort by start_date
+            activities = sorted(activities, key=lambda x: x.start_date)
             if oldest and newest:
-                return [json.loads(activity) for activity in activities if parser.parse(oldest) <= parser.parse(json.loads(activity).get("start_date")) <= parser.parse(newest)]
-            return [json.loads(activity) for activity in activities]
+                return [activity for activity in activities 
+                       if parser.parse(oldest) <= parser.parse(activity.start_date) <= parser.parse(newest)]
+            return activities
         return []
 
-    def add_wellness(self, uid: str, wellness: dict) -> str:
-        """add wellness"""
-        # we need to account for updated wellness since wellness's id is the date we cant and we need to compare the whole object
-        # get the id of the wellness
-        wellness_id = wellness.get("id")
+    def add_wellness(self, uid: str, wellness: IntervalsWellness) -> str:
+        """Add a wellness entry to storage"""
+        wellness_id = wellness.id
         wellnesses = self.get_wellnesses(uid)
         if wellnesses:
             for i, well in enumerate(wellnesses):
-                if well.get("id") == wellness_id:
-                    # compare the whole object as json
-                    if json.dumps(well) == json.dumps(wellness):
+                if well.id == wellness_id:
+                    if well == wellness:
                         return "alreadyexists"
-                    # remove the old wellness
-                    self.remove_wellness(uid, well)
-                    # add the new wellness
-                    self.valkey.lpush(f"{self.intervals_prefix}_athlete_{uid}_wellness", json.dumps(wellness))
+                    self.remove_wellness(uid, well.to_dict())
+                    self.valkey.lpush(f"{self.intervals_prefix}_athlete_{uid}_wellness", wellness.to_json())
                     return "changed"
-        # check if the list exists
         if self.valkey.exists(f"{self.intervals_prefix}_athlete_{uid}_wellness"):
-            # check if wellness already exists
-            if json.dumps(wellness) in self.valkey.lrange(f"{self.intervals_prefix}_athlete_{uid}_wellness", 0, -1):
+            if wellness.to_json() in self.valkey.lrange(f"{self.intervals_prefix}_athlete_{uid}_wellness", 0, -1):
                 return "alreadyexists"
-        self.valkey.lpush(f"{self.intervals_prefix}_athlete_{uid}_wellness", json.dumps(wellness))
+        self.valkey.lpush(f"{self.intervals_prefix}_athlete_{uid}_wellness", wellness.to_json())
         return "added"
 
     def remove_wellness(self, uid: str, wellness: dict):
         """remove wellness"""
         self.valkey.lrem(f"{self.intervals_prefix}_athlete_{uid}_wellness", 0, json.dumps(wellness))
 
-    def get_wellnesses(self, uid: str, oldest: str | None = None, newest: str | None = None):
+    def get_wellnesses(self, uid: str, oldest: str | None = None, newest: str | None = None) -> list[IntervalsWellness]:
         """get wellness"""
         wellnesses = self.valkey.lrange(f"{self.intervals_prefix}_athlete_{uid}_wellness", 0, -1)
-        # decode the json
         if wellnesses:
-            # sort wellness by id (date)
-            wellnesses = sorted(wellnesses, key=lambda x: json.loads(x).get("id"))
-            # for wellness in wellnesses:
-            #     wellness = json.loads(wellness)
-            #     id = wellness.get("id")
-            #     self.helper.slog(f"{uid} - wellness: {id} len: {len(json.dumps(wellness))}")
+            # Convert JSON strings to IntervalsWellness objects
+            wellnesses = [IntervalsWellness.from_dict(json.loads(wellness)) for wellness in wellnesses]
+            # Sort by id (date)
+            wellnesses = sorted(wellnesses, key=lambda x: x.id)
             if oldest and newest:
-                return [json.loads(wellness) for wellness in wellnesses if parser.parse(oldest) <= parser.parse(json.loads(wellness).get("id")) <= parser.parse(newest)]
-            return [json.loads(wellness) for wellness in wellnesses]
+                return [wellness for wellness in wellnesses 
+                       if parser.parse(oldest) <= parser.parse(wellness.id) <= parser.parse(newest)]
+            return wellnesses
         return []
     def _headers(self, uid: str):
         """Basic authorization headers"""
@@ -255,43 +239,43 @@ class IntervalsIcu(PluginLoader):
 
     def _scrape_athlete(self, uid: str, force_all: bool = False):
         """scrape all things from intervals"""
-        # date format is YYYY-MM-DD
-        # oldest set it to the previous month
-        # newest set it to the current month and day + 1
         today = datetime.datetime.now()
         newest = (today + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-        # first lets try and get the oldest activity from the user
         activities = self.get_activities(uid)
         wellness = self.get_wellnesses(uid)
         wellnesses_added = 0
         activities_added = 0
         wellnesses_changed = 0
         activities_changed = 0
+
         if activities:
-            oldest_activity = parser.parse(activities[-1].get("start_date")).strftime("%Y-%m-%d")
-            # substract 3 days from the oldest activity
+            oldest_activity = parser.parse(activities[-1].start_date).strftime("%Y-%m-%d")
             oldest_activity = (parser.parse(oldest_activity) - datetime.timedelta(days=3)).strftime("%Y-%m-%d")
         else:
             oldest_activity = (today - datetime.timedelta(days=30)).strftime("%Y-%m-%d")
+
         if wellness:
-            oldest_wellness = parser.parse(wellness[-1].get("id")).strftime("%Y-%m-%d")
-            # substract 3 days from the oldest wellness
+            oldest_wellness = parser.parse(wellness[-1].id).strftime("%Y-%m-%d")
             oldest_wellness = (parser.parse(oldest_wellness) - datetime.timedelta(days=3)).strftime("%Y-%m-%d")
         else:
             oldest_wellness = (today - datetime.timedelta(days=10*365)).strftime("%Y-%m-%d")
+
         if force_all:
             oldest_activity = "2010-01-01"
             oldest_wellness = "2010-01-01"
+
         params_activity = {"oldest": oldest_activity, "newest": newest}
         params_wellness = {"oldest": oldest_wellness, "newest": newest}
+
         try:
             # get activities
             self.helper.slog(f"Getting activities from intervals {oldest_activity} to {newest}")
             response = self._request("activities", "GET", uid=uid, data=params_activity)
             if response.status_code == 200:
-                activities = response.json()
-                for activity in activities:
-                    self.helper.slog(f"Got activity: {self.users.id2u(uid)} - {activity.get('start_date')} - {activity.get('id')}")
+                activities_data = response.json()
+                for activity_data in activities_data:
+                    self.helper.slog(f"Got activity: {self.users.id2u(uid)} - {activity_data.get('start_date')} - {activity_data.get('id')}")
+                    activity = IntervalsActivity.from_dict(activity_data)
                     result = self.add_activity(uid, activity)
                     if result == "added":
                         activities_added += 1
@@ -300,15 +284,15 @@ class IntervalsIcu(PluginLoader):
             else:
                 self.helper.slog("Failed to get activities")
                 self.helper.slog(response.status_code)
-            # update last refresh time for the athlete using Unix timestamp
 
             # get wellness
             self.helper.slog(f"Getting wellness from intervals {oldest_wellness} to {newest}")
             response = self._request("wellness", "GET", uid=uid, data=params_wellness)
             if response.status_code == 200:
-                wellness = response.json()
-                for wellness in wellness:
-                    self.helper.slog(f"Got wellness: {self.users.id2u(uid)} - {wellness.get('id')}")
+                wellness_data = response.json()
+                for wellness_entry in wellness_data:
+                    self.helper.slog(f"Got wellness: {self.users.id2u(uid)} - {wellness_entry.get('id')}")
+                    wellness = IntervalsWellness.from_dict(wellness_entry)
                     result = self.add_wellness(uid, wellness)
                     if result == "added":
                         wellnesses_added += 1
@@ -318,11 +302,18 @@ class IntervalsIcu(PluginLoader):
                 self.helper.slog("Failed to get wellness")
                 self.helper.slog(response.status_code)
 
-            # update last refresh time for the athlete using Unix timestamp
             self.valkey.set(f"{self.intervals_prefix}_{uid}_last_refresh", str(int(datetime.datetime.now().timestamp())))
-        except Exception:
+            
+        except Exception as e:
+            self.helper.slog(f"Error in _scrape_athlete: {str(e)}")
             return False
-        return {"activities_added": activities_added, "activities_changed": activities_changed, "wellnesses_added": wellnesses_added, "wellnesses_changed": wellnesses_changed}
+
+        return {
+            "activities_added": activities_added,
+            "activities_changed": activities_changed,
+            "wellnesses_added": wellnesses_added,
+            "wellnesses_changed": wellnesses_changed
+        }
 
     def verify_api_key(self, uid: str):
         """this uses the athlete endpoint to verify the api key"""
@@ -386,11 +377,9 @@ class IntervalsIcu(PluginLoader):
     async def activities(self, message: Message):
         """get activities"""
         uid = message.user_id
-        #await self._scrape_activities(uid)
         activities = self.get_activities(uid)
         if activities:
-            # sort activities by date
-            activities = sorted(activities, key=lambda x: x.get("start_date"))
+            activities = sorted(activities, key=lambda x: x.start_date)
             activities_str = "\n".join(self.return_pretty_activities(activities))
             self.driver.reply_to(message, activities_str)
         else:
@@ -508,7 +497,7 @@ class IntervalsIcu(PluginLoader):
             data = self.get_wellnesses(uid, date_from, date_to)
             date_field = "id"
         elif table == "activities":
-            data = self.get_activities(uid)
+            data = self.get_activities(uid, date_from, date_to)
             date_field = "start_date"
         if not data:
             return []
@@ -516,12 +505,11 @@ class IntervalsIcu(PluginLoader):
         metrics_rows = []
         for entry in data:
             metrics_vals = {}
-            metrics_vals["date"] = entry.get(date_field)
+            metrics_vals["date"] = getattr(entry, date_field)
             for m in metric:
-                if m in entry:
-                    val = entry.get(m)
-                    if val is not None:
-                        metrics_vals[m] = entry.get(m)
+                val = getattr(entry, m, None)
+                if val is not None:
+                    metrics_vals[m] = val
             # check if we have any values exluding the date
             if len(metrics_vals) > 1:
                 metrics_rows.append(metrics_vals)
@@ -529,7 +517,6 @@ class IntervalsIcu(PluginLoader):
     def parse_period(self, period: str):
         """parse period returns start_date and end_date"""
         """takes in one or more digits + [d, w, m, y]"""
-        """d - day, w - week, m - month, y - year"""
         # get the last character
         period_type = period[-1]
         # get the number

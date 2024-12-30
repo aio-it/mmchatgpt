@@ -170,6 +170,8 @@ class IntervalsActivity:
     icu_average_watts: Optional[float] = None
     icu_variability_index: Optional[float] = None
     icu_power_spike_threshold: Optional[float] = None
+    activity_link: Optional[str] = None
+    activity_link_markdown: Optional[str] = None
 
     @classmethod
     def from_dict(cls, data: dict) -> 'IntervalsActivity':
@@ -184,6 +186,9 @@ class IntervalsActivity:
         """
         valid_fields = {k: v for k, v in data.items() 
                        if k in cls.__dataclass_fields__ and not isinstance(v, dict)}
+        # add the activity_link_markdown field by taking the id
+        valid_fields['activity_link'] = f"https://intervals.icu/activities/{valid_fields['id']}"
+        valid_fields['activity_link_markdown'] = f"[{valid_fields['name']}](https://intervals.icu/activities/{valid_fields['id']})"
         return cls(**valid_fields)
     
     def to_dict(self) -> dict:

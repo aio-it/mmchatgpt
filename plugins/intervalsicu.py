@@ -1,23 +1,24 @@
 import base64
 import datetime
+import inspect
 import json
+import re
+from functools import wraps
+from typing import Dict, List
 
 import requests
+import schedule
+from dateutil import parser
 from mmpy_bot.driver import Driver
 from mmpy_bot.function import listen_to
 from mmpy_bot.plugins.base import PluginManager
 from mmpy_bot.settings import Settings
 from mmpy_bot.wrappers import Message
-from dateutil import parser
 
 from plugins.base import PluginLoader
-import schedule
 from plugins.models.intervals_activity import IntervalsActivity
 from plugins.models.intervals_wellness import IntervalsWellness, SportInfo
-from typing import Dict, List
-import inspect
-import re
-from functools import wraps
+
 
 def bot_command(category: str, description: str, pattern: str, admin: bool = False):
     """
@@ -51,7 +52,33 @@ def bot_command(category: str, description: str, pattern: str, admin: bool = Fal
 class IntervalsIcu(PluginLoader):
     """IntervalsIcu plugin"""
     _INTERNAL_TIMER_LOOP = 300
-    
+    _MINIMUM_REFRESH_INTERVAL_FOR_ATHLETE = 60  # 5 minutes
+    ACTIVITY_OVERVIEW_COMMON_FIELDS = [
+        "moving_time",
+        "calories",
+        "average_heartrate",
+        "max_heartrate",
+    ]
+    ACTIVITY_OVERVIEW_RUNNING_FIELDS = [
+        "distance",
+        "pace",
+        "average_speed",
+        "max_speed",
+    ]
+    ACTIVITY_OVERVIEW_CYCLING_FIELDS = [
+        "distance",
+        "pace",
+        "average_speed",
+        "max_speed",
+    ]
+    ACTIVITY_OVERVIEW_WEIGHTTRAINING_FIELDS = [
+        "kg_lifted"
+    ]
+    ACTIVITY_MAPPING_REGEX = {
+        "run|walk|hike|trailrun|treadmill": ACTIVITY_OVERVIEW_COMMON_FIELDS + ACTIVITY_OVERVIEW_RUNNING_FIELDS,
+        "ride|cycling": ACTIVITY_OVERVIEW_COMMON_FIELDS + ACTIVITY_OVERVIEW_CYCLING_FIELDS,
+        "weighttraining": ACTIVITY_OVERVIEW_COMMON_FIELDS + ACTIVITY_OVERVIEW_WEIGHTTRAINING_FIELDS,
+    }
     # Add categories for commands
     COMMAND_CATEGORIES = {
         "login": "Login commands",
@@ -536,7 +563,9 @@ Parameters:
         uid = message.user_id
         self.remove_athlete_opted_in(uid)
         self.driver.reply_to(message, "You have opted out of public usage")
-
+    def convert_snakecase_to_ucfirst(self, string: str) -> str:
+        """Convert snake_case to Ucfirst"""
+        return " ".join([word.capitalize() for word in string.split("_")])
     # Activity & Wellness Management Commands  
     @bot_command(
         category="Activity & Wellness Management",
@@ -549,17 +578,30 @@ Parameters:
         activities = self.get_activities(uid)
         # reverse the list
         activities = activities[::-1][:10]
+        # get the fields for the activities using the mapping
+            
         if activities:
             activities = sorted(activities, key=lambda x: x.start_date, reverse=True)
             activities_str = "Last 10 activities:\n (or whatever fits in 14000 characters)\n"
             for activity in activities:
-                # only print fields that are not None
+                # use the ACTIVITY_MAPPING_REGEX to get the fields by checking each type of activity against activity.type
+                fields = self.ACTIVITY_OVERVIEW_COMMON_FIELDS
+                regexes = self.ACTIVITY_MAPPING_REGEX.keys()
+                for regex in regexes:
+                    # use search instead of match to match anywhere in the string
+                    if re.search(regex, activity.type, re.IGNORECASE):
+                        fields = self.ACTIVITY_MAPPING_REGEX[regex]
+                        break
+                await self.helper.log(f"Unknown/Unmatched activity type: {activity.type}")
+
                 # print the header
-                activities_str += f"Activity: {activity.start_date} - {activity.type} - {activity.name}\n"
+                activities_str += f"Activity: {activity.start_date_local} - {activity.type} - {activity.activity_link_markdown}\n"
                 data = []
-                for key, value in activity.to_dict().items():
-                    if value:
-                        data.append([key, value])
+                # only print fields that are not None
+                for field in fields:
+                    value = getattr(activity, field)
+                    if value is not None:
+                        data.append([self.convert_snakecase_to_ucfirst(field), self.get_metric_to_human_readable(field, value)])
                 activities_str += self.generate_markdown_table(["Field", "Value"], data)
                 activities_str += "--------------------------------\n"
             # limit to 14000 characters
@@ -857,6 +899,66 @@ Parameters:
         table = self.generate_markdown_table(headers, rows)
         # limit the metrics
         return table
+    def get_metric_to_human_readable(self, metric: str, value: any) -> str:
+        """get metric to human readable"""
+        if type(value) == float and metric != "pace":
+            # limit to 2 decimal places
+            value = round(value, 2)
+        if metric == "distance":
+            # convert distance in meters to km
+            value = round(value/1000, 2)
+            return f"{value} km"
+        if metric == "duration" or metric == "moving_time":
+            # convert seconds to 00:00:00
+            return self.seconds_to_human_readable(value)
+        if metric == "calories":
+            return f"{value} cal"
+        if metric == "steps":
+            return f"{value} steps"
+        if metric == "weight":
+            # limit to 2 decimal places
+            return f"{value} kg"
+        if metric == "sleep" or "sleep" in metric:
+            # convert seconds to 00:00:00
+            return self.seconds_to_hms(value)
+        if metric == "pace":
+            # Convert pace from meters per second to mm:ss per kilometer
+            seconds_per_km = 1000 / value  # Calculate seconds per kilometer
+            return f"{self.seconds_to_hms(seconds_per_km)}/km"
+        if metric == "hr" or metric == "heartrate" or "heartrate" in metric:
+            return f"{value} bpm"
+        return value
+    def seconds_to_hms(self, seconds: int) -> str:
+        """convert seconds to hh:mm:ss"""
+        seconds = int(round(seconds))  # Round to nearest whole number
+        hours = seconds // 3600
+        minutes = (seconds % 3600) // 60
+        secs = seconds % 60
+
+        if hours > 0:
+            return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+        elif minutes > 0:
+            return f"{minutes}:{secs:02d}"
+        else:
+            return f"{secs}s"
+    def seconds_to_human_readable(self, seconds: int) -> str:
+        """Convert seconds to a human-readable string like '1y 2w 3d 4h 5m 6s'."""
+        seconds = int(round(seconds))
+        time_units = [
+            ('y', 365*24*3600),
+            ('w', 7*24*3600),
+            ('d', 24*3600),
+            ('h', 3600),
+            ('m', 60),
+            ('s', 1)
+        ]
+        parts = []
+        for suffix, length in time_units:
+            value = seconds // length
+            if value > 0 or suffix == 's':  # Always show seconds
+                parts.append(f"{value}{suffix}")
+            seconds %= length
+        return ' '.join(parts)
 
     def get_units_for_metric(self, metric: str) -> str:
         """get units for metric"""

@@ -14,12 +14,154 @@ from plugins.base import PluginLoader
 import schedule
 from plugins.models.intervals_activity import IntervalsActivity
 from plugins.models.intervals_wellness import IntervalsWellness, SportInfo
+from typing import Dict, List
+import inspect
+import re
+from functools import wraps
+
+def bot_command(category: str, description: str, pattern: str, admin: bool = False):
+    """
+    Decorator to specify command metadata
+    
+    Args:
+        category: Command category for grouping
+        description: Help description
+        pattern: Command pattern (without .intervals prefix)
+        admin: Whether command requires admin privileges
+    """
+    def decorator(func):
+        @wraps(func)
+        @listen_to(f"^\.intervals {pattern}")
+        async def wrapper(self, message: Message, *args, **kwargs):
+            if admin and not self.users.is_admin(message.sender_name):
+                self.driver.reply_to(message, "You need to be an admin to use this command")
+                return
+            return await func(self, message, *args, **kwargs)
+        
+        # Store command metadata
+        wrapper._command_meta = {
+            "category": category,
+            "description": description,
+            "pattern": pattern,
+            "is_admin": admin
+        }
+        return wrapper
+    return decorator
 
 class IntervalsIcu(PluginLoader):
     """IntervalsIcu plugin"""
     _INTERNAL_TIMER_LOOP = 300
+    
+    # Add categories for commands
+    COMMAND_CATEGORIES = {
+        "login": "Login commands",
+        "opt": "Public usage commands",
+        "profile": "Personal Information commands", 
+        "activities": "Personal Activity & wellness commands",
+        "refresh": "Data refresh commands",
+        "admin": "Admin only commands",
+        "reset": "Data management commands",
+        "steps|weight|distance|hr": "Metric commands"
+    }
+
     def __init__(self):
         super().__init__()
+        self._command_cache = None
+
+    def get_commands(self) -> Dict[str, Dict[str, List[str]]]:
+        """Get all commands grouped by category with their descriptions"""
+        if self._command_cache is not None:
+            return self._command_cache
+
+        commands = {}
+        
+        # Get all methods with command metadata
+        for name, method in inspect.getmembers(self):
+            if hasattr(method, '_command_meta'):
+                meta = method._command_meta
+                category = meta["category"]
+                
+                if category not in commands:
+                    commands[category] = []
+                    
+                commands[category].append({
+                    "pattern": meta["pattern"],
+                    "description": meta["description"],
+                    "is_admin": meta["is_admin"]
+                })
+
+        # Define category order
+        category_order = [
+
+            "Authentication",
+            "Privacy Settings",
+            "Activity & Wellness Management",
+            "Data Refresh",
+            "Metrics",
+            "Profile",
+            "Help",
+            "Admin"
+        ]
+
+        # Sort commands by category order
+        sorted_commands = {}
+        for category in category_order:
+            if category in commands:
+                sorted_commands[category] = commands[category]
+        
+        # Add any remaining categories not in the order list
+        for category in commands:
+            if category not in sorted_commands:
+                sorted_commands[category] = commands[category]
+
+        self._command_cache = sorted_commands
+        return sorted_commands
+
+    def generate_help_message(self) -> str:
+        """Generate help message dynamically from commands"""
+        commands = self.get_commands()
+        
+        help_sections = []
+        
+        # Add each category
+        for category, command_list in commands.items():
+            section = [f"\n**{category}**:"]
+            
+            for cmd in command_list:
+                pattern = cmd["pattern"]
+                desc = cmd["description"]
+                
+                # Format the command help line
+                # Convert regex patterns to readable format
+                pattern = pattern.replace("([\s\S]*)", "<value>")  # For login and generic input
+                pattern = pattern.replace("([a-zA-Z0-9_]+)", "<name>")  # For profile set name
+                pattern = pattern.replace("([0-9.]+)", "<value>")  # For profile set value
+                pattern = pattern.replace("([0-9]+[ymdw])", "<period>")  # For metrics period
+                
+                cmd_str = f".intervals {pattern}"
+                
+                # Add admin marker if needed
+                if cmd["is_admin"]:
+                    cmd_str += " (admin only)"
+                    
+                section.append(f"{cmd_str} - {desc}")
+            
+            help_sections.append("\n".join(section))
+        
+        # Add parameters section
+        parameters = """
+Parameters:
+[metric] - distance, duration, calories, steps, count, weight
+[period] - Format: <number><unit> where unit is d(days), w(weeks), m(months), y(years). Example: 7d, 4w
+[goal] - number
+[profile_key] - height, weight(only for starting reference will be used for goals)
+[api_key] - Your Intervals.icu API key
+"""
+        
+        # Combine all sections
+        full_help = "Intervals.icu Bot Commands:\n" + "\n".join(help_sections) + "\n" + parameters
+        
+        return full_help
 
     def initialize(self, driver: Driver, plugin_manager: PluginManager, settings: Settings):
         super().initialize(driver, plugin_manager, settings)
@@ -327,11 +469,15 @@ class IntervalsIcu(PluginLoader):
         except Exception:
             return False
 
-    @listen_to(r"^\.intervals login ([\s\S]*)")
+    # Commands organized by category:
+    
+    # Authentication Commands
+    @bot_command(
+        category="Authentication",
+        description="Connect your Intervals.icu account by providing your API key",
+        pattern="login ([\s\S]*)"  # Hidden regex
+    )
     async def login(self, message: Message, text: str):
-        """login to intervals"""
-        # this is done by providing an api key
-        # get uid from message sender
         uid = message.user_id
         self.valkey.set(f"{self.intervals_prefix}_{uid}_apikey", text)
         # verify the api key
@@ -341,41 +487,63 @@ class IntervalsIcu(PluginLoader):
             self.driver.reply_to(message, "API key verified\nYou are now logged in\n to participate in the public usage use\n.intervals opt-in\n you can opt out at any time using:\n.intervals opt-out")
         else:
             self.driver.reply_to(message, "API key verification failed")
-    @listen_to(r"^\.intervals opt-in")
-    async def opt_in(self, message: Message):
-        """opt in to public usage"""
-        uid = message.user_id
-        if self.verify_api_key(uid):
-            self.add_athlete_opted_in(uid)
-            self.driver.reply_to(message, "You have opted in to public usage")
-        else:
-            self.driver.reply_to(message, "You need to login first using .intervals login")
-    @listen_to(r"^\.intervals opt-out")
-    async def opt_out(self, message: Message):
-        """opt out of public usage"""
-        uid = message.user_id
-        self.remove_athlete_opted_in(uid)
-        self.driver.reply_to(message, "You have opted out of public usage")
-    @listen_to(r"^\.intervals logout")
-    async def logout(self, message: Message):
-        """logout of intervals"""
-        uid = message.user_id
-        self.valkey.delete(f"{self.intervals_prefix}_{uid}_apikey")
-        self.remove_athlete(uid)
-        self.remove_athlete_opted_in(uid)
-        self.driver.reply_to(message, "You have been logged out")
-    @listen_to(r"^\.intervals verify")
+
+    @bot_command(
+        category="Authentication",
+        description="Check if your API key is valid and working",
+        pattern="verify"
+    )
     async def verify(self, message: Message):
-        """verify the api key"""
         uid = message.user_id
         works = self.verify_api_key(uid)
         if works:
             self.driver.reply_to(message, "API key verified")
         else:
             self.driver.reply_to(message, "API key verification failed")
-    @listen_to(r"^\.intervals activities")
+
+    @bot_command(
+        category="Authentication",
+        description="Remove your API key and disconnect your account",
+        pattern="logout"
+    )
+    async def logout(self, message: Message):
+        uid = message.user_id
+        self.valkey.delete(f"{self.intervals_prefix}_{uid}_apikey")
+        self.remove_athlete(uid)
+        self.remove_athlete_opted_in(uid)
+        self.driver.reply_to(message, "You have been logged out")
+
+    # Privacy Settings Commands
+    @bot_command(
+        category="Privacy Settings",
+        description="Enable sharing your data with other users in the community",
+        pattern="opt-in"
+    )
+    async def opt_in(self, message: Message):
+        uid = message.user_id
+        if self.verify_api_key(uid):
+            self.add_athlete_opted_in(uid)
+            self.driver.reply_to(message, "You have opted in to public usage")
+        else:
+            self.driver.reply_to(message, "You need to login first using .intervals login")
+
+    @bot_command(
+        category="Privacy Settings",
+        description="Disable sharing your data with other users",
+        pattern="opt-out"
+    )
+    async def opt_out(self, message: Message):
+        uid = message.user_id
+        self.remove_athlete_opted_in(uid)
+        self.driver.reply_to(message, "You have opted out of public usage")
+
+    # Activity & Wellness Management Commands  
+    @bot_command(
+        category="Activity & Wellness Management",
+        description="Display your recent activities and workouts",
+        pattern="activities"
+    )
     async def activities(self, message: Message):
-        """get activities"""
         uid = message.user_id
         activities = self.get_activities(uid)
         if activities:
@@ -384,9 +552,25 @@ class IntervalsIcu(PluginLoader):
             self.driver.reply_to(message, activities_str)
         else:
             self.driver.reply_to(message, "No activities found try .intervals refresh data")
-    @listen_to(r"^.intervals refresh data force")
+
+    @bot_command(
+        category="Activity & Wellness Management",
+        description="Delete all your stored activities and wellness data",
+        pattern="reset data"
+    )
+    async def reset(self, message: Message):
+        uid = message.user_id
+        self.valkey.delete(f"{self.intervals_prefix}_athlete_{uid}_activities")
+        self.valkey.delete(f"{self.intervals_prefix}_athlete_{uid}_wellness")
+        self.driver.reply_to(message, "Activities & Wellness reset")
+
+    # Data Refresh Commands
+    @bot_command(
+        category="Data Refresh",
+        description="Force sync all historical data from Intervals.icu (may take a while)",
+        pattern="refresh data force"
+    )
     async def refresh_force(self, message: Message):
-        """force refresh activities"""
         uid = message.user_id
         result = self._scrape_athlete(uid, force_all=True)
         # count the number of activities and wellness
@@ -396,9 +580,13 @@ class IntervalsIcu(PluginLoader):
             self.driver.reply_to(message, f"Refreshed activities newly total:{activities_count_new} new:{result.get('activities_added')} changed:{result.get('activities_changed')} & wellness total:{wellness_count_new} new:{result.get('wellnesses_added')} changed:{result.get('wellnesses_changed')}")
         else:
             self.driver.reply_to(message, "No new activities & wellness found")
-    @listen_to(r"^\.intervals refresh data$")
+
+    @bot_command(
+        category="Data Refresh",
+        description="Sync recent data from Intervals.icu",
+        pattern="refresh data"
+    )
     async def refresh(self, message: Message):
-        """refresh activities"""
         uid = message.user_id
         # check if the last refresh was too recent
         refresh_interval = int(self.valkey.get(f"{self.intervals_prefix}_refresh_interval")) or 900  # 15 minutes default
@@ -416,170 +604,38 @@ class IntervalsIcu(PluginLoader):
             self.driver.reply_to(message, f"Refreshed activities newly total:{activities_count_new} new:{result.get('activities_added')} changed:{result.get('activities_changed')} & wellness total:{wellness_count_new} new:{result.get('wellnesses_added')} changed:{result.get('wellnesses_changed')}")
         else:
             self.driver.reply_to(message, "No new activities & wellness found")
-    @listen_to(r"^\.intervals reset data")
-    async def reset(self, message: Message):
-        """reset activities"""
-        uid = message.user_id
-        self.valkey.delete(f"{self.intervals_prefix}_athlete_{uid}_activities")
-        self.valkey.delete(f"{self.intervals_prefix}_athlete_{uid}_wellness")
-        self.driver.reply_to(message, "Activities & Wellness reset")
-    @listen_to(r"^\.intervals athletes")
-    async def athletes_cmd(self, message: Message):
-        """get athletes"""
-        # check if the user is an admin
-        if not self.users.is_admin(message.sender_name):
-            self.driver.reply_to(message, "You need to be an admin to use this command")
-            return
-        athletes = self.valkey.smembers(f"{self.intervals_prefix}_athletes")
-        if not athletes:
-            self.driver.reply_to(message, "No athletes found")
-            return
-        # convert to usernames
-        athletes = ["@" + self.users.id2unhl(uid) for uid in athletes]
-        athletes = "\n".join(athletes)
-        self.driver.reply_to(message, athletes)
-    @listen_to(r"^\.intervals participants")
-    async def participants(self, message: Message):
-        """get participants"""
-        athletes = self.valkey.smembers(f"{self.intervals_prefix}_athletes_opted_in")
-        if not athletes:
-            self.driver.reply_to(message, "No participants found. ask them to use .intervals opt-in")
-            return
-        # convert to usernames
-        athletes = ["@" + self.users.id2unhl(uid) for uid in athletes]
-        athletes = "\n".join(athletes)
-        self.driver.reply_to(message, athletes)
-    @listen_to(r"^\.intervals profile")
+
+    # Profile Commands
+    @bot_command(
+        category="Profile",
+        description="View your stored profile settings and preferences",
+        pattern="profile"
+    )
     async def profile(self, message: Message):
-        """get profile"""
         uid = message.user_id
         # valkey stored profile
         profile = self.valkey.hgetall(f"{self.intervals_prefix}_profiles", uid)
         if profile:
             self.driver.reply_to(message, profile)
             return
-    @listen_to(r"^\.intervals profile set ([\s\S]*) ([\s\S]*)")
+
+    @bot_command(
+        category="Profile",
+        description="Update a profile setting. Usage: .intervals profile set <setting_name> <value> (example: profile set weight 75)",
+        pattern="profile set ([a-zA-Z0-9_]+) ([0-9.]+)"  # Hidden regex
+    )
     async def profile_set(self, message: Message, key: str, value: str):
-        """set profile key value"""
         uid = message.user_id
         self.valkey.hset(f"{self.intervals_prefix}_profiles", uid, {key: value})
         self.driver.reply_to(message, f"Set {key} to {value}")
-    @listen_to(r"^\.intervals admin set auto_refresh ([\s\S]*)")
-    async def set_auto_refresh(self, message: Message, value: str):
-        """set auto refresh"""
-        if not self.users.is_admin(message.sender_name):
-            self.driver.reply_to(message, "You need to be an admin to use this command")
-            return
-        self.valkey.set(f"{self.intervals_prefix}_auto_refresh", value)
-        self.driver.reply_to(message, f"Set auto refresh to {value}")
-    @listen_to(r"^\.intervals admin set refresh_interval ([\s\S]*)")
-    async def set_refresh_interval(self, message: Message, value: str):
-        """set refresh interval"""
-        if not self.users.is_admin(message.sender_name):
-            self.driver.reply_to(message, "You need to be an admin to use this command")
-            return
-        self.valkey.set(f"{self.intervals_prefix}_refresh_interval", value)
-        self.driver.reply_to(message, f"Set refresh interval to {value}")
-    @listen_to(r"^\.intervals admin refresh all")
-    async def refresh_all(self, message: Message):
-        """refresh all data"""
-        if not self.users.is_admin(message.sender_name):
-            self.driver.reply_to(message, "You need to be an admin to use this command")
-            return
-        self.refresh_all_athletes()
-        self.driver.reply_to(message, "Refreshed all activities")
-    async def get_athlete_metrics(self, uid: str, table: str, metric: str|list, date_from: str, date_to: str)->list[dict]:
-        """get athlete metrics"""
-        # check if we are doing wellness or activities
-        if type(metric) == str:
-            metric = [metric]
-        if table == "wellness":
-            data = self.get_wellnesses(uid, date_from, date_to)
-            date_field = "id"
-        elif table == "activities":
-            data = self.get_activities(uid, date_from, date_to)
-            date_field = "start_date"
-        if not data:
-            return []
-        # get the metric and return the date and metric
-        metrics_rows = []
-        for entry in data:
-            metrics_vals = {}
-            metrics_vals["date"] = getattr(entry, date_field)
-            for m in metric:
-                val = getattr(entry, m, None)
-                if val is not None:
-                    metrics_vals[m] = val
-            # check if we have any values exluding the date
-            if len(metrics_vals) > 1:
-                metrics_rows.append(metrics_vals)
-        return metrics_rows
-    def parse_period(self, period: str):
-        """parse period returns start_date and end_date"""
-        """takes in one or more digits + [d, w, m, y]"""
-        # get the last character
-        period_type = period[-1]
-        # get the number
-        period_number = int(period[:-1])
-        # get the current date
-        today = datetime.datetime.now()
-        end_date = today.strftime("%Y-%m-%d")
-        if period_type == "d":
-            start_date = (today - datetime.timedelta(days=period_number)).strftime("%Y-%m-%d")
 
-        elif period_type == "w":
-            start_date = (today - datetime.timedelta(weeks=period_number)).strftime("%Y-%m-%d")
-        elif period_type == "m":
-            start_date = (today - datetime.timedelta(days=30*period_number)).strftime("%Y-%m-%d")
-        elif period_type == "y":
-            start_date = (today - datetime.timedelta(days=365*period_number)).strftime("%Y-%m-%d")
-        else:
-            raise Exception("Invalid period")
-        return start_date, end_date
-    def generate_markdown_table(self, headers, rows):
-        # Create the header row
-        header_row = "| " + " | ".join(headers) + " |"
-        # Create the separator row with appropriate dashes for each header
-        separator_row = "|-" + "-|-".join(['-' * len(header) for header in headers]) + "-|"
-        # Create the data rows
-        data_rows = ["| " + " | ".join(map(str, row)) + " |" for row in rows]
-        
-        # Combine all parts into a full table
-        table = "\n" + "\n".join([header_row, separator_row] + data_rows) + "\n"
-        return table
-    def get_template_for_metrics(self, metrics: list, limit: int = 5) -> str:
-        """format a table for metrics in a mattermost format"""
-        # get the headers
-        headers = list(metrics[0].keys())
-        # generate the list of data rows
-        rows = [[metric.get(header) for header in headers] for metric in metrics]
-
-        # reverse the rows
-        rows = rows[::-1]
-        # limit the rows
-        rows = rows[:limit]
-
-        # generate the table
-        table = self.generate_markdown_table(headers, rows)
-        # limit the metrics
-        return table
-    def get_units_for_metric(self, metric: str) -> str:
-        """get units for metric"""
-        units = {
-            "distance": "km",
-            "duration": "minutes",
-            "calories": "cal",
-            "steps": "steps",
-            "weight": "kg",
-            "sleep": "hours",
-            "hr": "bpm"
-        }
-        if metric in units:
-            return units.get(metric)
-        return ""
-    @listen_to(r"^\.intervals (steps|weight|distance|hr) ([0-9]+[ymdw])")
+    # Metrics Commands
+    @bot_command(
+        category="Metrics",
+        description="View statistics over time. Usage: .intervals <metric> <timespan> (example: steps 7d or weight 2w)",
+        pattern="(steps|weight|distance|hr) ([0-9]+[ymdw])"  # Hidden regex
+    )
     async def get_user_metrics(self, message: Message, metric: str, period: str):
-        """get steps"""
         uid = message.user_id
         # parse the period
         try:
@@ -630,65 +686,187 @@ class IntervalsIcu(PluginLoader):
             msg += f"\nMin {metric} {metric_min} on {metric_min_date}"
             msg += f"\nMax {metric} {metric_max} on {metric_max_date}"
             limit = 100
-            msg += "\n\nData (Limited to showing only the latest {limit} entries calculations are performed in the entire period):\n"
+            msg += f"\n\nData (Limited to showing only the latest {limit} entries calculations are performed in the entire period):\n"
             msg += self.get_template_for_metrics(metrics, limit=limit)
             self.driver.reply_to(message, msg)
         else:
             self.driver.reply_to(message, f"No {metric} found")
-    @listen_to(r"^\.intervals help")
+
+    # Admin Commands
+    @bot_command(
+        category="Admin",
+        description="Display list of all registered athletes in the system",
+        pattern="athletes",
+        admin=True
+    )
+    async def athletes_cmd(self, message: Message):
+        athletes = self.valkey.smembers(f"{self.intervals_prefix}_athletes")
+        if not athletes:
+            self.driver.reply_to(message, "No athletes found")
+            return
+        # convert to usernames
+        athletes = ["@" + self.users.id2unhl(uid) for uid in athletes]
+        athletes = "\n".join(athletes)
+        self.driver.reply_to(message, athletes)
+
+    @bot_command(
+        category="Privacy Settings",
+        description="Show all users who have opted in to data sharing",
+        pattern="participants"
+    )
+    async def participants(self, message: Message):
+        athletes = self.valkey.smembers(f"{self.intervals_prefix}_athletes_opted_in")
+        if not athletes:
+            self.driver.reply_to(message, "No participants found. ask them to use .intervals opt-in")
+            return
+        # convert to usernames
+        athletes = ["@" + self.users.id2unhl(uid) for uid in athletes]
+        athletes = "\n".join(athletes)
+        self.driver.reply_to(message, athletes)
+
+    @bot_command(
+        category="Admin",
+        description="Enable or disable automatic data sync. Usage: .intervals admin set auto_refresh <true/false>",
+        pattern="admin set auto_refresh ([\s\S]*)",  # Hidden regex
+        admin=True
+    )
+    async def set_auto_refresh(self, message: Message, value: str):
+        self.valkey.set(f"{self.intervals_prefix}_auto_refresh", value)
+        self.driver.reply_to(message, f"Set auto refresh to {value}")
+
+    @bot_command(
+        category="Admin",
+        description="Set sync interval in seconds. Usage: .intervals admin set refresh_interval <seconds>",
+        pattern="admin set refresh_interval ([\s\S]*)",  # Hidden regex
+        admin=True
+    )
+    async def set_refresh_interval(self, message: Message, value: str):
+        self.valkey.set(f"{self.intervals_prefix}_refresh_interval", value)
+        self.driver.reply_to(message, f"Set refresh interval to {value}")
+
+    @bot_command(
+        category="Admin",
+        description="Manually trigger synchronization for all athletes",
+        pattern="admin refresh all",
+        admin=True
+    )
+    async def refresh_all(self, message: Message):
+        self.refresh_all_athletes()
+        self.driver.reply_to(message, "Refreshed all activities")
+
+    # Help Commands
+    @bot_command(
+        category="Help",
+        description="Display this help message with all available commands",
+        pattern="help"
+    )
     async def help(self, message: Message):
-        """help"""
-        help_str = """
-        Login commands:
-        .intervals login [api_key] - login
-        .intervals opt-in - opt in to public usage
-        .intervals opt-out - opt out of public usage
-        .intervals logout - logout
-        .intervals verify - verify the api key
-
-        Personal Information commands:
-        .intervals profile - get profile
-        .intervals profile set [profile_key] [value] - set profile key value
-
-        Personal Activity & wellness commands:
-        .intervals activities - get activities
-        .intervals refresh data force - force refresh activities & wellness (use with caution)
-        .intervals refresh data - refresh activities & wellness
-        .intervals reset data - reset activities & wellness
-        .intervals (steps|weight|distance|hr) [period] - get metrics for the specified period (e.g., 7d, 1m, 1y)
-
-        Public commands (opt-in required):
-        .intervals participants - get participants (athletes who opted in)
-
-        Help:
-        .intervals help - get help
-
-           * MEANS NOT IMPLEMENTED YET (and might not be implemented let me know if you need it)
-
-        Parameters:
-        [metric] - distance, duration, calories, steps, count, weight
-        [goal] - number
-        [enddate] - YYYY-MM-DD
-        [startdate] - YYYY-MM-DD
-        [profile_key] - height, weight(only for starting reference will be used for goals)
-        [recurring_period] - daily, weekly, monthly, yearly
-        [name] - string
-        [username] - mattermost username
-     
-        Admin only commands:
-        .intervals admin athletes - get athletes (admin only)
-        .intervals admin refresh all - refresh all data (admin only)
-        .intervals admin set auto_refresh [true/false] - set auto refresh (admin only)
-        .intervals admin set refresh_interval [interval in seconds] - set refresh interval (admin only)
-        """
+        help_str = self.generate_help_message()
         self.driver.reply_to(message, help_str)
+
+    async def get_athlete_metrics(self, uid: str, table: str, metric: str|list, date_from: str, date_to: str)->list[dict]:
+        """get athlete metrics"""
+        # check if we are doing wellness or activities
+        if type(metric) == str:
+            metric = [metric]
+        if table == "wellness":
+            data = self.get_wellnesses(uid, date_from, date_to)
+            date_field = "id"
+        elif table == "activities":
+            data = self.get_activities(uid, date_from, date_to)
+            date_field = "start_date"
+        if not data:
+            return []
+        # get the metric and return the date and metric
+        metrics_rows = []
+        for entry in data:
+            metrics_vals = {}
+            metrics_vals["date"] = getattr(entry, date_field)
+            for m in metric:
+                val = getattr(entry, m, None)
+                if val is not None:
+                    metrics_vals[m] = val
+            # check if we have any values exluding the date
+            if len(metrics_vals) > 1:
+                metrics_rows.append(metrics_vals)
+        return metrics_rows
+
+    def parse_period(self, period: str):
+        """parse period returns start_date and end_date"""
+        """takes in one or more digits + [d, w, m, y]"""
+        # get the last character
+        period_type = period[-1]
+        # get the number
+        period_number = int(period[:-1])
+        # get the current date
+        today = datetime.datetime.now()
+        end_date = today.strftime("%Y-%m-%d")
+        if period_type == "d":
+            start_date = (today - datetime.timedelta(days=period_number)).strftime("%Y-%m-%d")
+
+        elif period_type == "w":
+            start_date = (today - datetime.timedelta(weeks=period_number)).strftime("%Y-%m-%d")
+        elif period_type == "m":
+            start_date = (today - datetime.timedelta(days=30*period_number)).strftime("%Y-%m-%d")
+        elif period_type == "y":
+            start_date = (today - datetime.timedelta(days=365*period_number)).strftime("%Y-%m-%d")
+        else:
+            raise Exception("Invalid period")
+        return start_date, end_date
+
+    def generate_markdown_table(self, headers, rows):
+        # Create the header row
+        header_row = "| " + " | ".join(headers) + " |"
+        # Create the separator row with appropriate dashes for each header
+        separator_row = "|-" + "-|-".join(['-' * len(header) for header in headers]) + "-|"
+        # Create the data rows
+        data_rows = ["| " + " | ".join(map(str, row)) + " |" for row in rows]
+        
+        # Combine all parts into a full table
+        table = "\n" + "\n".join([header_row, separator_row] + data_rows) + "\n"
+        return table
+
+    def get_template_for_metrics(self, metrics: list, limit: int = 5) -> str:
+        """format a table for metrics in a mattermost format"""
+        # get the headers
+        headers = list(metrics[0].keys())
+        # generate the list of data rows
+        rows = [[metric.get(header) for header in headers] for metric in metrics]
+
+        # reverse the rows
+        rows = rows[::-1]
+        # limit the rows
+        rows = rows[:limit]
+
+        # generate the table
+        table = self.generate_markdown_table(headers, rows)
+        # limit the metrics
+        return table
+
+    def get_units_for_metric(self, metric: str) -> str:
+        """get units for metric"""
+        units = {
+            "distance": "km",
+            "duration": "minutes",
+            "calories": "cal",
+            "steps": "steps",
+            "weight": "kg",
+            "sleep": "hours",
+            "hr": "bpm"
+        }
+        if metric in units:
+            return units.get(metric)
+        return ""
+
     def clear_lock(self, lockname: str):
         self.valkey.delete(f"{self.intervals_prefix}_locks_{lockname}")
+
     def get_lock(self, lockname: str):
         lock = self.helper.str2bool(self.valkey.get(f"{self.intervals_prefix}_locks_{lockname}"))
         if lock:
             return True
         return False
+
     def refresh_all_athletes(self):
         """refresh all from all athletes"""
         self.helper.slog("Refreshing all athletes initiated")

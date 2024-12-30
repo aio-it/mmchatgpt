@@ -86,6 +86,7 @@ class IntervalsWellness:
         if self.sportInfo:
             data['sportInfo'] = [vars(sport) for sport in self.sportInfo]
         return data
+
     def to_json(self) -> str:
         """export to json"""
         return json.dumps(self.to_dict())

@@ -194,6 +194,7 @@ class IntervalsActivity:
             dict: Dictionary representation of the activity
         """
         return {k: v for k, v in self.__dict__.items() if v is not None}
+
     def to_json(self) -> str:
         """
         Convert the IntervalsActivity instance to a JSON string

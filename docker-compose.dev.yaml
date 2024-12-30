@@ -19,5 +19,17 @@ services:
       - pg
     depends_on:
       - pg
+  redis-commander:
+    container_name: redis-commander
+    hostname: redis-commander
+    image: ghcr.io/joeferner/redis-commander:latest
+    restart: always
+    links:
+      - valkey
+    environment:
+      - REDIS_HOSTS=local:valkey:6379
+    ports:
+      - "8081:8081"
+    user: redis
 volumes:
   pgadmin-data:

@@ -551,7 +551,7 @@ Parameters:
         activities = activities[::-1][:10]
         if activities:
             activities = sorted(activities, key=lambda x: x.start_date, reverse=True)
-            activities_str = ""
+            activities_str = "Last 10 activities:\n (or whatever fits in 14000 characters)\n"
             for activity in activities:
                 # only print fields that are not None
                 # print the header

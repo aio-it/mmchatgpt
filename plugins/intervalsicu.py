@@ -14,6 +14,8 @@ from plugins.base import PluginLoader
 import schedule
 
 class IntervalsIcu(PluginLoader):
+    """IntervalsIcu plugin"""
+    _INTERNAL_TIMER_LOOP = 300
     def __init__(self):
         super().__init__()
 
@@ -29,7 +31,7 @@ class IntervalsIcu(PluginLoader):
 
         # jobs
         self.jobs = {}
-        self.jobs['refresh_all_athletes'] = schedule.every(60).seconds.do(self.refresh_all_athletes)
+        self.jobs['refresh_all_athletes'] = schedule.every(self._INTERNAL_TIMER_LOOP).seconds.do(self.refresh_all_athletes)
         self.jobs['cleanup_duplicates'] = schedule.every(1).days.do(self.cleanup_duplicates_for_all_athletes)
         self.jobs['cleanup_broken_athletes'] = schedule.every(1).days.do(self.cleanup_broken_athletes)
 
@@ -122,18 +124,36 @@ class IntervalsIcu(PluginLoader):
 
         self.valkey.lpush(f"{self.intervals_prefix}_athlete_{uid}_activities", json.dumps(activity))
         return "added"
-    def generate_metric_to_table_mapping(self, metric: str):
-        """generate metric to table mapping"""
-        mapping = {
-            "distance": "activities",
-            "duration": "activities",
-            "calories": "activities",
-            "steps": "wellness",
-            "weight": "wellness",
-            "sleep": "wellness",
-            "hr": "wellness"
-        }
-        return mapping.get(metric)
+    def generate_and_set_metric_lookup_table(self) -> dict:
+        """generate and set the metric table from wellness and activities"""
+        mappings = {}
+        # fetch one activity and one wellness and check if the metric is in the activity or wellness
+        for uid in self.athletes:
+            activities = self.get_activities(uid)
+            if activities:
+                for act in activities:
+                    for key in act:
+                        mappings[key] = "activities"
+                    # break after the first activity
+                    break
+            wellness = self.get_wellnesses(uid)
+            if wellness:
+                for well in wellness:
+                    for key in well:
+                        mappings[key] = "wellness"
+                    # break after the first wellness
+                    break
+            # break after the first athlete
+            break
+        self.metric_lookup_table = mappings
+        return self.metric_lookup_table
+    
+    def lookup_metric_in_table(self, metric: str) -> str:
+        """get the table where the metric is stored"""
+        if not hasattr(self, "metric_lookup_table"):
+            self.generate_and_set_metric_lookup_table()
+        return self.metric_lookup_table.get(metric, "activities")
+
     def remove_activity(self, uid: str, activity: dict):
         self.valkey.lrem(f"{self.intervals_prefix}_athlete_{uid}_activities", 0, json.dumps(activity))
 
@@ -580,7 +600,7 @@ class IntervalsIcu(PluginLoader):
         except Exception:
             self.driver.reply_to(message, "Invalid period")
             return
-        metrics_table = self.generate_metric_to_table_mapping(metric)
+        metrics_table = self.lookup_metric_in_table(metric)
         metrics = await self.get_athlete_metrics(uid, metrics_table, metric, date_from=date_from, date_to=date_to)
         msg = ""
         msg += f"Showing {metric} for {self.users.id2unhl(uid)} from {str(date_from)} to {str(date_to)}"

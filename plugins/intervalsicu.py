@@ -694,6 +694,9 @@ Parameters:
             self.driver.reply_to(message, "Invalid period")
             return
         metrics_table = self.lookup_metric_table(metric)
+        if not metrics_table:
+            self.driver.reply_to(message, "Invalid metric")
+            return
         metrics = await self.get_athlete_metrics(uid, metrics_table, metric, date_from=date_from, date_to=date_to)
         hmetric = self.convert_snakecase_and_camelcase_to_ucfirst(original_metric)
         msg = ""

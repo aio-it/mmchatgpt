@@ -18,19 +18,14 @@ from mmpy_bot.wrappers import Message
 from plugins.base import PluginLoader
 from plugins.models.intervals_activity import IntervalsActivity
 from plugins.models.intervals_wellness import IntervalsWellness, SportInfo
+from dataclasses import fields
 
-
-def bot_command(category: str, description: str, pattern: str, admin: bool = False):
+def bot_command(category: str, description: str, pattern: str = None, admin: bool = False):
     """
     Decorator to specify command metadata
-    
-    Args:
-        category: Command category for grouping
-        description: Help description
-        pattern: Command pattern (without .intervals prefix)
-        admin: Whether command requires admin privileges
     """
     def decorator(func):
+
         @wraps(func)
         @listen_to(f"^\.intervals {pattern}")
         async def wrapper(self, message: Message, *args, **kwargs):
@@ -235,13 +230,16 @@ Parameters:
             activities = sorted(activities, key=lambda x: x.id)
             for i in range(1, len(activities)):
                 if activities[i].id == activities[i-1].id:
-                    self.remove_activity(uid, activities[i].to_dict())
+                    self.helper.slog(f"Removing duplicate activity for user {self.users.id2u(uid)} - {activities[i].id} and {activities[i-1].id}")
+                    self.remove_activity(uid, activities[i].to_json())
         if wellness:
             wellness = sorted(wellness, key=lambda x: x.id)
             for i in range(1, len(wellness)):
                 if wellness[i].id == wellness[i-1].id:
-                    self.helper.log(f"Removing duplicate wellness for user {self.users.id2u(uid)} - {wellness[i].id}")
-                    self.remove_wellness(uid, wellness[i].to_dict())
+                    self.helper.slog(f"Removing duplicate wellness for user {self.users.id2u(uid)} - {wellness[i].id} and {wellness[i-1].id}")
+                    self.helper.slog(f"1: {wellness[i].to_json()}")
+                    self.helper.slog(f"2: {wellness[i-1].to_json()}")
+                    self.remove_wellness(uid, wellness[i].to_json())
 
     def return_pretty_activities(self, activities: list[IntervalsActivity]):
         """return pretty activities"""
@@ -289,35 +287,12 @@ Parameters:
         self.valkey.lpush(f"{self.intervals_prefix}_athlete_{uid}_activities", activity.to_json())
         return "added"
 
-    def generate_and_set_metric_lookup_table(self) -> dict:
-        """generate and set the metric table from wellness and activities"""
-        mappings = {}
-        # fetch one activity and one wellness and check if the metric is in the activity or wellness
-        for uid in self.athletes:
-            activities = self.get_activities(uid)
-            if activities:
-                for act in activities:
-                    for key in act:
-                        mappings[key] = "activities"
-                    # break after the first activity
-                    break
-            wellness = self.get_wellnesses(uid)
-            if wellness:
-                for well in wellness:
-                    for key in well:
-                        mappings[key] = "wellness"
-                    # break after the first wellness
-                    break
-            # break after the first athlete
-            break
-        self.metric_lookup_table = mappings
-        return self.metric_lookup_table
-    
-    def lookup_metric_in_table(self, metric: str) -> str:
+    def lookup_metric_table(self, metric: str) -> str:
         """get the table where the metric is stored"""
-        if not hasattr(self, "metric_lookup_table"):
-            self.generate_and_set_metric_lookup_table()
-        return self.metric_lookup_table.get(metric, "activities")
+        if IntervalsActivity.has_field(metric):
+            return "activities"
+        if IntervalsWellness.has_field(metric):
+            return "wellness"
 
     def remove_activity(self, uid: str, activity: dict):
         self.valkey.lrem(f"{self.intervals_prefix}_athlete_{uid}_activities", 0, json.dumps(activity))
@@ -331,8 +306,9 @@ Parameters:
             # Sort by start_date
             activities = sorted(activities, key=lambda x: x.start_date)
             if oldest and newest:
-                return [activity for activity in activities 
-                       if parser.parse(oldest) <= parser.parse(activity.start_date) <= parser.parse(newest)]
+                activities = [activity for activity in activities
+                       if parser.parse(oldest) <= parser.parse(activity.start_date_local) <= parser.parse(newest)]
+                return activities
             return activities
         return []
 
@@ -345,7 +321,7 @@ Parameters:
                 if well.id == wellness_id:
                     if well == wellness:
                         return "alreadyexists"
-                    self.remove_wellness(uid, well.to_dict())
+                    self.remove_wellness(uid, well.to_json())
                     self.valkey.lpush(f"{self.intervals_prefix}_athlete_{uid}_wellness", wellness.to_json())
                     return "changed"
         if self.valkey.exists(f"{self.intervals_prefix}_athlete_{uid}_wellness"):
@@ -356,7 +332,10 @@ Parameters:
 
     def remove_wellness(self, uid: str, wellness: dict):
         """remove wellness"""
-        self.valkey.lrem(f"{self.intervals_prefix}_athlete_{uid}_wellness", 0, json.dumps(wellness))
+        # check if it is a string or a dict
+        if isinstance(wellness, dict):
+            wellness = json.dumps(wellness)
+        self.valkey.lrem(f"{self.intervals_prefix}_athlete_{uid}_wellness", 0, wellness)
 
     def get_wellnesses(self, uid: str, oldest: str | None = None, newest: str | None = None) -> list[IntervalsWellness]:
         """get wellness"""
@@ -366,8 +345,9 @@ Parameters:
             wellnesses = [IntervalsWellness.from_dict(json.loads(wellness)) for wellness in wellnesses]
             # Sort by id (date)
             wellnesses = sorted(wellnesses, key=lambda x: x.id)
+            #self.helper.slog(f"Got wellnesses: {wellnesses[:10]}")
             if oldest and newest:
-                return [wellness for wellness in wellnesses 
+                return [wellness for wellness in wellnesses
                        if parser.parse(oldest) <= parser.parse(wellness.id) <= parser.parse(newest)]
             return wellnesses
         return []
@@ -563,9 +543,16 @@ Parameters:
         uid = message.user_id
         self.remove_athlete_opted_in(uid)
         self.driver.reply_to(message, "You have opted out of public usage")
-    def convert_snakecase_to_ucfirst(self, string: str) -> str:
-        """Convert snake_case to Ucfirst"""
-        return " ".join([word.capitalize() for word in string.split("_")])
+    def convert_snakecase_and_camelcase_to_ucfirst(self, string: str) -> str:
+        """Convert snake_case and camelcase and capitalize each letter of each word"""
+        if "_" in string:
+            string = string.lower()
+            return " ".join([word.capitalize() for word in string.split("_")])
+        # Convert camelCase to Ucfirst allowing multiple words
+        # example "camelCase" -> "Camel Case"
+        # example "camelCaseExample" -> "Camel Case Example"
+        w = re.sub(r"([a-z])([A-Z])", r"\1 \2", string)
+        return " ".join([word.capitalize() for word in w.split(" ")])
     # Activity & Wellness Management Commands  
     @bot_command(
         category="Activity & Wellness Management",
@@ -604,7 +591,7 @@ Parameters:
                 for field in fields:
                     value = getattr(activity, field)
                     if value is not None:
-                        data.append([self.convert_snakecase_to_ucfirst(field), self.get_metric_to_human_readable(field, value)])
+                        data.append([self.convert_snakecase_and_camelcase_to_ucfirst(field), self.get_metric_to_human_readable(field, value)])
                 activities_str += self.generate_markdown_table(["Field", "Value"], data)
                 activities_str += "--------------------------------\n"
             # limit to 14000 characters
@@ -653,7 +640,7 @@ Parameters:
         current_time = int(datetime.datetime.now().timestamp())
         last_refresh = self.valkey.get(f"{self.intervals_prefix}_{uid}_last_refresh")
         if last_refresh:
-            if current_time - int(float(last_refresh)) < 900:
+            if current_time - int(float(last_refresh)) < refresh_interval:
                 self.driver.reply_to(message, f"Refresh too recent wait {refresh_interval - (current_time - int(float(last_refresh)))} seconds")
                 return
         result = self._scrape_athlete(uid)
@@ -693,10 +680,11 @@ Parameters:
     @bot_command(
         category="Metrics",
         description="View statistics over time. Usage: .intervals <metric> <timespan> (example: steps 7d or weight 2w)",
-        pattern="(sleep|steps|weight|distance|hr|sleep) ([0-9]+[ymdw])"  # Hidden regex
+        pattern="(steps|moving_time|kg_lifted|distance|sleep|average_heartrate|max_heartrate|average_speed|max_speed|pace) ([0-9]+[ymdw])"  # Hidden regex
     )
     async def get_user_metrics(self, message: Message, metric: str, period: str):
         uid = message.user_id
+        original_metric = metric
         if metric == "sleep":
             metric = "sleepSecs"
         # parse the period
@@ -705,51 +693,54 @@ Parameters:
         except Exception:
             self.driver.reply_to(message, "Invalid period")
             return
-        metrics_table = self.lookup_metric_in_table(metric)
+        metrics_table = self.lookup_metric_table(metric)
         metrics = await self.get_athlete_metrics(uid, metrics_table, metric, date_from=date_from, date_to=date_to)
+        hmetric = self.convert_snakecase_and_camelcase_to_ucfirst(original_metric)
         msg = ""
-        msg += f"Showing {metric} for {self.users.id2unhl(uid)} from {str(date_from)} to {str(date_to)}"
+        # substract 1 day from the date_to to get the correct period
+        date_to_str = (parser.parse(date_to) - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+        msg += f"Showing {hmetric} for {self.users.id2unhl(uid)} from {str(date_from)} to {str(date_to_str)}"
         if metrics:
             # do some calculations
             metric_sum = 0
             for met in metrics:
-                metric_sum += int(met.get(metric) or 0)
+                metric_sum += int(met.get(metric,0))
             # dont show hr and weight totals
             if metric not in ["hr", "weight"]:
-                msg += f"\nTotal {metric} {metric_sum}"
+                msg += f"\nTotal {hmetric} {self.get_metric_to_human_readable(original_metric,metric_sum)}"
             # lets calculate two averages. one for the period and one for the active days
             active_days = len(metrics)
-            total_days = (parser.parse(date_to) - parser.parse(date_from)).days
+            total_days = (parser.parse(date_to) - parser.parse(date_from)).days -1
             inactive_days = total_days - active_days
             if active_days:
-                msg += f"\nAverage {metric} for the period on active days {metric_sum/active_days}"
+                msg += f"\nAverage {hmetric} for the period on active days {self.get_metric_to_human_readable(original_metric,metric_sum/active_days)}"
                 msg += f"\nActive days {active_days}"
             if total_days:
-                msg += f"\nAverage {metric} for the total period {metric_sum/total_days}"
+                msg += f"\nAverage {hmetric} for the total period {self.get_metric_to_human_readable(original_metric,metric_sum/total_days)}"
                 msg += f"\nTotal days {total_days}"
             if inactive_days:
                 msg += f"\nInactive days {inactive_days}"
             # lets get the median
             metric_median = 0
-            metric_vals = [int(met.get(metric) or 0) for met in metrics]
+            metric_vals = [met.get(metric,0) for met in metrics]
             if metric_vals:
                 metric_vals.sort()
                 if len(metric_vals) % 2 == 0:
                     metric_median = (metric_vals[len(metric_vals)//2] + metric_vals[len(metric_vals)//2 - 1]) / 2
                 else:
                     metric_median = metric_vals[len(metric_vals)//2]
-                msg += f"\nMedian {metric} {metric_median}"
+                msg += f"\nMedian {hmetric} {self.get_metric_to_human_readable(metric,metric_median)}"
             # lets get the min and max
-            metric_min =   min([int(met.get(metric) or 0) for met in metrics])
-            metric_max =   max([int(met.get(metric) or 0) for met in metrics])
+            metric_min =   min([met.get(metric,0) for met in metrics])
+            metric_max =   max([met.get(metric,0) for met in metrics])
             # find the date for the min and max
-            metric_min_date = [met.get("date") for met in metrics if int(met.get(metric) or 0) == metric_min]
-            metric_max_date = [met.get("date") for met in metrics if int(met.get(metric) or 0) == metric_max]
-            msg += f"\nMin {metric} {metric_min} on {metric_min_date}"
-            msg += f"\nMax {metric} {metric_max} on {metric_max_date}"
+            metric_min_date = [met.get("date") for met in metrics if met.get(metric,0) == metric_min]
+            metric_max_date = [met.get("date") for met in metrics if met.get(metric,0) == metric_max]
+            msg += f"\nMin {hmetric} {self.get_metric_to_human_readable(original_metric,metric_min)} on {', '.join([parser.parse(d).strftime('%Y-%m-%d %H:%M:%S') for d in metric_min_date])}"
+            msg += f"\nMax {hmetric} {self.get_metric_to_human_readable(original_metric,metric_max)} on {', '.join([parser.parse(d).strftime('%Y-%m-%d %H:%M:%S') for d in metric_max_date])}"
             limit = 100
             msg += f"\n\nData (Limited to showing only the latest {limit} entries calculations are performed in the entire period):\n"
-            msg += self.get_template_for_metrics(metrics, limit=limit)
+            msg += self.get_table_for_metrics(metrics, limit=limit)
             self.driver.reply_to(message, msg)
         else:
             self.driver.reply_to(message, f"No {metric} found")
@@ -845,7 +836,7 @@ Parameters:
             metrics_vals = {}
             metrics_vals["date"] = getattr(entry, date_field)
             for m in metric:
-                val = getattr(entry, m, None)
+                val = getattr(entry, m)
                 if val is not None:
                     metrics_vals[m] = val
             # check if we have any values exluding the date
@@ -864,8 +855,11 @@ Parameters:
         today = datetime.datetime.now()
         end_date = today.strftime("%Y-%m-%d")
         if period_type == "d":
-            start_date = (today - datetime.timedelta(days=period_number)).strftime("%Y-%m-%d")
-
+            if period_number == 1:
+                # dont substract 1 day
+                start_date = today.strftime("%Y-%m-%d")
+            else:
+                start_date = (today - datetime.timedelta(days=period_number)).strftime("%Y-%m-%d")
         elif period_type == "w":
             start_date = (today - datetime.timedelta(weeks=period_number)).strftime("%Y-%m-%d")
         elif period_type == "m":
@@ -874,6 +868,8 @@ Parameters:
             start_date = (today - datetime.timedelta(days=365*period_number)).strftime("%Y-%m-%d")
         else:
             raise Exception("Invalid period")
+        # add one day to the end date
+        end_date = (parser.parse(end_date) + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
         return start_date, end_date
 
     def generate_markdown_table(self, headers, rows):
@@ -888,12 +884,13 @@ Parameters:
         table = "\n" + "\n".join([header_row, separator_row] + data_rows) + "\n"
         return table
 
-    def get_template_for_metrics(self, metrics: list, limit: int = 5) -> str:
+    def get_table_for_metrics(self, metrics: list, limit: int = 5) -> str:
         """format a table for metrics in a mattermost format"""
         # get the headers
         headers = list(metrics[0].keys())
+        pretty_headers = [self.convert_snakecase_and_camelcase_to_ucfirst(header) for header in headers]
         # generate the list of data rows
-        rows = [[metric.get(header) for header in headers] for metric in metrics]
+        rows = [[self.get_metric_to_human_readable(header, metric.get(header)) for header in headers] for metric in metrics]
 
         # reverse the rows
         rows = rows[::-1]
@@ -901,11 +898,18 @@ Parameters:
         rows = rows[:limit]
 
         # generate the table
-        table = self.generate_markdown_table(headers, rows)
+        table = self.generate_markdown_table(pretty_headers, rows)
         # limit the metrics
         return table
     def get_metric_to_human_readable(self, metric: str, value: any) -> str:
         """get metric to human readable"""
+        metric = metric.lower()
+        if metric == "date" or "date" in metric:
+            # parse and format the date %Y-%m-%d
+            f =  parser.parse(value).strftime("%Y-%m-%d %H:%M:%S")
+            if f.split(" ")[1] == "00:00:00":
+                return f.split(" ")[0]
+            return f
         if type(value) == float and metric != "pace":
             # limit to 2 decimal places
             value = round(value, 2)
@@ -929,8 +933,12 @@ Parameters:
             return f"{value} kg"
         if metric == "sleep" or "sleep" in metric:
             # convert seconds to 00:00:00
+            if type(value) == float:
+                value = int(value)
             return self.seconds_to_hms(value)
         if metric == "pace":
+            if value == 0:
+                return "0:00/km"
             # Convert pace from meters per second to mm:ss per kilometer
             seconds_per_km = 1000 / value  # Calculate seconds per kilometer
             return f"{self.seconds_to_hms(seconds_per_km)}/km"
@@ -1033,7 +1041,7 @@ Parameters:
                 self.helper.slog(f"Refreshing data for {self.users.id2u(athlete)}")
                 result = self._scrape_athlete(athlete)
                 if result:
-                    self.helper.slog(f"Refreshed data for {self.users.id2u(athlete)} total:{result.get('activities_added') + result.get('activities_changed')} new:{result.get('activities_added')} changed:{result.get('activities_changed')} & wellness total:{result.get('wellnesses_added') + result.get('wellnesses_changed')} new:{result.get('wellnesses_added')} changed:{result.get('wellnesses_changed')}")
+                    self.helper.slog(f"Refreshed data for {self.users.id2u(athlete)} total activities:{len(self.get_activities(athlete))} new:{result.get('activities_added')} changed:{result.get('activities_changed')} & wellness total:{len(self.get_wellnesses(athlete))} new:{result.get('wellnesses_added')} changed:{result.get('wellnesses_changed')}")
                 else:
                     self.helper.slog(f"Failed to refresh activities for {self.users.id2u(athlete)}")
 

@@ -39,7 +39,7 @@ requirements:
 	echo "Generating requirements.txt"
 	PIPENV_VERBOSITY=-1 pipenv requirements > requirements.txt
 logs:
-	docker compose logs -f
+	docker compose logs -f bot
 test:
 	pipenv run coverage run -m pytest -vv -s tests
 	pipenv run coverage report

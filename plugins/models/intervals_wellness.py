@@ -1,5 +1,5 @@
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -82,7 +82,8 @@ class IntervalsWellness:
         Returns:
             dict: Dictionary representation of the wellness entry
         """
-        data = {k: v for k, v in self.__dict__.items() if v is not None}
+        #data = {k: v for k, v in self.__dict__.items() if v is not None}
+        data = {k: v for k, v in self.__dict__.items()}
         if self.sportInfo:
             data['sportInfo'] = [vars(sport) for sport in self.sportInfo]
         return data
@@ -90,3 +91,6 @@ class IntervalsWellness:
     def to_json(self) -> str:
         """export to json"""
         return json.dumps(self.to_dict())
+    @classmethod
+    def has_field(cls,field_name: str) -> bool:
+        return any(field.name == field_name for field in fields(cls))

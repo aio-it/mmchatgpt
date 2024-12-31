@@ -693,7 +693,7 @@ Parameters:
     @bot_command(
         category="Metrics",
         description="View statistics over time. Usage: .intervals <metric> <timespan> (example: steps 7d or weight 2w)",
-        pattern="(steps|weight|distance|hr|sleep) ([0-9]+[ymdw])"  # Hidden regex
+        pattern="(sleep|steps|weight|distance|hr|sleep) ([0-9]+[ymdw])"  # Hidden regex
     )
     async def get_user_metrics(self, message: Message, metric: str, period: str):
         uid = message.user_id

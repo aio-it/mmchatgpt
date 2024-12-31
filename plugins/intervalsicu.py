@@ -588,11 +588,14 @@ Parameters:
                 fields = self.ACTIVITY_OVERVIEW_COMMON_FIELDS
                 regexes = self.ACTIVITY_MAPPING_REGEX.keys()
                 for regex in regexes:
+                    matched = False
                     # use search instead of match to match anywhere in the string
                     if re.search(regex, activity.type, re.IGNORECASE):
+                        matched = True
                         fields = self.ACTIVITY_MAPPING_REGEX[regex]
                         break
-                await self.helper.log(f"Unknown/Unmatched activity type: {activity.type}")
+                if not matched:
+                    await self.helper.log(f"Unknown/Unmatched activity type: {activity.type} for user {self.users.id2u(uid)} - {activity.id}")
 
                 # print the header
                 activities_str += f"Activity: {activity.start_date_local} - {activity.type} - {activity.activity_link_markdown}\n"

@@ -693,10 +693,12 @@ Parameters:
     @bot_command(
         category="Metrics",
         description="View statistics over time. Usage: .intervals <metric> <timespan> (example: steps 7d or weight 2w)",
-        pattern="(steps|weight|distance|hr) ([0-9]+[ymdw])"  # Hidden regex
+        pattern="(steps|weight|distance|hr|sleep) ([0-9]+[ymdw])"  # Hidden regex
     )
     async def get_user_metrics(self, message: Message, metric: str, period: str):
         uid = message.user_id
+        if metric == "sleep":
+            metric = "sleepSecs"
         # parse the period
         try:
             date_from, date_to = self.parse_period(period)
@@ -907,6 +909,10 @@ Parameters:
         if type(value) == float and metric != "pace":
             # limit to 2 decimal places
             value = round(value, 2)
+        if metric == "speed" or "speed" in metric:
+            # convert speed in meters per second to km/h
+            value = round(value * 3.6, 2)
+            return f"{value} km/h"
         if metric == "distance":
             # convert distance in meters to km
             value = round(value/1000, 2)

@@ -8,7 +8,7 @@ import string
 import time
 from io import BytesIO
 from re import DOTALL as re_DOTALL
-
+import schedule
 import aiodocker
 import aiodocker.types
 import aiohttp.client_exceptions as aiohttp_client_exceptions
@@ -187,7 +187,16 @@ class ChatGPT(PluginLoader):
             parameters=["searchterm"],
             privilege_level="user",
         )
-
+        time_to_new_date_tool = Tool(
+            function=self.time_to_new_date,
+            description="Calculate the time to a new date from the current date. Use this to calculate the time remaining until a specific date or event.",
+            parameters=[
+                {"name": "date", "description": "The new date to calculate the time send to. format it like this: 2022-12-31 23:59:59"}
+            ],
+            privilege_level="user",
+            needs_message_object=True,
+            returns_files=False,
+        )
         web_search_tool = Tool(
             function=self.helper.web_search,
             description="Quick web search that returns only titles and snippets of the top 10 results. Use this for general information, fact-checking, or when you need a broad overview of a topic. Does NOT download full webpage content.",
@@ -374,6 +383,7 @@ class ChatGPT(PluginLoader):
         #self.tools_manager.add_tool(enable_disable_memories)
         self.tools_manager.add_tool(enable_disable_memories_user)
         self.tools_manager.add_tool(delete_user_memory_or_memories)
+        self.tools_manager.add_tool(time_to_new_date_tool)
         self.user_tools = self.tools_manager.get_tools_as_dict("user")
         self.admin_tools = self.tools_manager.get_tools_as_dict("admin")
         # print the tools
@@ -386,7 +396,16 @@ class ChatGPT(PluginLoader):
 
     def add_name(self, name):
         self.names.append(name)
+    async def time_to_new_date(self, message: Message, date: str, tool_run=False):
+        """Calculate the time to a new date from the current date"""
+        from dateutil import parser
+        import datetime
+        today = datetime.datetime.now()
+        new_date = parser.parse(date)
+        time_to_new_date = new_date - today
+        return f"Time to new date: {time_to_new_date}"
 
+    
     async def delete_user_memory_or_memories(self, message: Message, mode: str, memory_id: str = None, tool_run=False):
         """Delete a memory or memories for the user"""
         if message.is_direct_message:

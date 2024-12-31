@@ -649,7 +649,7 @@ Parameters:
     async def refresh(self, message: Message):
         uid = message.user_id
         # check if the last refresh was too recent
-        refresh_interval = int(self.valkey.get(f"{self.intervals_prefix}_refresh_interval")) or 900  # 15 minutes default
+        refresh_interval = int(self._MINIMUM_REFRESH_INTERVAL_FOR_ATHLETE)
         current_time = int(datetime.datetime.now().timestamp())
         last_refresh = self.valkey.get(f"{self.intervals_prefix}_{uid}_last_refresh")
         if last_refresh:

@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import datetime
 import inspect
@@ -6,6 +7,9 @@ import re
 from functools import wraps
 from typing import Dict, List
 
+import nest_asyncio
+
+nest_asyncio.apply()
 import requests
 import schedule
 from dateutil import parser
@@ -18,7 +22,7 @@ from mmpy_bot.wrappers import Message
 from plugins.base import PluginLoader
 from plugins.models.intervals_activity import IntervalsActivity
 from plugins.models.intervals_wellness import IntervalsWellness, SportInfo
-from dataclasses import fields
+
 
 def bot_command(category: str, description: str, pattern: str = None, admin: bool = False):
     """
@@ -205,8 +209,10 @@ Parameters:
         self.jobs['refresh_all_athletes'] = schedule.every(self._INTERNAL_TIMER_LOOP).seconds.do(self.refresh_all_athletes)
         self.jobs['cleanup_duplicates'] = schedule.every(1).days.do(self.cleanup_duplicates_for_all_athletes)
         self.jobs['cleanup_broken_athletes'] = schedule.every(1).days.do(self.cleanup_broken_athletes)
-        # announcement job
+        # activity announcement job
         self.jobs['announce_added_activities'] = schedule.every(5).seconds.do(self.announce_added_activities)
+        # leaderboards announcement job
+        self.jobs['announce_leaderboard'] = schedule.every(1).days.at("18:00").do(self.announce_leaderboards)
 
         # check if the key auto_refresh is set if not set it to true
         if not self.valkey.exists(f"{self.intervals_prefix}_auto_refresh"):
@@ -1154,18 +1160,22 @@ Parameters:
             self.driver.reply_to(message, wellness_str)
         else:
             self.driver.reply_to(message, "No wellness entries found try .intervals refresh data")
-    @bot_command(
-        category="Leaderboards & Competitions",
-        description="Leaderboards for bunch of metrics",
-        pattern="leaderboards"
-    )
-    async def leaderboards(self, message: Message):
-        """leaderboards for bunch of metrics"""
+    def announce_leaderboards(self):
+        """announce leaderboards"""
+        leaderboard_str = self.generate_leaderboards()
+        channel_id = self.get_announcement_channel()
+        if not channel_id:
+            return
+        self.driver.create_post(channel_id, leaderboard_str)
+
+    def generate_leaderboards(self):
         # get the leaderboard for the last 7 days
         # get the metrics for all the athletes
         period = "7d"
         start_date, end_date = self.parse_period(period)
-        metrics = ["moving_time","steps","calories", "distance", "pace", "average_speed", "max_speed","kg_lifted"]
+        summable_metrics = ["moving_time","steps","calories", "distance", "kg_lifted"]
+        max_metrics = ["pace", "max_speed", "average_speed"]
+        metrics = summable_metrics + max_metrics
         all_metrics = {}
         for user in self.athletes:
             if not user in self.opted_in:
@@ -1173,11 +1183,8 @@ Parameters:
             all_metrics[user] = {}
             for metric in metrics:
                 metrics_table = self.lookup_metric_table(metric)
-                if not metrics_table:
-                    self.driver.reply_to(message, "Invalid metric")
-                    return
-                metricss = await self.get_athlete_metrics(user, metrics_table, metric, date_from=start_date, date_to=end_date)
-                all_metrics[user][metric] = metricss
+                loop = asyncio.get_event_loop()
+                all_metrics[user][metric] = loop.run_until_complete(self.get_athlete_metrics(user, metrics_table, metric, date_from=start_date, date_to=end_date))
         # for each metric get the top 5 and rank them based on the sum of the metric
         leaderboard = {}
         leaderboard_str = f"Leaderboards for the last 7 days {start_date} -> {end_date}\n"
@@ -1204,8 +1211,13 @@ Parameters:
             leaderboard[metric] = {}
             for user in all_metrics.keys():
                 # get the sum of the metric
-                metric_sum = sum([met.get(metric,0) for met in all_metrics.get(user).get(metric)])
-                leaderboard[metric][user] = metric_sum
+                metric_val = 0
+                metric_val = [met.get(metric,0) for met in all_metrics.get(user).get(metric)]
+                if metric in summable_metrics:
+                    metric_val = sum(metric_val)
+                elif metric in max_metrics:
+                    metric_val = max(metric_val)
+                leaderboard[metric][user] = metric_val
             # sort the leaderboard
             leaderboard[metric] = dict(sorted(leaderboard[metric].items(), key=lambda item: item[1], reverse=True))
         # generate the leaderboard
@@ -1221,9 +1233,43 @@ Parameters:
             table = self.generate_markdown_table(headers, rows)
             leaderboard_str += table
             leaderboard_str += "--------------------------------\n"
-        self.driver.reply_to(message, leaderboard_str)
-
-
+        return leaderboard_str
+    @bot_command(
+        category="Leaderboards & Competitions",
+        description="Leaderboards for bunch of metrics",
+        pattern="leaderboards"
+    )
+    async def leaderboards(self, message: Message):
+        """leaderboards for bunch of metrics"""
+        self.driver.reply_to(message, self.generate_leaderboards())
+    # command to get next execution time of self.jobs
+    @bot_command(
+        category="Admin",
+        description="Get the next execution time of jobs",
+        pattern="admin jobs next"
+    )
+    async def get_jobs(self, message: Message):
+        """get the next execution time of jobs"""
+        next_jobs = []
+        for name, job in self.jobs.items():
+            next_run = job.next_run
+            # convert that next_run datetime to seconds
+            next_run = next_run.timestamp()
+            now = datetime.datetime.now().timestamp()
+            next_run = next_run - now
+            next_run = self.seconds_to_human_readable(next_run)
+            next_jobs.append(f"Job: {name} Next Execution: {next_run}")
+        self.driver.reply_to(message, "\n".join(next_jobs))
+    @bot_command(
+        category="Admin",
+        description="Force run all jobs",
+        pattern="admin jobs force"
+    )
+    async def force_jobs(self, message: Message):
+        """force run all jobs"""
+        for name, job in self.jobs.items():
+            job.run()
+        self.driver.reply_to(message, "Forced all jobs")
     @bot_command(
         category="Activity & Wellness Management",
         description="Display your recent wellness entries",

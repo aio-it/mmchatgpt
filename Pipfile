@@ -42,6 +42,7 @@ certifi = "*"
 requests = {extras = ["security"], version = "*"}
 python-dateutil = "*"
 schedule = "*"
+nest-asyncio = "*"
 
 [dev-packages]
 autopep8 = "*"

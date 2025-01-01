@@ -198,7 +198,7 @@ Parameters:
         if self.get_announcement_channel() is None:
             self.announcements_enabled = False
         else:
-            self.announcements_enabled = self.valkey.get(f"{self.intervals_prefix}_announcements_enabled") == "true"
+            self.announcements_enabled = True
             self.announcement_channel = self.get_announcement_channel()
         # jobs
         self.jobs = {}
@@ -1165,7 +1165,7 @@ Parameters:
         # get the metrics for all the athletes
         period = "7d"
         start_date, end_date = self.parse_period(period)
-        metrics = ["distance", "moving_time", "calories", "steps","pace","average_speed","max_speed"]
+        metrics = ["moving_time","steps","calories", "distance", "pace", "average_speed", "max_speed","kg_lifted"]
         all_metrics = {}
         for user in self.athletes:
             if not user in self.opted_in:
@@ -1180,6 +1180,26 @@ Parameters:
                 all_metrics[user][metric] = metricss
         # for each metric get the top 5 and rank them based on the sum of the metric
         leaderboard = {}
+        leaderboard_str = f"Leaderboards for the last 7 days {start_date} -> {end_date}\n"
+        # make a custom one for count of activities
+        leaderboard["activities"] = {}
+        # get the count of activities
+
+        for user in self.opted_in:
+            leaderboard["activities"][user] = len(self.get_activities(user, oldest=start_date, newest=end_date))
+        leaderboard["activities"] = dict(sorted(leaderboard["activities"].items(), key=lambda item: item[1], reverse=True))
+        # generate the string for the activities count
+        leaderboard_str += f"### Activities\n"
+        headers = ["Rank", "Athlete", "Sum"]
+        rows = []
+        rank = 1
+        for user in leaderboard["activities"].keys():
+            rows.append([rank, self.users.id2unhl(user), leaderboard["activities"].get(user)])
+            rank += 1
+        table = self.generate_markdown_table(headers, rows)
+        leaderboard_str += table
+        leaderboard_str += "--------------------------------\n"
+        # get the sum of the metrics
         for metric in metrics:
             leaderboard[metric] = {}
             for user in all_metrics.keys():
@@ -1189,9 +1209,9 @@ Parameters:
             # sort the leaderboard
             leaderboard[metric] = dict(sorted(leaderboard[metric].items(), key=lambda item: item[1], reverse=True))
         # generate the leaderboard
-        leaderboard_str = ""
+
         for metric in metrics:
-            leaderboard_str += f"Leaderboard for {self.convert_snakecase_and_camelcase_to_ucfirst(metric)} for the last 7 days ({start_date}->{end_date}\n"
+            leaderboard_str += f"### {self.convert_snakecase_and_camelcase_to_ucfirst(metric)}\n"
             headers = ["Rank", "User", "Value"]
             rows = []
             rank = 1

@@ -1154,6 +1154,55 @@ Parameters:
             self.driver.reply_to(message, wellness_str)
         else:
             self.driver.reply_to(message, "No wellness entries found try .intervals refresh data")
+    @bot_command(
+        category="Leaderboards & Competitions",
+        description="Leaderboards for bunch of metrics",
+        pattern="leaderboards"
+    )
+    async def leaderboards(self, message: Message):
+        """leaderboards for bunch of metrics"""
+        # get the leaderboard for the last 7 days
+        # get the metrics for all the athletes
+        period = "7d"
+        start_date, end_date = self.parse_period(period)
+        metrics = ["distance", "moving_time", "calories", "steps","pace","average_speed","max_speed"]
+        all_metrics = {}
+        for user in self.athletes:
+            if not user in self.opted_in:
+                continue
+            all_metrics[user] = {}
+            for metric in metrics:
+                metrics_table = self.lookup_metric_table(metric)
+                if not metrics_table:
+                    self.driver.reply_to(message, "Invalid metric")
+                    return
+                metricss = await self.get_athlete_metrics(user, metrics_table, metric, date_from=start_date, date_to=end_date)
+                all_metrics[user][metric] = metricss
+        # for each metric get the top 5 and rank them based on the sum of the metric
+        leaderboard = {}
+        for metric in metrics:
+            leaderboard[metric] = {}
+            for user in all_metrics.keys():
+                # get the sum of the metric
+                metric_sum = sum([met.get(metric,0) for met in all_metrics.get(user).get(metric)])
+                leaderboard[metric][user] = metric_sum
+            # sort the leaderboard
+            leaderboard[metric] = dict(sorted(leaderboard[metric].items(), key=lambda item: item[1], reverse=True))
+        # generate the leaderboard
+        leaderboard_str = ""
+        for metric in metrics:
+            leaderboard_str += f"Leaderboard for {self.convert_snakecase_and_camelcase_to_ucfirst(metric)} for the last 7 days ({start_date}->{end_date}\n"
+            headers = ["Rank", "User", "Value"]
+            rows = []
+            rank = 1
+            for user in leaderboard[metric].keys():
+                rows.append([rank, self.users.id2unhl(user), self.get_metric_to_human_readable(metric,leaderboard[metric].get(user))])
+                rank += 1
+            table = self.generate_markdown_table(headers, rows)
+            leaderboard_str += table
+            leaderboard_str += "--------------------------------\n"
+        self.driver.reply_to(message, leaderboard_str)
+
 
     @bot_command(
         category="Activity & Wellness Management",
@@ -1173,8 +1222,6 @@ Parameters:
         metrics = await self.get_athlete_metrics(uid, metrics_table, metric, date_from=start_date, date_to=end_date)
         all_metrics = {}
         for user in self.athletes:
-            if user == message.user_id:
-                continue
             if not metrics_table:
                 self.driver.reply_to(message, "Invalid metric")
                 return
@@ -1184,21 +1231,27 @@ Parameters:
             metrics = await self.get_athlete_metrics(user, metrics_table, metric, date_from=start_date, date_to=end_date)
             # store the metrics
             all_metrics[user] = metrics
-        # create a table with all of the metrics for all the users
-        # get the headers by combining all the metrics and getting the unique ones
-        headers = set()
-        for user in all_metrics:
-            for metric in all_metrics[user]:
-                headers.update(metric.keys())
-        headers = list(headers)
-        # create the table
-        table = []
-        for user in all_metrics:
-            for metric in all_metrics[user]:
-                row = []
-                for header in headers:
-                    row.append(metric.get(header))
-                table.append(row)
+        # create a table with all of the metrics for all the users the headers should be each user and the rows the metrics for each day
+        # get the headers
+        #TODO fix this. it is broken
+        headers = ["Date"]
+        headers.extend([self.users.id2unhl(user) for user in all_metrics.keys()])
+        # get the dates
+        dates = []
+        if metrics_table == "wellness":
+            dates = [metric.get("id") for metric in metrics]
+        elif metrics_table == "activities":
+            dates = [metric.get("start_date") for metric in metrics]
+        # create the rows
+        rows = []
+        for date in dates:
+            row = [date]
+            for user in all_metrics.keys():
+                for metric in all_metrics.get(user):
+                    if metric.get("date") == date:
+                        row.append(metric.get(metric))
+            rows.append(row)
+        table = self.generate_markdown_table(headers, rows)
+
         # generate the table
-        table = self.generate_markdown_table(headers, table)
         self.driver.reply_to(message, table)

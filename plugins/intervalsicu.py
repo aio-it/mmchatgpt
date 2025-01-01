@@ -250,10 +250,30 @@ Parameters:
 
     def return_pretty_activities(self, activities: list[IntervalsActivity]):
         """return pretty activities"""
-        pretty = []
+        activities_str = ""
         for activity in activities:
-            pretty.append(f"{activity.start_date_local} {activity.type} {activity.name} {activity.distance} {activity.moving_time} {activity.calories}")
-        return pretty
+            # use the ACTIVITY_MAPPING_REGEX to get the fields by checking each type of activity against activity.type
+            fields = self.ACTIVITY_OVERVIEW_COMMON_FIELDS
+            regexes = self.ACTIVITY_MAPPING_REGEX.keys()
+            for regex in regexes:
+                matched = False
+                # use search instead of match to match anywhere in the string
+                if re.search(regex, activity.type, re.IGNORECASE):
+                    matched = True
+                    fields = self.ACTIVITY_MAPPING_REGEX[regex]
+                    break
+
+            # print the header
+            activities_str += f"Activity: {activity.start_date_local} - {activity.type} - {activity.activity_link_markdown}\n"
+            data = []
+            # only print fields that are not None
+            for field in fields:
+                value = getattr(activity, field)
+                if value is not None:
+                    data.append([self.convert_snakecase_and_camelcase_to_ucfirst(field), self.get_metric_to_human_readable(field, value)])
+            activities_str += self.generate_markdown_table(["Field", "Value"], data)
+            activities_str += "--------------------------------\n"
+        return activities_str
 
     def add_athlete(self, uid: str):
         self.valkey.sadd(f"{self.intervals_prefix}_athletes", uid)
@@ -304,12 +324,12 @@ Parameters:
                     activity = self.valkey.lpop(f"{self.intervals_prefix}_athlete_{uid}_activities_added")
                     if activity is None:
                         # no more activities
-                        self.helper.slog(f"No more activities for {self.users.id2unhl(uid)}")
+                        #self.helper.slog(f"No more activities for {self.users.id2unhl(uid)}")
                         break
                     if activity:
                         activity = IntervalsActivity.from_dict(json.loads(activity))
                         # TODO: change this
-                        pretty = self.return_pretty_activities(activity)
+                        pretty = self.return_pretty_activities([activity])
                         self.helper.slog(f"Announcing activity for {self.users.id2unhl(uid)}: {pretty}")
                         self.driver.create_post(self.get_announcement_channel(),f"New activity for {self.users.id2unhl(uid)}: {pretty}")
     def lookup_metric_table(self, metric: str) -> str:
@@ -596,29 +616,7 @@ Parameters:
             activities = sorted(activities, key=lambda x: x.start_date, reverse=True)
             activities_str = "Last 10 activities:\n (or whatever fits in 14000 characters)\n"
             for activity in activities:
-                # use the ACTIVITY_MAPPING_REGEX to get the fields by checking each type of activity against activity.type
-                fields = self.ACTIVITY_OVERVIEW_COMMON_FIELDS
-                regexes = self.ACTIVITY_MAPPING_REGEX.keys()
-                for regex in regexes:
-                    matched = False
-                    # use search instead of match to match anywhere in the string
-                    if re.search(regex, activity.type, re.IGNORECASE):
-                        matched = True
-                        fields = self.ACTIVITY_MAPPING_REGEX[regex]
-                        break
-                if not matched:
-                    await self.helper.log(f"Unknown/Unmatched activity type: {activity.type} for user {self.users.id2u(uid)} - {activity.id}")
-
-                # print the header
-                activities_str += f"Activity: {activity.start_date_local} - {activity.type} - {activity.activity_link_markdown}\n"
-                data = []
-                # only print fields that are not None
-                for field in fields:
-                    value = getattr(activity, field)
-                    if value is not None:
-                        data.append([self.convert_snakecase_and_camelcase_to_ucfirst(field), self.get_metric_to_human_readable(field, value)])
-                activities_str += self.generate_markdown_table(["Field", "Value"], data)
-                activities_str += "--------------------------------\n"
+                activities_str += self.return_pretty_activities([activity])
             # limit to 14000 characters
             activities_str = activities_str[:14000]
             self.driver.reply_to(message, activities_str)

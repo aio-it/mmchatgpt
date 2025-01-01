@@ -194,12 +194,19 @@ Parameters:
         # get all athletes and opted in athletes
         self.athletes = self.valkey.smembers(f"{self.intervals_prefix}_athletes") or set()
         self.opted_in = self.valkey.smembers(f"{self.intervals_prefix}_athletes_opted_in") or set()
-
+        # announcement config
+        if self.get_announcement_channel() is None:
+            self.announcements_enabled = False
+        else:
+            self.announcements_enabled = self.valkey.get(f"{self.intervals_prefix}_announcements_enabled") == "true"
+            self.announcement_channel = self.get_announcement_channel()
         # jobs
         self.jobs = {}
         self.jobs['refresh_all_athletes'] = schedule.every(self._INTERNAL_TIMER_LOOP).seconds.do(self.refresh_all_athletes)
         self.jobs['cleanup_duplicates'] = schedule.every(1).days.do(self.cleanup_duplicates_for_all_athletes)
         self.jobs['cleanup_broken_athletes'] = schedule.every(1).days.do(self.cleanup_broken_athletes)
+        # announcement job
+        self.jobs['announce_added_activities'] = schedule.every(5).seconds.do(self.announce_added_activities)
 
         # check if the key auto_refresh is set if not set it to true
         if not self.valkey.exists(f"{self.intervals_prefix}_auto_refresh"):
@@ -285,8 +292,26 @@ Parameters:
                 return "alreadyexists"
 
         self.valkey.lpush(f"{self.intervals_prefix}_athlete_{uid}_activities", activity.to_json())
+        # lets keep track of the added activities so we can announce them to the channel
+        if uid in self.opted_in:
+            self.valkey.lpush(f"{self.intervals_prefix}_athlete_{uid}_activities_added", activity.to_json())
         return "added"
-
+    def announce_added_activities(self):
+        if self.announcements_enabled and self.get_announcement_channel() is not None:
+            for uid in self.opted_in:
+                # do a while loop to get all the activities using lpop
+                while True:
+                    activity = self.valkey.lpop(f"{self.intervals_prefix}_athlete_{uid}_activities_added")
+                    if activity is None:
+                        # no more activities
+                        self.helper.slog(f"No more activities for {self.users.id2unhl(uid)}")
+                        break
+                    if activity:
+                        activity = IntervalsActivity.from_dict(json.loads(activity))
+                        # TODO: change this
+                        pretty = self.return_pretty_activities(activity)
+                        self.helper.slog(f"Announcing activity for {self.users.id2unhl(uid)}: {pretty}")
+                        self.driver.create_post(self.get_announcement_channel(),f"New activity for {self.users.id2unhl(uid)}: {pretty}")
     def lookup_metric_table(self, metric: str) -> str:
         """get the table where the metric is stored"""
         if IntervalsActivity.has_field(metric):
@@ -602,8 +627,26 @@ Parameters:
 
     @bot_command(
         category="Activity & Wellness Management",
+        description="Delete all your stored wellness data",
+        pattern="reset wellness"
+    )
+    async def reset_wellness(self, message: Message):
+        uid = message.user_id
+        self.valkey.delete(f"{self.intervals_prefix}_athlete_{uid}_wellness")
+        self.driver.reply_to(message, "Wellnesses reset")
+    @bot_command(
+        category="Activity & Wellness Management",
+        description="Delete all your stored activities data",
+        pattern="reset activities"
+    )
+    async def reset_activities(self, message: Message):
+        uid = message.user_id
+        self.valkey.delete(f"{self.intervals_prefix}_athlete_{uid}_activities")
+        self.driver.reply_to(message, "Activities reset")
+    @bot_command(
+        category="Activity & Wellness Management",
         description="Delete all your stored activities and wellness data",
-        pattern="reset data"
+        pattern="reset alldata"
     )
     async def reset(self, message: Message):
         uid = message.user_id
@@ -764,7 +807,35 @@ Parameters:
         athletes = ["@" + self.users.id2unhl(uid) for uid in athletes]
         athletes = "\n".join(athletes)
         self.driver.reply_to(message, athletes)
-
+    @bot_command(
+        category="Admin",
+        description="Enable/disable announcements for new activities",
+        pattern="admin set announcements ([\s\S]*)",
+        admin=True
+    )
+    async def set_announcements(self, message: Message, value: str):
+        if value.lower() == "true":
+            self.announcements_enabled = True
+            self.driver.reply_to(message, "Announcements enabled")
+        elif value.lower() == "false":
+            self.announcements_enabled = False
+            self.driver.reply_to(message, "Announcements disabled")
+        else:
+            self.driver.reply_to(message, "Invalid value")
+    @bot_command(
+        category="Admin",
+        description="Set the announcement channel",
+        pattern="admin set announcement_channel ([a-z0-9]+)",
+        admin=True
+    )
+    async def chat_set_announcement_channel(self, message: Message, channel_id: str):
+        self.set_announcement_channel(channel_id)
+        self.driver.reply_to(message, f"Set announcement channel to {channel_id}")
+    def set_announcement_channel(self, channel_id: str):
+        self.valkey.set(f"{self.intervals_prefix}_announcement_channel", channel_id)
+        self.announcement_channel = channel_id
+    def get_announcement_channel(self):
+        return self.valkey.get(f"{self.intervals_prefix}_announcement_channel")
     @bot_command(
         category="Privacy Settings",
         description="Show all users who have opted in to data sharing",
@@ -1110,7 +1181,7 @@ Parameters:
                 self.driver.reply_to(message, "Invalid metric")
                 return
             #check if the user is opted in
-            if not user in self.opted_in_athletes:
+            if not user in self.opted_in:
                 continue
             metrics = await self.get_athlete_metrics(user, metrics_table, metric, date_from=start_date, date_to=end_date)
             # store the metrics

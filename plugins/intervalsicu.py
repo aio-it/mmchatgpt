@@ -1085,3 +1085,51 @@ Parameters:
             self.driver.reply_to(message, wellness_str)
         else:
             self.driver.reply_to(message, "No wellness entries found try .intervals refresh data")
+
+    @bot_command(
+        category="Activity & Wellness Management",
+        description="Display your recent wellness entries",
+        pattern="compare (.*) (.*)"
+    )
+    async def compare_stats(self,message: Message, metric:str, period:str):
+        """compare a stat against other users within a period"""
+        # get our own stats for a metric
+        uid = message.user_id
+        period = period.lower()
+        start_date, end_date = self.parse_period(period)
+        metrics_table = self.lookup_metric_table(metric)
+        if not metrics_table:
+            self.driver.reply_to(message, "Invalid metric")
+            return
+        metrics = await self.get_athlete_metrics(uid, metrics_table, metric, date_from=start_date, date_to=end_date)
+        all_metrics = {}
+        for user in self.athletes:
+            if user == message.user_id:
+                continue
+            if not metrics_table:
+                self.driver.reply_to(message, "Invalid metric")
+                return
+            #check if the user is opted in
+            if not user in self.opted_in_athletes:
+                continue
+            metrics = await self.get_athlete_metrics(user, metrics_table, metric, date_from=start_date, date_to=end_date)
+            # store the metrics
+            all_metrics[user] = metrics
+        # create a table with all of the metrics for all the users
+        # get the headers by combining all the metrics and getting the unique ones
+        headers = set()
+        for user in all_metrics:
+            for metric in all_metrics[user]:
+                headers.update(metric.keys())
+        headers = list(headers)
+        # create the table
+        table = []
+        for user in all_metrics:
+            for metric in all_metrics[user]:
+                row = []
+                for header in headers:
+                    row.append(metric.get(header))
+                table.append(row)
+        # generate the table
+        table = self.generate_markdown_table(headers, table)
+        self.driver.reply_to(message, table)

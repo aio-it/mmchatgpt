@@ -1213,6 +1213,8 @@ Parameters:
                 # get the sum of the metric
                 metric_val = 0
                 metric_val = [met.get(metric,0) for met in all_metrics.get(user).get(metric)]
+                if len(metric_val) == 0:
+                    continue
                 if metric in summable_metrics:
                     metric_val = sum(metric_val)
                 elif metric in max_metrics:

@@ -1166,7 +1166,13 @@ Parameters:
         channel_id = self.get_announcement_channel()
         if not channel_id:
             return
-        self.driver.create_post(channel_id, leaderboard_str)
+        # create a message that can act as a container for the leaderboard
+        post = self.driver.create_post(channel_id, f"Daily Leaderboard for {datetime.datetime.now().strftime('%Y-%m-%d')}")
+        self.helper.slog(post)
+        # remove first line from the leaderboard_str
+        leaderboard_str = "\n".join(leaderboard_str.split("\n")[1:])
+        # post the leaderboard
+        self.driver.create_post(channel_id, f"\n{leaderboard_str}", root_id=post.get('id'))
 
     def generate_leaderboards(self):
         # get the leaderboard for the last 7 days

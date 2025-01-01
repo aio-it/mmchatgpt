@@ -1055,3 +1055,33 @@ Parameters:
         self.valkey.set(f"{self.intervals_prefix}_last_refresh", str(current_time))
         self.helper.slog("Refreshed all activities successfully")
         self.clear_lock("refresh_all_athletes")
+    @bot_command(
+        category="Activity & Wellness Management",
+        description="Display your recent wellness entries",
+        pattern="wellness"
+    )
+    async def wellness(self, message: Message):
+        uid = message.user_id
+        # only return the last 10 wellness entries
+        wellness = self.get_wellnesses(uid)
+        # reverse the list
+        wellness = wellness[::-1][:10]
+        if wellness:
+            wellness = sorted(wellness, key=lambda x: x.id, reverse=True)
+            wellness_str = "Last 10 wellness entries:\n"
+            for entry in wellness:
+                # print the header
+                wellness_str += f"Wellness: {entry.id}\n"
+                data = []
+                # only print fields that are not None
+                for field in entry.__dict__:
+                    value = getattr(entry, field)
+                    if value is not None:
+                        data.append([self.convert_snakecase_and_camelcase_to_ucfirst(field), self.get_metric_to_human_readable(field, value)])
+                wellness_str += self.generate_markdown_table(["Field", "Value"], data)
+                wellness_str += "--------------------------------\n"
+            # limit to 14000 characters
+            wellness_str = wellness_str[:14000]
+            self.driver.reply_to(message, wellness_str)
+        else:
+            self.driver.reply_to(message, "No wellness entries found try .intervals refresh data")

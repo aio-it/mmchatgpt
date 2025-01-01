@@ -1168,7 +1168,6 @@ Parameters:
             return
         # create a message that can act as a container for the leaderboard
         post = self.driver.create_post(channel_id, f"Daily Leaderboard for {datetime.datetime.now().strftime('%Y-%m-%d')}")
-        self.helper.slog(post)
         # remove first line from the leaderboard_str
         leaderboard_str = "\n".join(leaderboard_str.split("\n")[1:])
         # post the leaderboard

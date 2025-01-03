@@ -12,8 +12,8 @@ class IntervalsActivity:
     id: str
     start_date_local: str
     type: str
-    name: str
     start_date: str
+    name: Optional[str] = "Activity"
     distance: Optional[float] = None
     moving_time: Optional[int] = None
     calories: Optional[int] = None

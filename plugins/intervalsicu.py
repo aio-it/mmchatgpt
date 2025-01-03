@@ -207,7 +207,7 @@ Parameters:
         # jobs
         self.jobs = {}
         self.jobs['refresh_all_athletes'] = schedule.every(self._INTERNAL_TIMER_LOOP).seconds.do(self.refresh_all_athletes)
-        self.jobs['cleanup_duplicates'] = schedule.every(1).days.do(self.cleanup_duplicates_for_all_athletes)
+        self.jobs['cleanup_duplicates'] = schedule.every(1).minutes.do(self.cleanup_duplicates_for_all_athletes)
         self.jobs['cleanup_broken_athletes'] = schedule.every(1).days.do(self.cleanup_broken_athletes)
         # activity announcement job
         self.jobs['announce_added_activities'] = schedule.every(5).seconds.do(self.announce_added_activities)
@@ -227,6 +227,7 @@ Parameters:
         self.cleanup_duplicates_for_all_athletes()
         self.cleanup_broken_athletes()
 
+
     def cleanup_broken_athletes(self):
         for athlete in self.athletes:
             if not self.verify_api_key(athlete):
@@ -239,6 +240,10 @@ Parameters:
     def cleanup_duplicates(self, uid: str):
         activities = self.get_activities(uid)
         wellness = self.get_wellnesses(uid)
+        # get wellnesses directy from the valkey
+        wellnesses = self.valkey.lrange(f"{self.intervals_prefix}_athlete_{uid}_wellness", 0, -1)
+        # sort wellnesses by id
+        wellnesses = sorted(wellnesses, key=lambda x: json.loads(x).get("id"))
         if activities:
             activities = sorted(activities, key=lambda x: x.id)
             for i in range(1, len(activities)):
@@ -246,14 +251,17 @@ Parameters:
                     self.helper.slog(f"Removing duplicate activity for user {self.users.id2u(uid)} - {activities[i].id} and {activities[i-1].id}")
                     self.remove_activity(uid, activities[i].to_json())
         if wellness:
-            wellness = sorted(wellness, key=lambda x: x.id)
+            # sort by "id" and "updated"
+            wellness = sorted(wellness, key=lambda x: (x.id, x.updated))
             for i in range(1, len(wellness)):
-                if wellness[i].id == wellness[i-1].id:
-                    self.helper.slog(f"Removing duplicate wellness for user {self.users.id2u(uid)} - {wellness[i].id} and {wellness[i-1].id}")
-                    self.helper.slog(f"1: {wellness[i].to_json()}")
-                    self.helper.slog(f"2: {wellness[i-1].to_json()}")
-                    self.remove_wellness(uid, wellness[i].to_json())
-
+                old_wellness = wellness[i-1]
+                new_wellness = wellness[i]
+                if old_wellness.id == new_wellness.id:
+                    # merge the two wellnesses
+                    merged = IntervalsWellness.from_dict({**old_wellness.to_dict(), **new_wellness.to_dict()})
+                    self.helper.slog(f"Removing duplicate wellness for user {self.users.id2u(uid)} - {old_wellness.id} and {new_wellness.id}")
+                    self.remove_wellness(uid, json.dumps(wellnesses[i]))
+                    self.add_wellness(uid, merged)
     def return_pretty_activities(self, activities: list[IntervalsActivity]):
         """return pretty activities"""
         activities_str = ""
@@ -370,9 +378,14 @@ Parameters:
         if wellnesses:
             for i, well in enumerate(wellnesses):
                 if well.id == wellness_id:
-                    if well == wellness:
-                        return "alreadyexists"
+                    # if the id already exists lets merge the new with the old one and update it
+                    old_wellness = wellnesses[i].to_dict()
+                    new_wellness = wellness.to_dict()
+                    # merge the two dictionaries
+                    wellness = IntervalsWellness.from_dict({**old_wellness, **new_wellness})
+                    # remove the old wellness
                     self.remove_wellness(uid, well.to_json())
+                    # add the new wellness
                     self.valkey.lpush(f"{self.intervals_prefix}_athlete_{uid}_wellness", wellness.to_json())
                     return "changed"
         if self.valkey.exists(f"{self.intervals_prefix}_athlete_{uid}_wellness"):
@@ -506,7 +519,7 @@ Parameters:
             
         except Exception as e:
             self.helper.slog(f"Error in _scrape_athlete: {str(e)}")
-            return False
+            raise e
 
         return {
             "activities_added": activities_added,
@@ -666,7 +679,11 @@ Parameters:
     )
     async def refresh_force(self, message: Message):
         uid = message.user_id
-        result = self._scrape_athlete(uid, force_all=True)
+        try:
+            result = self._scrape_athlete(uid, force_all=True)
+        except Exception as e:
+            self.driver.reply_to(message, f"Error: {str(e)}")
+            return
         # count the number of activities and wellness
         wellness_count_new = len(self.get_wellnesses(uid))
         activities_count_new = len(self.get_activities(uid))
@@ -690,7 +707,11 @@ Parameters:
             if current_time - int(float(last_refresh)) < refresh_interval:
                 self.driver.reply_to(message, f"Refresh too recent wait {refresh_interval - (current_time - int(float(last_refresh)))} seconds")
                 return
-        result = self._scrape_athlete(uid)
+        try:
+            result = self._scrape_athlete(uid)
+        except Exception as e:
+            self.driver.reply_to(message, f"Error: {str(e)}")
+            return
         # get counts of activities and wellness
         wellness_count_new = len(self.get_wellnesses(uid))
         activities_count_new = len(self.get_activities(uid))
@@ -1078,7 +1099,7 @@ Parameters:
             return True
         return False
 
-    def refresh_all_athletes(self):
+    def refresh_all_athletes(self, force_all: bool = False):
         """refresh all from all athletes"""
         #self.helper.slog("Refreshing all athletes initiated")
         # create a lock in valkey to prevent multiple refreshes running at the same time
@@ -1116,7 +1137,12 @@ Parameters:
                     continue
 
                 self.helper.slog(f"Refreshing data for {self.users.id2u(athlete)}")
-                result = self._scrape_athlete(athlete)
+                try:
+                    result = self._scrape_athlete(athlete)
+                except Exception as e:
+                    self.helper.slog(f"Error in refresh_all_athletes: {str(e)}")
+                    self.clear_lock("refresh_all_athletes")
+                    continue
                 if result:
                     self.helper.slog(f"Refreshed data for {self.users.id2u(athlete)} total activities:{len(self.get_activities(athlete))} new:{result.get('activities_added')} changed:{result.get('activities_changed')} & wellness total:{len(self.get_wellnesses(athlete))} new:{result.get('wellnesses_added')} changed:{result.get('wellnesses_changed')}")
                 else:

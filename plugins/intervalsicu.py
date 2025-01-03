@@ -488,6 +488,7 @@ Parameters:
                 activities_data = response.json()
                 for activity_data in activities_data:
                     self.helper.slog(f"Got activity: {self.users.id2u(uid)} - {activity_data.get('start_date')} - {activity_data.get('id')}")
+                    self.helper.slog(activity_data)
                     activity = IntervalsActivity.from_dict(activity_data)
                     result = self.add_activity(uid, activity)
                     if result == "added":

@@ -72,13 +72,23 @@ class LogManager(PluginLoader):
                     page += 1
 
                 if not delete_immediately:
+                    local_request_count = 0
                     # sort posts by id
                     posts_to_delete = sorted(posts_to_delete)
+                    # make sure they are unique
+                    posts_to_delete = list(dict.fromkeys(posts_to_delete))
+                    delete_count = len(posts_to_delete)
+                    max_log_every_n = 5000
+                    log_every_n = min(max_log_every_n,int(delete_count // 10))
                     # keep the last 100
                     posts_to_delete = posts_to_delete[:-lines_to_keep]
                     for post_id in posts_to_delete:
                         self.driver.posts.delete_post(post_id)
+                        if local_request_count % log_every_n == 0:
+                            # log every 500 requests
+                            self.helper.slog(f"Deleted {local_request_count}/{delete_count} made {request_count} (max: {max_requests}) requests.")
                         request_count += 1
+                        local_request_count += 1
 
                 if len(posts_to_delete):
                     self.driver.reply_to(message, f"Deleted {len(posts_to_delete)} messages from the log channel {self.log_channel} and made {request_count} (max: {max_requests}) requests.")

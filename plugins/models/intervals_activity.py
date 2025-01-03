@@ -187,6 +187,11 @@ class IntervalsActivity:
         valid_fields = {k: v for k, v in data.items() 
                        if k in cls.__dataclass_fields__ and not isinstance(v, dict)}
         # add the activity_link_markdown field by taking the id
+        if 'name' in valid_fields:
+            if valid_fields['name'] is None:
+                valid_fields['name'] = "Activity"
+        else:
+            valid_fields['name'] = "Activity"
         valid_fields['activity_link'] = f"https://intervals.icu/activities/{valid_fields['id']}"
         valid_fields['activity_link_markdown'] = f"[{valid_fields['name']}](https://intervals.icu/activities/{valid_fields['id']})"
         return cls(**valid_fields)

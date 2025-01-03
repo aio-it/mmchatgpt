@@ -899,11 +899,21 @@ Parameters:
     @bot_command(
         category="Admin",
         description="Manually trigger synchronization for all athletes",
-        pattern="admin refresh all",
+        pattern="admin refresh all$",
         admin=True
     )
     async def refresh_all(self, message: Message):
-        self.refresh_all_athletes()
+        self.refresh_all_athletes(force=True)
+        self.driver.reply_to(message, "Refreshed all activities")
+
+    @bot_command(
+        category="Admin",
+        description="Manually trigger synchronization for all athletes",
+        pattern="admin refresh all force$",
+        admin=True
+    )
+    async def refresh_all(self, message: Message):
+        self.refresh_all_athletes(force=True,force_all=True)
         self.driver.reply_to(message, "Refreshed all activities")
 
     # Help Commands
@@ -1099,7 +1109,7 @@ Parameters:
             return True
         return False
 
-    def refresh_all_athletes(self, force_all: bool = False):
+    def refresh_all_athletes(self, force: bool = False, force_all: bool = False):
         """refresh all from all athletes"""
         #self.helper.slog("Refreshing all athletes initiated")
         # create a lock in valkey to prevent multiple refreshes running at the same time
@@ -1108,7 +1118,7 @@ Parameters:
             return
         auto_refresh = self.helper.str2bool(self.valkey.get(f"{self.intervals_prefix}_auto_refresh"))
         #self.helper.slog(f"Auto refresh is {auto_refresh}")
-        if not auto_refresh:
+        if not force and not auto_refresh:
             #self.helper.slog(f"Auto refresh is off")
             self.clear_lock("refresh_all_athletes")
             return
@@ -1121,7 +1131,7 @@ Parameters:
         if not last_refresh:
             last_refresh = str(current_time - 7*24*3600)  # 7 days ago
         
-        if current_time - int(float(last_refresh)) < refresh_interval:
+        if not force and current_time - int(float(last_refresh)) < refresh_interval:
             #self.helper.slog(f"Global refresh too recent. Next refresh in {refresh_interval - (current_time - int(float(last_refresh)))} seconds")
             self.clear_lock("refresh_all_athletes")
             return
@@ -1132,13 +1142,13 @@ Parameters:
                 if not athlete_last_refresh:
                     athlete_last_refresh = str(current_time - 7*24*3600)  # 7 days ago
 
-                if current_time - int(float(athlete_last_refresh)) < refresh_interval:
+                if not force and current_time - int(float(athlete_last_refresh)) < refresh_interval:
                     self.helper.slog(f"Skipping {self.users.id2u(athlete)} - refreshed too recently")
                     continue
 
                 self.helper.slog(f"Refreshing data for {self.users.id2u(athlete)}")
                 try:
-                    result = self._scrape_athlete(athlete)
+                    result = self._scrape_athlete(athlete, force_all=force_all)
                 except Exception as e:
                     self.helper.slog(f"Error in refresh_all_athletes: {str(e)}")
                     self.clear_lock("refresh_all_athletes")

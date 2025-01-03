@@ -72,10 +72,8 @@ class LogManager(PluginLoader):
                     page += 1
 
                 if not delete_immediately:
-                    # cast create_at to int
-                    posts_to_delete = [{"create_at": int(posts[post_id]["create_at"]), "post_id": post_id} for post_id in posts_to_delete]
-                    # sort posts by create_at
-                    posts_to_delete = sorted(posts_to_delete, key=lambda x: x["create_at"])
+                    # sort posts by id
+                    posts_to_delete = sorted(posts_to_delete)
                     # keep the last 100
                     posts_to_delete = posts_to_delete[:-lines_to_keep]
                     for post_id in posts_to_delete:

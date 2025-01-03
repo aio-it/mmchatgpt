@@ -248,7 +248,7 @@ Parameters:
             activities = sorted(activities, key=lambda x: x.id)
             for i in range(1, len(activities)):
                 if activities[i].id == activities[i-1].id:
-                    self.helper.slog(f"Removing duplicate activity for user {self.users.id2u(uid)} - {activities[i].id} and {activities[i-1].id}")
+                    self.helper.console(f"Removing duplicate activity for user {self.users.id2u(uid)} - {activities[i].id} and {activities[i-1].id}")
                     self.remove_activity(uid, activities[i].to_json())
         if wellness:
             # sort by "id" and "updated"
@@ -259,7 +259,7 @@ Parameters:
                 if old_wellness.id == new_wellness.id:
                     # merge the two wellnesses
                     merged = IntervalsWellness.from_dict({**old_wellness.to_dict(), **new_wellness.to_dict()})
-                    self.helper.slog(f"Removing duplicate wellness for user {self.users.id2u(uid)} - {old_wellness.id} and {new_wellness.id}")
+                    self.helper.console(f"Removing duplicate wellness for user {self.users.id2u(uid)} - {old_wellness.id} and {new_wellness.id}")
                     self.remove_wellness(uid, json.dumps(wellnesses[i]))
                     self.add_wellness(uid, merged)
     def return_pretty_activities(self, activities: list[IntervalsActivity]):

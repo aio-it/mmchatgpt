@@ -482,17 +482,15 @@ Parameters:
 
         try:
             # get activities
-            self.helper.slog(f"Getting activities from intervals {oldest_activity} to {newest}")
+            #self.helper.slog(f"Getting activities from intervals {oldest_activity} to {newest}")
             response = self._request("activities", "GET", uid=uid, data=params_activity)
             if response.status_code == 200:
                 activities_data = response.json()
                 for activity_data in activities_data:
-                    self.helper.slog(f"Got activity: {self.users.id2u(uid)} - {activity_data.get('start_date')} - {activity_data.get('id')}")
+                    #self.helper.slog(f"Got activity: {self.users.id2u(uid)} - {activity_data.get('start_date')} - {activity_data.get('id')}")
                     if activity_data.get("source","").lower() == "strava":
                         # strava activities not supported via the api for some reason
-                        self.helper.slog(activity_data)
                         continue
-
                     activity = IntervalsActivity.from_dict(activity_data)
                     result = self.add_activity(uid, activity)
                     if result == "added":
@@ -500,16 +498,17 @@ Parameters:
                     elif result == "changed":
                         activities_changed += 1
             else:
-                self.helper.slog("Failed to get activities")
-                self.helper.slog(response.status_code)
+                pass
+                #self.helper.slog("Failed to get activities")
+                #self.helper.slog(response.status_code)
 
             # get wellness
-            self.helper.slog(f"Getting wellness from intervals {oldest_wellness} to {newest}")
+            #self.helper.slog(f"Getting wellness from intervals {oldest_wellness} to {newest}")
             response = self._request("wellness", "GET", uid=uid, data=params_wellness)
             if response.status_code == 200:
                 wellness_data = response.json()
                 for wellness_entry in wellness_data:
-                    self.helper.slog(f"Got wellness: {self.users.id2u(uid)} - {wellness_entry.get('id')}")
+                    #self.helper.slog(f"Got wellness: {self.users.id2u(uid)} - {wellness_entry.get('id')}")
                     wellness = IntervalsWellness.from_dict(wellness_entry)
                     result = self.add_wellness(uid, wellness)
                     if result == "added":
@@ -517,8 +516,9 @@ Parameters:
                     elif result == "changed":
                         wellnesses_changed += 1
             else:
-                self.helper.slog("Failed to get wellness")
-                self.helper.slog(response.status_code)
+                pass
+                #self.helper.slog("Failed to get wellness")
+                #self.helper.slog(response.status_code)
 
             self.valkey.set(f"{self.intervals_prefix}_{uid}_last_refresh", str(int(datetime.datetime.now().timestamp())))
             

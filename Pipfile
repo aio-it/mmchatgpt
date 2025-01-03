@@ -43,6 +43,7 @@ requests = {extras = ["security"], version = "*"}
 python-dateutil = "*"
 schedule = "*"
 nest-asyncio = "*"
+apscheduler = "*"
 
 [dev-packages]
 autopep8 = "*"

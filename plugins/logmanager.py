@@ -4,8 +4,7 @@ from mmpy_bot.driver import Driver
 from mmpy_bot.plugins.base import PluginManager
 from mmpy_bot.settings import Settings
 from plugins.base import PluginLoader
-
-
+import schedule
 class LogManager(PluginLoader):
     def __init__(self):
         super().__init__()
@@ -17,11 +16,16 @@ class LogManager(PluginLoader):
         self.log_to_channel = self.helper.log_to_channel
         self.log_channel = self.helper.log_channel
         self.my_user_id = self.driver.user_id
-        
+        # run purger every minute
+        schedule.every(5).minutes.do(self.purge_logs_schedule)
+        self.purge_logs_schedule()
 
-    @listen_to(r"^\.logs purge ([0-9]+) ([0-9]+)$")
-    async def log_purge(self, message: Message, lines_to_keep: int, max_requests: int):
-        if self.users.is_admin(message.sender_name):
+    def purge_logs_schedule(self):
+        self.helper.console("Running log purger")
+        posts_to_delete, requests_count = self.purge_logs(1000, 0)
+        self.helper.console(f"Deleted {len(posts_to_delete)} messages from the log channel and made {requests_count} requests.")
+
+    def purge_logs(self, lines_to_keep:int, max_requests: int):
             if self.log_to_channel:
                 # get all messages from the channel
                 posts_to_delete = []
@@ -86,10 +90,14 @@ class LogManager(PluginLoader):
                         self.driver.posts.delete_post(post_id)
                         if local_request_count % log_every_n == 0:
                             # log every 500 requests
-                            self.helper.slog(f"Deleted {local_request_count}/{delete_count} made {request_count} (max: {max_requests}) requests.")
+                            self.helper.console(f"Deleted {local_request_count}/{delete_count} made {request_count} (max: {max_requests}) requests.")
                         request_count += 1
                         local_request_count += 1
-
+                return posts_to_delete, request_count
+    @listen_to(r"^\.logs purge ([0-9]+) ([0-9]+)$")
+    async def log_purge(self, message: Message, lines_to_keep: int, max_requests: int):
+        if self.users.is_admin(message.sender_name):
+                posts_to_delete, request_count = self.purge_logs(lines_to_keep, max_requests)
                 if len(posts_to_delete):
                     self.driver.reply_to(message, f"Deleted {len(posts_to_delete)} messages from the log channel {self.log_channel} and made {request_count} (max: {max_requests}) requests.")
                 else:

@@ -11,7 +11,6 @@ import tempfile
 import urllib
 
 import bs4
-import certifi
 import dns.resolver
 import magic
 import requests
@@ -130,7 +129,21 @@ class Helper:
         log.info("LOG: %s", msg)
         if self.log_to_channel:
             self.driver.create_post(self.log_channel, msg[:4000])
-
+    def console(self, message: str):
+        """log to console"""
+        callerclass, callerfunc = self.get_caller_info()
+        message = f"[{callerclass}.{callerfunc}] {message}"
+        log.info("CONSOLE: %s", message)
+    def console_debug(self, message: str):
+        """log to console"""
+        callerclass, callerfunc = self.get_caller_info()
+        message = f"[{callerclass}.{callerfunc}] {message}"
+        log.debug("CONSOLE: %s", message)
+    def console_error(self, message: str):
+        """log to console"""
+        callerclass, callerfunc = self.get_caller_info()
+        message = f"[{callerclass}.{callerfunc}] {message}"
+        log.error("CONSOLE: %s", message)
     async def debug(self, message: str, private: bool = False):
         """send debug message to log channel. if private is true send to all admins"""
         log.debug("DEBUG: %s", message)

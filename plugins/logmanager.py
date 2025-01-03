@@ -24,7 +24,7 @@ class LogManager(PluginLoader):
         if self.users.is_admin(message.sender_name):
             if self.log_to_channel:
                 # get all messages from the channel
-                all_posts = []
+                posts_to_delete = []
                 post_order = []
                 page = 0
                 per_page = 200
@@ -64,8 +64,7 @@ class LogManager(PluginLoader):
                         if delete_immediately:
                             self.driver.posts.delete_post(post_id)
                             request_count += 1
-                        post = posts[post_id]
-                        all_posts.append(post)
+                        posts_to_delete.append(post_id)
                         if max_requests and request_count >= max_requests:
                             break
                     if len(post_order) < per_page or (max_requests and request_count >= max_requests):
@@ -74,14 +73,14 @@ class LogManager(PluginLoader):
 
                 if not delete_immediately:
                     # sort posts by create_at
-                    all_posts = sorted(all_posts, key=lambda x: x["create_at"])
+                    posts_to_delete = sorted(posts_to_delete, key=lambda x: x["create_at"])
                     # keep the last 100
-                    all_posts = all_posts[:-lines_to_keep]
-                    for post in all_posts:
-                        self.driver.posts.delete_post(post["id"])
+                    posts_to_delete = posts_to_delete[:-lines_to_keep]
+                    for post_id in posts_to_delete:
+                        self.driver.posts.delete_post(post_id)
                         request_count += 1
 
-                if len(all_posts):
-                    self.driver.reply_to(message, f"Deleted {len(all_posts)} messages from the log channel {self.log_channel} and made {request_count} (max: {max_requests}) requests.")
+                if len(posts_to_delete):
+                    self.driver.reply_to(message, f"Deleted {len(posts_to_delete)} messages from the log channel {self.log_channel} and made {request_count} (max: {max_requests}) requests.")
                 else:
                     self.driver.reply_to(message, f"No messages found in the log channel {self.log_channel} and made {request_count} (max: {max_requests}) requests.")

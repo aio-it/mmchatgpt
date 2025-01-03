@@ -223,7 +223,7 @@ Parameters:
         self.clear_lock("refresh_all_athletes")
 
         # run the jobs on startup
-        self.refresh_all_athletes()
+        self.refresh_all_athletes(force=True)
         self.cleanup_duplicates_for_all_athletes()
         self.cleanup_broken_athletes()
 

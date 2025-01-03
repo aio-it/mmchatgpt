@@ -912,7 +912,7 @@ Parameters:
         pattern="admin refresh all force$",
         admin=True
     )
-    async def refresh_all(self, message: Message):
+    async def refresh_all_force_all(self, message: Message):
         self.refresh_all_athletes(force=True,force_all=True)
         self.driver.reply_to(message, "Refreshed all activities")
 

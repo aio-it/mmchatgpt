@@ -23,6 +23,7 @@ from plugins.users import Users
 from plugins.version import Version
 from plugins.vectordb import VectorDb
 from plugins.intervalsicu import IntervalsIcu
+from plugins.logmanager import LogManager
 
 env = Env()
 log_channel = env.str("MM_BOT_LOG_CHANNEL")
@@ -64,6 +65,7 @@ bot = Bot(
         Jira(),
         VectorDb(),
         IntervalsIcu(),
+        LogManager(),
         Version(),
     ],
     enable_logging=True,

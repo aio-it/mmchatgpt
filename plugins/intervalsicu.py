@@ -100,16 +100,16 @@ class IntervalsIcu(PluginLoader):
             return self._command_cache
 
         commands = {}
-        
+
         # Get all methods with command metadata
         for name, method in inspect.getmembers(self):
             if hasattr(method, '_command_meta'):
                 meta = method._command_meta
                 category = meta["category"]
-                
+
                 if category not in commands:
                     commands[category] = []
-                    
+
                 commands[category].append({
                     "pattern": meta["pattern"],
                     "description": meta["description"],
@@ -134,7 +134,7 @@ class IntervalsIcu(PluginLoader):
         for category in category_order:
             if category in commands:
                 sorted_commands[category] = commands[category]
-        
+
         # Add any remaining categories not in the order list
         for category in commands:
             if category not in sorted_commands:
@@ -146,34 +146,34 @@ class IntervalsIcu(PluginLoader):
     def generate_help_message(self) -> str:
         """Generate help message dynamically from commands"""
         commands = self.get_commands()
-        
+
         help_sections = []
-        
+
         # Add each category
         for category, command_list in commands.items():
             section = [f"\n**{category}**:"]
-            
+
             for cmd in command_list:
                 pattern = cmd["pattern"]
                 desc = cmd["description"]
-                
+
                 # Format the command help line
                 # Convert regex patterns to readable format
                 pattern = pattern.replace("([\s\S]*)", "<value>")  # For login and generic input
                 pattern = pattern.replace("([a-zA-Z0-9_]+)", "<name>")  # For profile set name
                 pattern = pattern.replace("([0-9.]+)", "<value>")  # For profile set value
                 pattern = pattern.replace("([0-9]+[ymdw])", "<period>")  # For metrics period
-                
+
                 cmd_str = f".intervals {pattern}"
-                
+
                 # Add admin marker if needed
                 if cmd["is_admin"]:
                     cmd_str += " (admin only)"
-                    
+
                 section.append(f"{cmd_str} - {desc}")
-            
+
             help_sections.append("\n".join(section))
-        
+
         # Add parameters section
         parameters = """
 Parameters:
@@ -183,10 +183,10 @@ Parameters:
 [profile_key] - height, weight(only for starting reference will be used for goals)
 [api_key] - Your Intervals.icu API key
 """
-        
+
         # Combine all sections
         full_help = "Intervals.icu Bot Commands:\n" + "\n".join(help_sections) + "\n" + parameters
-        
+
         return full_help
 
     def initialize(self, driver: Driver, plugin_manager: PluginManager, settings: Settings):
@@ -197,7 +197,15 @@ Parameters:
 
         # get all athletes and opted in athletes
         self.athletes = self.valkey.smembers(f"{self.intervals_prefix}_athletes") or set()
+        # fix bug where valkey returns as list
+        if self.athletes and isinstance(self.athletes, list):
+            self.athletes = set(self.athletes)
+            self.helper.log("Fixed bug where athletes was a list")
         self.opted_in = self.valkey.smembers(f"{self.intervals_prefix}_athletes_opted_in") or set()
+        # fix bug where valkey returns as list
+        if self.opted_in and isinstance(self.opted_in, list):
+            self.opted_in = set(self.opted_in)
+            self.helper.log("Fixed bug where opted_in was a list")
         # announcement config
         if self.get_announcement_channel() is None:
             self.announcements_enabled = False
@@ -226,7 +234,6 @@ Parameters:
         self.refresh_all_athletes(force=True)
         self.cleanup_duplicates_for_all_athletes()
         self.cleanup_broken_athletes()
-
 
     def cleanup_broken_athletes(self):
         for athlete in self.athletes:
@@ -338,7 +345,7 @@ Parameters:
                     activity = self.valkey.lpop(f"{self.intervals_prefix}_athlete_{uid}_activities_added")
                     if activity is None:
                         # no more activities
-                        #self.helper.slog(f"No more activities for {self.users.id2unhl(uid)}")
+                        # self.helper.slog(f"No more activities for {self.users.id2unhl(uid)}")
                         break
                     if activity:
                         activity = IntervalsActivity.from_dict(json.loads(activity))
@@ -409,7 +416,7 @@ Parameters:
             wellnesses = [IntervalsWellness.from_dict(json.loads(wellness)) for wellness in wellnesses]
             # Sort by id (date)
             wellnesses = sorted(wellnesses, key=lambda x: x.id)
-            #self.helper.slog(f"Got wellnesses: {wellnesses[:10]}")
+            # self.helper.slog(f"Got wellnesses: {wellnesses[:10]}")
             if oldest and newest:
                 return [wellness for wellness in wellnesses
                        if parser.parse(oldest) <= parser.parse(wellness.id) <= parser.parse(newest)]
@@ -482,12 +489,12 @@ Parameters:
 
         try:
             # get activities
-            #self.helper.slog(f"Getting activities from intervals {oldest_activity} to {newest}")
+            # self.helper.slog(f"Getting activities from intervals {oldest_activity} to {newest}")
             response = self._request("activities", "GET", uid=uid, data=params_activity)
             if response.status_code == 200:
                 activities_data = response.json()
                 for activity_data in activities_data:
-                    #self.helper.slog(f"Got activity: {self.users.id2u(uid)} - {activity_data.get('start_date')} - {activity_data.get('id')}")
+                    # self.helper.slog(f"Got activity: {self.users.id2u(uid)} - {activity_data.get('start_date')} - {activity_data.get('id')}")
                     if activity_data.get("source","").lower() == "strava":
                         # strava activities not supported via the api for some reason
                         continue
@@ -499,16 +506,16 @@ Parameters:
                         activities_changed += 1
             else:
                 pass
-                #self.helper.slog("Failed to get activities")
-                #self.helper.slog(response.status_code)
+                # self.helper.slog("Failed to get activities")
+                # self.helper.slog(response.status_code)
 
             # get wellness
-            #self.helper.slog(f"Getting wellness from intervals {oldest_wellness} to {newest}")
+            # self.helper.slog(f"Getting wellness from intervals {oldest_wellness} to {newest}")
             response = self._request("wellness", "GET", uid=uid, data=params_wellness)
             if response.status_code == 200:
                 wellness_data = response.json()
                 for wellness_entry in wellness_data:
-                    #self.helper.slog(f"Got wellness: {self.users.id2u(uid)} - {wellness_entry.get('id')}")
+                    # self.helper.slog(f"Got wellness: {self.users.id2u(uid)} - {wellness_entry.get('id')}")
                     wellness = IntervalsWellness.from_dict(wellness_entry)
                     result = self.add_wellness(uid, wellness)
                     if result == "added":
@@ -517,11 +524,11 @@ Parameters:
                         wellnesses_changed += 1
             else:
                 pass
-                #self.helper.slog("Failed to get wellness")
-                #self.helper.slog(response.status_code)
+                # self.helper.slog("Failed to get wellness")
+                # self.helper.slog(response.status_code)
 
             self.valkey.set(f"{self.intervals_prefix}_{uid}_last_refresh", str(int(datetime.datetime.now().timestamp())))
-            
+
         except Exception as e:
             self.helper.slog(f"Error in _scrape_athlete: {str(e)}")
             raise e
@@ -546,7 +553,7 @@ Parameters:
             return False
 
     # Commands organized by category:
-    
+
     # Authentication Commands
     @bot_command(
         category="Authentication",
@@ -622,7 +629,7 @@ Parameters:
         # example "camelCaseExample" -> "Camel Case Example"
         w = re.sub(r"([a-z])([A-Z])", r"\1 \2", string)
         return " ".join([word.capitalize() for word in w.split(" ")])
-    # Activity & Wellness Management Commands  
+    # Activity & Wellness Management Commands
     @bot_command(
         category="Activity & Wellness Management",
         description="Display your recent activities and workouts",
@@ -635,7 +642,7 @@ Parameters:
         # reverse the list
         activities = activities[::-1][:10]
         # get the fields for the activities using the mapping
-            
+
         if activities:
             activities = sorted(activities, key=lambda x: x.start_date, reverse=True)
             activities_str = "Last 10 activities:\n (or whatever fits in 14000 characters)\n"
@@ -993,7 +1000,7 @@ Parameters:
         separator_row = "|-" + "-|-".join(['-' * len(header) for header in headers]) + "-|"
         # Create the data rows
         data_rows = ["| " + " | ".join(map(str, row)) + " |" for row in rows]
-        
+
         # Combine all parts into a full table
         table = "\n" + "\n".join([header_row, separator_row] + data_rows) + "\n"
         return table
@@ -1116,28 +1123,28 @@ Parameters:
 
     def refresh_all_athletes(self, force: bool = False, force_all: bool = False):
         """refresh all from all athletes"""
-        #self.helper.slog("Refreshing all athletes initiated")
+        # self.helper.slog("Refreshing all athletes initiated")
         # create a lock in valkey to prevent multiple refreshes running at the same time
         if self.helper.str2bool(self.get_lock("refresh_all_athletes")):
-            #self.helper.slog("Refresh lock is on")
+            # self.helper.slog("Refresh lock is on")
             return
         auto_refresh = self.helper.str2bool(self.valkey.get(f"{self.intervals_prefix}_auto_refresh"))
-        #self.helper.slog(f"Auto refresh is {auto_refresh}")
+        # self.helper.slog(f"Auto refresh is {auto_refresh}")
         if not force and not auto_refresh:
-            #self.helper.slog(f"Auto refresh is off")
+            # self.helper.slog(f"Auto refresh is off")
             self.clear_lock("refresh_all_athletes")
             return
 
         refresh_interval = int(self.valkey.get(f"{self.intervals_prefix}_refresh_interval")) or 3*3600  # 3 hours default
         current_time = int(datetime.datetime.now().timestamp())
-        
+
         # Check global refresh time
         last_refresh = self.valkey.get(f"{self.intervals_prefix}_last_refresh")
         if not last_refresh:
             last_refresh = str(current_time - 7*24*3600)  # 7 days ago
-        
+
         if not force and current_time - int(float(last_refresh)) < refresh_interval:
-            #self.helper.slog(f"Global refresh too recent. Next refresh in {refresh_interval - (current_time - int(float(last_refresh)))} seconds")
+            # self.helper.slog(f"Global refresh too recent. Next refresh in {refresh_interval - (current_time - int(float(last_refresh)))} seconds")
             self.clear_lock("refresh_all_athletes")
             return
 
@@ -1339,7 +1346,7 @@ Parameters:
             if not metrics_table:
                 self.driver.reply_to(message, "Invalid metric")
                 return
-            #check if the user is opted in
+            # check if the user is opted in
             if not user in self.opted_in:
                 continue
             metrics = await self.get_athlete_metrics(user, metrics_table, metric, date_from=start_date, date_to=end_date)
@@ -1347,7 +1354,7 @@ Parameters:
             all_metrics[user] = metrics
         # create a table with all of the metrics for all the users the headers should be each user and the rows the metrics for each day
         # get the headers
-        #TODO fix this. it is broken
+        # TODO fix this. it is broken
         headers = ["Date"]
         headers.extend([self.users.id2unhl(user) for user in all_metrics.keys()])
         # get the dates

@@ -4,5 +4,10 @@
   },
   "python.formatting.provider": "none",
   "files.eol": "\n",
-  "makefile.configureOnOpen": true
+  "makefile.configureOnOpen": true,
+  "python.testing.pytestArgs": [
+    "tests"
+  ],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true
 }

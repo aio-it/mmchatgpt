@@ -879,6 +879,15 @@ if files:
             # Close the docker client
             await dockerclient.close()
 
+    def get_latest_model(self, prefix):
+        """get the latest model with a prefix"""
+        models = self.update_allowed_models()
+        # models list are sorrted by created date so the first one is the latest
+        for model in models:
+            if model.id.startswith(prefix):
+                return model
+        return None
+
     def update_allowed_models(self):
         """update allowed models"""
         response = openai.models.list()
@@ -1999,8 +2008,11 @@ if files:
         name = "@o1"
         if name not in self.names:
             self.add_name(name)
-        await self.helper.log(f"User: {message.sender_name} used o1 keyword")
-        await self.chat(message, model="o1-preview")
+        model = self.get_latest_model("o1")
+        await self.helper.log(
+            f"User: {message.sender_name} used o1 keyword using {model}"
+        )
+        await self.chat(message, model=model)
 
     @listen_to(r"^@o1mini[ \n]+.+", regexp_flag=re_DOTALL)
     async def chat_o1_mini(self, message: Message):
@@ -2008,12 +2020,25 @@ if files:
         name = "@o1mini"
         if name not in self.names:
             self.add_name(name)
-        await self.helper.log(f"User: {message.sender_name} used o1mini keyword")
-        await self.chat(message, model="o1-mini")
+        model = self.get_latest_model("o1-mini")
+        await self.helper.log(
+            f"User: {message.sender_name} used o1mini keyword using {model}"
+        )
+        await self.chat(message, model=model)
+
+    @listen_to(r"^@o3mini[ \n]+.+", regexp_flag=re_DOTALL)
+    async def chat_o3_mini(self, message: Message):
+        """listen to everything and respond when mentioned"""
+        model = self.get_latest_model("o3-mini")
+        await self.helper.log(
+            f"User: {message.sender_name} used o3-mini keyword using {model}"
+        )
+        await self.chat(message, model=model)
 
     @listen_to(r"^@gpt3[ \n]+.+", regexp_flag=re_DOTALL)
     async def chat_gpt3(self, message: Message):
         """listen to everything and respond when mentioned"""
+        model = self.get_latest_model("gpt3.5")
         name = "@gpt3"
         if name not in self.names:
             self.add_name(name)
@@ -2023,10 +2048,6 @@ if files:
     @listen_to(r"^@gpt4{0,1}[ \n]+.+", regexp_flag=re_DOTALL)
     async def chat_gpt4(self, message: Message):
         """listen to everything and respond when mentioned"""
-        names = ["@gpt4o", "@gpt4"]
-        for name in names:
-            if name not in self.names:
-                self.add_name(name)
         if "4" not in self.model:
             await self.chat(message, "gpt-4o")
         else:

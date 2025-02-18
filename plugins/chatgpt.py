@@ -2008,7 +2008,7 @@ if files:
         name = "@o1"
         if name not in self.names:
             self.add_name(name)
-        model = self.get_latest_model("o1")
+        model = self.get_latest_model("o1").id
         await self.helper.log(
             f"User: {message.sender_name} used o1 keyword using {model}"
         )
@@ -2020,7 +2020,7 @@ if files:
         name = "@o1mini"
         if name not in self.names:
             self.add_name(name)
-        model = self.get_latest_model("o1-mini")
+        model = self.get_latest_model("o1-mini").id
         await self.helper.log(
             f"User: {message.sender_name} used o1mini keyword using {model}"
         )
@@ -2029,7 +2029,7 @@ if files:
     @listen_to(r"^@o3mini[ \n]+.+", regexp_flag=re_DOTALL)
     async def chat_o3_mini(self, message: Message):
         """listen to everything and respond when mentioned"""
-        model = self.get_latest_model("o3-mini")
+        model = self.get_latest_model("o3-mini").id
         await self.helper.log(
             f"User: {message.sender_name} used o3-mini keyword using {model}"
         )
@@ -2038,7 +2038,7 @@ if files:
     @listen_to(r"^@gpt3[ \n]+.+", regexp_flag=re_DOTALL)
     async def chat_gpt3(self, message: Message):
         """listen to everything and respond when mentioned"""
-        model = self.get_latest_model("gpt3.5")
+        model = self.get_latest_model("gpt3.5").id
         name = "@gpt3"
         if name not in self.names:
             self.add_name(name)

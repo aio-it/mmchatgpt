@@ -1046,7 +1046,7 @@ Parameters:
             # convert seconds to 00:00:00
             return self.seconds_to_human_readable(value)
         if metric == "calories":
-            return f"{value} cal"
+            return f"{value} kcal"
         if metric == "steps":
             return f"{value} steps"
         if metric == "weight":

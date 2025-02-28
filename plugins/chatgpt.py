@@ -927,7 +927,7 @@ if files:
             models_msg += f"- {model.id} ({model.created})\n"
         self.driver.reply_to(message, models_msg)
 
-    @listen_to(r"^\.gpt model set ([a-zA-Z0-9_-]+)")
+    @listen_to(r"^\.gpt model set ([\.a-zA-Z0-9_-]+)")
     async def model_set(self, message: Message, model: str):
         """set the model"""
         if self.users.is_admin(message.sender_name):

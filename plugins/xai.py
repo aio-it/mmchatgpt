@@ -78,7 +78,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         try:
             self.fetch_available_models()
             print(f"Fetched allowed models from Xai API: {self.ALLOWED_MODELS}")
-            print(f"Using latest sonnet model as default: {self.DEFAULT_MODEL}")
+            print(f"Using latest grok model as default: {self.DEFAULT_MODEL}")
         except Exception as e:
             print(f"Error fetching models on initialization: {str(e)}")
             print(f"Using default allowed models: {self.ALLOWED_MODELS}")
@@ -131,12 +131,12 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             if models:
                 self.ALLOWED_MODELS = models
 
-                # Find the latest sonnet model to use as default
-                sonnet_models = [m for m in models if m.startswith("claude-3-7-sonnet-")]
-                if sonnet_models:
+                # Find the latest grok model to use as default
+                grok_models = [m for m in models if m.startswith("grok-2-1212")]
+                if grok_models:
                     # Sort models to find the latest version (assuming version format allows string comparison)
-                    latest_sonnet = sorted(sonnet_models)[-1]
-                    self.DEFAULT_MODEL = latest_sonnet
+                    latest_grok = sorted(grok_models)[-1]
+                    self.DEFAULT_MODEL = latest_grok
 
                 # Also update MAX_TOKENS_PER_MODEL with default values for any new models
                 for model_id in models:
@@ -311,22 +311,22 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         return latest_model
 
     @listen_to(r"^@s .+", regexp_flag=re_DOTALL)
-    @listen_to(r"^@sonnet .+", regexp_flag=re_DOTALL)
-    async def chat_sonnet(self, message: Message):
-        """alias for a specific model: claude-3-7-sonnet-"""
-        # await self.helper.log(f"@sonnet from {message.sender_name}")
-        model = self.get_latest_model("claude-3-7-sonnet-")
+    @listen_to(r"^@grok .+", regexp_flag=re_DOTALL)
+    async def chat_grok(self, message: Message):
+        """alias for a specific model: xai-3-7-grok-"""
+        # await self.helper.log(f"@grok from {message.sender_name}")
+        model = self.get_latest_model("grok-2-1212")
         if model is None:
-            self.driver.reply_to(message, "No sonnet models found. Please try again later.")
+            self.driver.reply_to(message, "No grok models found. Please try again later.")
             return
         return await self.chat(message, model)
 
-    @listen_to(r"^@claude .+", re_DOTALL)
+    @listen_to(r"^@xai .+", re_DOTALL)
     async def chat(self, message: Message, model: str = None):
         """listen to everything and respond when mentioned"""
-        # fetch the latest sonnet3.7 model
+        # fetch the latest grok3.7 model
         if model is None:
-            model = self.get_latest_model("claude-3-7-sonnet-")
+            model = self.get_latest_model("grok-2-1212")
         if model is None:
             model = self.get_xai_setting("model") or self.DEFAULT_MODEL
         # if message is not from a user, ignore
@@ -387,50 +387,48 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             # await self.helper.log("Messages being sent to Xai API:")
             # for idx, msg in enumerate(messages):
             #    await self.helper.log(f"Message {idx}: Role: {msg['role']}, Content: {msg['content'][:50]}...")
-            async with aclient.with_options(max_retries=5).messages.stream(
-                max_tokens=self.MAX_TOKENS_PER_MODEL[model],
+            response = aclient.chat.completions.create(
                 messages=messages,
-                system=self.get_xai_setting("system").replace("\n", " "),
+                stream=True,
                 model=model,
-                temperature=float(self.get_xai_setting("temperature")),
-            ) as stream:
-                async for text in stream.text_stream:
-                    # await self.helper.debug(text)
-                    # self.driver.reply_to(message, chunk_message.content)
-                    # if the message has content, add it to the full message
-                    if text:
-                        full_message += text
-                        # if full message begins with ``` or any other mattermost markdown append a \
-                        # newline to the post_prefix so it renders correctly
-                        markdown = [
-                            ">",
-                            "*",
-                            "_",
-                            "-",
-                            "+",
-                            "1",
-                            "~",
-                            "!",
-                            "`",
-                            "|",
-                            "#",
-                            "@",
-                            "•",
-                        ]
-                        if i == 0 and post_prefix[-1] != "\n" and full_message[0] in markdown:
-                            post_prefix += "\n"
-                            i += 1
+            )
+            async for text in response:
+                # await self.helper.debug(text)
+                # self.driver.reply_to(message, chunk_message.content)
+                # if the message has content, add it to the full message
+                if text:
+                    full_message += text
+                    # if full message begins with ``` or any other mattermost markdown append a \
+                    # newline to the post_prefix so it renders correctly
+                    markdown = [
+                        ">",
+                        "*",
+                        "_",
+                        "-",
+                        "+",
+                        "1",
+                        "~",
+                        "!",
+                        "`",
+                        "|",
+                        "#",
+                        "@",
+                        "•",
+                    ]
+                    if i == 0 and post_prefix[-1] != "\n" and full_message[0] in markdown:
+                        post_prefix += "\n"
+                        i += 1
 
-                        # await self.helper.debug((time.time() - last_update_time) * 1000)
-                        if (time.time() - last_update_time) * 1000 > stream_update_delay_ms:
-                            # await self.helper.debug("updating message")
-                            # update the message
-                            self.driver.posts.patch_post(
-                                reply_msg_id,
-                                {"message": f"{post_prefix}{full_message}"},
-                            )
-                            # update last_update_time
-                            last_update_time = time.time()
+                    # await self.helper.debug((time.time() - last_update_time) * 1000)
+                    if (time.time() - last_update_time) * 1000 > stream_update_delay_ms:
+                        # await self.helper.debug("updating message")
+                        # update the message
+                        self.driver.posts.patch_post(
+                            reply_msg_id,
+                            {"message": f"{post_prefix}{full_message}"},
+                        )
+                        # update last_update_time
+                        last_update_time = time.time()
         except (
             BadRequestError,
             APIStatusError,

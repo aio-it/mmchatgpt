@@ -380,7 +380,7 @@ class ChatGPT(PluginLoader):
         self.tools_manager.add_tool(save_user_memory)
         self.tools_manager.add_tool(get_user_memories)
         self.tools_manager.add_tool(search_user_memories)
-        #self.tools_manager.add_tool(enable_disable_memories)
+        # self.tools_manager.add_tool(enable_disable_memories)
         self.tools_manager.add_tool(enable_disable_memories_user)
         self.tools_manager.add_tool(delete_user_memory_or_memories)
         self.tools_manager.add_tool(time_to_new_date_tool)
@@ -405,7 +405,6 @@ class ChatGPT(PluginLoader):
         time_to_new_date = new_date - today
         return f"Time to new date: {time_to_new_date}"
 
-    
     async def delete_user_memory_or_memories(self, message: Message, mode: str, memory_id: str = None, tool_run=False):
         """Delete a memory or memories for the user"""
         if message.is_direct_message:
@@ -996,7 +995,7 @@ if files:
     async def set_chatgpt(self, message: Message, key: str, value: str, allow_user=False):
         """set the chatgpt key"""
         settings_key = self.SETTINGS_KEY
-        #await self.helper.log(f"set_chatgpt {key} {value}")
+        # await self.helper.log(f"set_chatgpt {key} {value}")
         if value is True:
             value = "true"
         elif value is False:
@@ -1008,7 +1007,7 @@ if files:
     async def set_chatgpt_setting(self, key: str, value: str):
         """set the chatgpt key"""
         settings_key = self.SETTINGS_KEY
-        #await self.helper.log(f"set_chatgpt {key} {value}")
+        # await self.helper.log(f"set_chatgpt {key} {value}")
         if value is True:
             value = "true"
         elif value is False:
@@ -1037,7 +1036,7 @@ if files:
                 value = True
             elif value == "false":
                 value = False
-                
+
             self.driver.reply_to(message, f"Set {key} to {value}")
 
     @listen_to(r"^\.gpt get")
@@ -1400,13 +1399,13 @@ if files:
         it_is_true = ["true", "True", "", None, True]
         if self.get_chatgpt_setting("chatgpt_memories_direct") and message.is_direct_message:
             if self.get_chatgpt_setting(f"chatgpt_memories_{message.user_id}_direct") in it_is_true:
-                #await self.helper.log(f"memories_enabled: {True} for {message.user_id} in direct")
+                # await self.helper.log(f"memories_enabled: {True} for {message.user_id} in direct")
                 return True
         if self.get_chatgpt_setting("chatgpt_memories_channel") and not message.is_direct_message :
             if self.get_chatgpt_setting(f"chatgpt_memories_{message.user_id}_channel_{message.channel_id}") in it_is_true:
-                #await self.helper.log(f"memories_enabled: {True} for {message.user_id} in channel {message.channel_id}")
+                # await self.helper.log(f"memories_enabled: {True} for {message.user_id} in channel {message.channel_id}")
                 return True
-        #await self.helper.log(f"memories_enabled: {False} for {message.user_id} in channel {message.channel_id} and direct is {message.is_direct_message}")
+        # await self.helper.log(f"memories_enabled: {False} for {message.user_id} in channel {message.channel_id} and direct is {message.is_direct_message}")
         return False
     # soon to be deprecated
     # @listen_to(".+", needs_mention=True)
@@ -1498,19 +1497,19 @@ if files:
                         self.valkey.rpush(memkey, *memory_ids)
 
             # TODO: search shared memories. this is scary allows users to inject context into the model for other users.
-            #shared_content = self.vectordb.search_shared(
+            # shared_content = self.vectordb.search_shared(
             #    query=message.text
-            #)
-            #await self.helper.log(f"memories: {memories}")
+            # )
+            # await self.helper.log(f"memories: {memories}")
 
             # TODO: maybe store the automaticly might not be a good idea. it could result in a lot of noise
             # store memory in vectordb
-            #self.vectordb.store_memory(
+            # self.vectordb.store_memory(
             #    content=message.text,
             #    user=message.user_id,
             #    usage_context=rag_usage_context,
-            #)
-        #await self.helper.log(f"memories_enabled: {memories_enabled}")
+            # )
+        # await self.helper.log(f"memories_enabled: {memories_enabled}")
         # add memories context just before the user message
         # This function checks if the thread exists in valkey and if not, fetches all posts in the thread and adds them to valkey
         thread_id = message.reply_id
@@ -1537,7 +1536,7 @@ if files:
             user_text = message.text
             message_files = self.extract_file_details(message)
             # log the type and filename of the files
-            #for file in message_files:
+            # for file in message_files:
             #    await self.helper.log(
             #        f"file: {file.get('filename')} type: {file.get('type')}"
             #    )
@@ -1763,13 +1762,13 @@ if files:
                     if self.valkey.hexists(call_key, tool_function["tool_call_id"]):
                         continue
                     function_name = tool_function["function_name"]
-                    #await self.helper.log(f"function_name: {function_name}")
+                    # await self.helper.log(f"function_name: {function_name}")
                     tool_call_id = tool_function["tool_call_id"]
                     # self.helper.slog(f"function_name: {function_name}")
                     # get function name from the tool manager
                     tool = self.tools_manager.get_tool(function_name)
                     function = tool.function
-                    #await self.helper.log(f"tool: {tool}")
+                    # await self.helper.log(f"tool: {tool}")
                     if not tool:
                         await self.helper.log(
                             f"Error: function not found: {function_name}"
@@ -1796,8 +1795,8 @@ if files:
                         arguments["message"] = message
                     if tool.needs_self:
                         arguments["self"] = self
-                        #await self.helper.log(f"tool: {tool}")
-                        #await self.helper.log(f"a: {arguments}")
+                        # await self.helper.log(f"tool: {tool}")
+                        # await self.helper.log(f"a: {arguments}")
                     if tool.returns_files:
                         # Execute the function
                         function_result, filename = await function(**arguments)
@@ -2058,9 +2057,9 @@ if files:
         """listen to everything and respond when mentioned"""
         # if direct and starting with names bail
         if message.is_direct_message and message.text.startswith("@"):
-            #await self.helper.log(
+            # await self.helper.log(
             #    "ignoring private message starting with @ from function chat_gpt4_mention"
-            #)
+            # )
             return
         for name in self.names:
             if message.text.startswith(name):

@@ -106,6 +106,42 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
                     message, f"Model not allowed. Allowed models: {self.ALLOWED_MODELS}"
                 )
 
+    @listen_to(r"^\.ant model available")
+    async def model_available(self, message: Message):
+        """get the available models from the anthropic api"""
+        if self.users.is_admin(message.sender_name):
+            try:
+                models = await self.fetch_available_models()
+                if models:
+                    model_list = "\n".join(models)
+                    self.driver.reply_to(message, f"Available Anthropic models:\n```\n{model_list}\n```")
+                else:
+                    self.driver.reply_to(message, "Failed to fetch available models from Anthropic API.")
+            except Exception as e:
+                await self.helper.debug(f"Error fetching models: {str(e)}")
+                self.driver.reply_to(message, f"Error fetching models: {str(e)}")
+
+    async def fetch_available_models(self):
+        """Fetch available models from Anthropic API"""
+        try:
+            response = await aclient.models.list()
+            models = [model.id for model in response.data]
+
+            # Update the class' ALLOWED_MODELS list
+            if models:
+                self.ALLOWED_MODELS = models
+                # Also update MAX_TOKENS_PER_MODEL with default values for any new models
+                for model_id in models:
+                    if model_id not in self.MAX_TOKENS_PER_MODEL:
+                        self.MAX_TOKENS_PER_MODEL[model_id] = 4096  # Default token limit
+
+                await self.helper.debug(f"Updated ALLOWED_MODELS to: {self.ALLOWED_MODELS}")
+
+            return models
+        except Exception as e:
+            await self.helper.log(f"Failed to fetch models from Anthropic API: {str(e)}")
+            return None
+
     @listen_to(r"^\.ant model get")
     async def model_get(self, message: Message):
         """get the model"""

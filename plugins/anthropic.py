@@ -9,6 +9,7 @@ import jsonpickle
 from environs import Env
 from anthropic import (
     AsyncAnthropic,
+    Anthropic as SyncAnthropic,
     BadRequestError,
     APIStatusError,
     APIError,
@@ -30,8 +31,11 @@ aclient = AsyncAnthropic(
     # This is the default and can be omitted
     api_key=env.str("ANTHROPIC_API_KEY"),
 )
+client = SyncAnthropic(
+    api_key=env.str("ANTHROPIC_API_KEY"),
+)
 
-MODEL = "claude-3-opus-20240229"
+MODEL = "claude-3-7-sonnet-20250219"
 VALKEY_PREPEND = "anthropic_thread_"
 
 # Custom Exceptions
@@ -51,11 +55,11 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     DEFAULT_MODEL = MODEL
     ALLOWED_MODELS = [
         DEFAULT_MODEL,
-        "claude-3-5-sonnet-20240620",
+        "claude-3-7-sonnet-20250219",
     ]
     MAX_TOKENS_PER_MODEL = {
         DEFAULT_MODEL: 4096,
-        "claude-3-5-sonnet-20240620": 4096,
+        "claude-3-7-sonnet-20250219": 4096,
     }
     ANTHROPIC_DEFAULTS = {
         "temperature": 1.0,
@@ -69,7 +73,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
     def __init__(self):
         super().__init__()
-        self.names = ["@claude", "@opus", "@sonnet"]  # Bot name
+        self.names = ["@claude", "@sonnet", "@s"]
         self.headers = {
             "User-Agent": self.USER_AGENT,
         }
@@ -82,6 +86,15 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         settings: Settings,
     ):
         super().initialize(driver, plugin_manager, settings)
+        # Fetch available models from Anthropic API on startup
+        try:
+            self.fetch_available_models()
+            print(f"Fetched allowed models from Anthropic API: {self.ALLOWED_MODELS}")
+            print(f"Using latest sonnet model as default: {self.DEFAULT_MODEL}")
+        except Exception as e:
+            print(f"Error fetching models on initialization: {str(e)}")
+            print(f"Using default allowed models: {self.ALLOWED_MODELS}")
+
         # Apply default model to valkey if not set and set self.model
         self.model = self.valkey.hget(self.SETTINGS_KEY, "model")
         if self.model is None:
@@ -91,13 +104,14 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         for key, value in self.ANTHROPIC_DEFAULTS.items():
             if self.valkey.hget(self.SETTINGS_KEY, key) is None:
                 self.valkey.hset(self.SETTINGS_KEY, key, value)
-        print(f"Allowed models: {self.ALLOWED_MODELS}")
+        print(f"Using model: {self.model}")
 
     @listen_to(r"^\.ant model set ([a-zA-Z0-9_-]+)")
     async def model_set(self, message: Message, model: str):
         """set the model"""
+        self.fetch_available_models()
         if self.users.is_admin(message.sender_name):
-            if True or model in self.ALLOWED_MODELS:
+            if model in self.ALLOWED_MODELS:
                 self.valkey.hset(self.SETTINGS_KEY, "model", model)
                 self.model = model
                 self.driver.reply_to(message, f"Set model to {model}")
@@ -111,7 +125,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         """get the available models from the anthropic api"""
         if self.users.is_admin(message.sender_name):
             try:
-                models = await self.fetch_available_models()
+                models = self.fetch_available_models()
                 if models:
                     model_list = "\n".join(models)
                     self.driver.reply_to(message, f"Available Anthropic models:\n```\n{model_list}\n```")
@@ -121,25 +135,31 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
                 await self.helper.debug(f"Error fetching models: {str(e)}")
                 self.driver.reply_to(message, f"Error fetching models: {str(e)}")
 
-    async def fetch_available_models(self):
+    def fetch_available_models(self):
         """Fetch available models from Anthropic API"""
         try:
-            response = await aclient.models.list()
+            response = client.models.list()
             models = [model.id for model in response.data]
 
             # Update the class' ALLOWED_MODELS list
             if models:
                 self.ALLOWED_MODELS = models
+
+                # Find the latest sonnet model to use as default
+                sonnet_models = [m for m in models if m.startswith("claude-3-7-sonnet-")]
+                if sonnet_models:
+                    # Sort models to find the latest version (assuming version format allows string comparison)
+                    latest_sonnet = sorted(sonnet_models)[-1]
+                    self.DEFAULT_MODEL = latest_sonnet
+
                 # Also update MAX_TOKENS_PER_MODEL with default values for any new models
                 for model_id in models:
                     if model_id not in self.MAX_TOKENS_PER_MODEL:
                         self.MAX_TOKENS_PER_MODEL[model_id] = 4096  # Default token limit
 
-                await self.helper.debug(f"Updated ALLOWED_MODELS to: {self.ALLOWED_MODELS}")
-
             return models
-        except Exception as e:
-            await self.helper.log(f"Failed to fetch models from Anthropic API: {str(e)}")
+        # pylint: disable=bare-except
+        except:  # noqa: E722
             return None
 
     @listen_to(r"^\.ant model get")
@@ -204,6 +224,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
                 .ant get - get all the anthropic keys
                 .ant model set <model> - set the model
                 .ant model get - get the model
+                .ant model available - get the available models
                 .ant help - this help message
             ```""",
         )
@@ -299,17 +320,32 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             await self.helper.debug("no messages in valkey thread")
         self.driver.reply_to(message, json.dumps(messages, indent=4)[:4000])
 
-    @listen_to(r"^@s .*", regexp_flag=re_DOTALL)
-    @listen_to(r"^@sonnet .*", regexp_flag=re_DOTALL)
+    def get_latest_model(self, prefix):
+        """get the latest model that starts with the prefix"""
+        models = self.fetch_available_models()
+        latest_model = None
+        for model in models:
+            if model.startswith(prefix):
+                latest_model = model
+        return latest_model
+
+    @listen_to(r"^@s .+", regexp_flag=re_DOTALL)
+    @listen_to(r"^@sonnet .+", regexp_flag=re_DOTALL)
     async def chat_sonnet(self, message: Message):
+        """alias for a specific model: claude-3-7-sonnet-"""
         # await self.helper.log(f"@sonnet from {message.sender_name}")
-        model = self.get_anthropic_setting("model") or self.DEFAULT_MODEL
+        model = self.get_latest_model("claude-3-7-sonnet-")
+        if model is None:
+            self.driver.reply_to(message, "No sonnet models found. Please try again later.")
+            return
         return await self.chat(message, model)
 
-    @listen_to(r"^@claude .*", re_DOTALL)
+    @listen_to(r"^@claude .+", re_DOTALL)
     async def chat(self, message: Message, model: str = None):
         """listen to everything and respond when mentioned"""
-        # no model is set, use default model
+        # fetch the latest sonnet3.7 model
+        if model is None:
+            model = self.get_latest_model("claude-3-7-sonnet-")
         if model is None:
             model = self.get_anthropic_setting("model") or self.DEFAULT_MODEL
         # if message is not from a user, ignore
@@ -354,7 +390,7 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         full_message = ""
         # post_prefix is so we can add the sender name to the message to prevent
         # confusion as to who the reply is to
-        post_prefix = f"@{message.sender_name}: "
+        post_prefix = f"({model}) @{message.sender_name}: "
 
         # lets create a message to send to the user that we can update
         # as we get more messages from anthropic

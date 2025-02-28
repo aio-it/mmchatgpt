@@ -2001,6 +2001,16 @@ if files:
 
         await self.helper.log(f"User: {message.sender_name} used {model}")
 
+    @listen_to(r"^@gpt4\.5[ \n]+.+", regexp_flag=re_DOTALL)
+    async def chat_gpt45(self, message: Message):
+        """listen to everything and respond when mentioned"""
+        name = "@gpt4.5"
+        if name not in self.names:
+            self.add_name(name)
+        model = self.get_latest_model("gpt-4.5").id
+        await self.helper.log(f"User: {message.sender_name} used gpt-4.5 keyword using {model}")
+        await self.chat(message, model=model)
+
     @listen_to(r"^@o1[ \n]+.+", regexp_flag=re_DOTALL)
     async def chat_o1(self, message: Message):
         """listen to everything and respond when mentioned"""

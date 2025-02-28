@@ -29,7 +29,6 @@ coverage = "*"
 jira = "*"
 mattermostautodriver = "*"
 httpx = "=0.27.2"
-duckduckgo-search = {extras = ["lxml"], version = "*"}
 brotli = "*"
 pillow = "*"
 valkey = {extras = ["libvalkey"], version = "*"}
@@ -44,6 +43,7 @@ python-dateutil = "*"
 schedule = "*"
 nest-asyncio = "*"
 apscheduler = "*"
+googlesearch-python = "*"
 
 [dev-packages]
 autopep8 = "*"

@@ -16,7 +16,7 @@ import magic
 import requests
 import validators
 import valkey
-from duckduckgo_search import DDGS
+from googlesearch import search as googlesearch
 from environs import Env
 from mmpy_bot.wrappers import Message
 
@@ -423,10 +423,10 @@ class Helper:
         # Get the base content type without parameters
         if ';' in content_type:
             content_type = content_type.split(';', 1)[0].strip()
-        
+
         # Get the main type and subtype
         main_type = content_type.split('/', 1)[0].lower() if '/' in content_type else 'unknown'
-        
+
         # Get extension from mimetype
         ext = mimetypes.guess_extension(content_type, strict=False)
         if ext:
@@ -434,13 +434,13 @@ class Helper:
             ext = ext[1:]
         else:
             ext = 'unknown'
-        
+
         # Special cases first
         if content_type.lower() == 'text/html':
             return 'html', 'txt'
         if content_type.lower() in ['application/json', 'application/xml']:
             return 'text', ext
-        
+
         # Map main types to our categories
         type_mapping = {
             'text': 'text',
@@ -449,7 +449,7 @@ class Helper:
             'audio': 'audio',
             'application': 'documents'
         }
-        
+
         return type_mapping.get(main_type, 'unknown'), ext
 
     async def download_webpage(self, url):
@@ -509,7 +509,7 @@ class Helper:
                 if not content_type:
                     # Use python-magic to detect content type from the content
                     content_type = magic.from_buffer(content[:1024], mime=True)
-                
+
                 await self.log(f"content type header: {url} {content_type}")
                 content_type, ext = self.get_content_type_and_ext(content_type)
                 await self.log(f"content_type: {url} {content_type}")
@@ -645,13 +645,25 @@ class Helper:
         return json.dumps(downloaded), localfiles
 
     async def web_search(self, searchterm):
-        """search the web using duckduckgo"""
+        """search the web using google and return the results"""
         # pylint: disable=attribute-defined-outside-init
         self.exit_after_loop = False
-        await self.log("searching the web using backend=api")
 
+        await self.log("searching the web")
         try:
-            results = DDGS().text(keywords=searchterm, backend="api", max_results=10)
+            results = googlesearch(searchterm, advanced=True, num_results=50)
+
+            # class SearchResult:
+            # def __init__(self, url, title, description):
+            #    self.url = url
+            #    self.title = title
+            #    self.description = description
+            # convert results to dict
+            results = [
+                {"href": result.url, "title": result.title, "description": result.description.strip()} for result in results
+            ]
+            # filter out any with an url that contains the href https://www.google.com/search
+            results = [result for result in results if "google.com/search" not in result.get("href")]
             # save to file
             filename = self.save_content_to_tmp_file(
                 json.dumps(results, indent=4), "json"
@@ -659,19 +671,7 @@ class Helper:
             return results, filename
         # pylint: disable=broad-exception-caught
         except Exception:
-            await self.log("Error: falling back to html backend")
-        await self.log("searching the web using backend=html")
-        try:
-            results = DDGS().text(keywords=searchterm, backend="html", max_results=10)
-            # save to file
-            filename = self.save_content_to_tmp_file(
-                json.dumps(results, indent=4), "json"
-            )
-            return results, filename
-        # pylint: disable=broad-except
-        except Exception as e:
-            await self.log(f"Error: {e}")
-            return f"Error: {e}", None
+            return "Search failed", None
     def str2bool(self, string: str | None):
         if type(string) == bool:
             return string

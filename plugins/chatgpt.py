@@ -199,7 +199,7 @@ class ChatGPT(PluginLoader):
         )
         web_search_tool = Tool(
             function=self.helper.web_search,
-            description="Quick web search that returns only titles and snippets of the top 10 results. Use this for general information, fact-checking, or when you need a broad overview of a topic. Does NOT download full webpage content.",
+            description="Quick web search that returns only titles and links as markdown and snippets of the top 10 results you determine to be the best. Use this for general information, fact-checking, or when you need a broad overview of a topic. Does NOT download full webpage content.",
             parameters=["searchterm"],
             privilege_level="user",
         )

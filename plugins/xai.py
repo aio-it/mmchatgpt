@@ -18,6 +18,8 @@ from mmpy_bot.wrappers import Message
 from plugins.base import PluginLoader
 
 env = Env()
+# load env
+env.read_env()
 
 aclient = AsyncOpenAI(base_url="https://api.x.ai/v1", api_key=env.str("XAI_API_KEY"))
 client = OpenAI(base_url="https://api.x.ai/v1", api_key=env.str("XAI_API_KEY"))

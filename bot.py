@@ -7,6 +7,7 @@ from mmpy_bot import Bot, Settings
 
 # from plugins.ollama import Ollama
 from plugins.anthropic import Anthropic
+from plugins.xai import Xai
 from plugins.calc import Calc
 from plugins.chatgpt import ChatGPT
 from plugins.giphy import Giphy
@@ -51,6 +52,7 @@ bot = Bot(
     plugins=[
         Users(),
         ChatGPT(),
+        Xai(),
         #        Docker(),
         Anthropic(),
         Pushups(),

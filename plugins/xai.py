@@ -387,17 +387,19 @@ AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             # await self.helper.log("Messages being sent to Xai API:")
             # for idx, msg in enumerate(messages):
             #    await self.helper.log(f"Message {idx}: Role: {msg['role']}, Content: {msg['content'][:50]}...")
-            response = aclient.chat.completions.create(
+            response = await aclient.chat.completions.create(
                 messages=messages,
                 stream=True,
                 model=model,
             )
-            async for text in response:
+            async for chunk in response:
                 # await self.helper.debug(text)
                 # self.driver.reply_to(message, chunk_message.content)
                 # if the message has content, add it to the full message
-                if text:
-                    full_message += text
+                chunk_message = chunk.choices[0].delta
+
+                if chunk_message.content:
+                    full_message += chunk_message.content
                     # if full message begins with ``` or any other mattermost markdown append a \
                     # newline to the post_prefix so it renders correctly
                     markdown = [

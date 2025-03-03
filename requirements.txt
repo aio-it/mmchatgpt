@@ -42,7 +42,7 @@ nest-asyncio==1.6.0; python_version >= '3.5'
 ntplib==0.4.0
 numpy==2.2.3; python_version >= '3.10'
 oauthlib==3.2.2; python_version >= '3.6'
-openai==1.65.1; python_version >= '3.8'
+openai==1.65.2; python_version >= '3.8'
 packaging==24.2; python_version >= '3.8'
 pedantic==1.16.4; python_full_version >= '3.9.0'
 pgvector==0.3.6; python_version >= '3.8'

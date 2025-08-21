@@ -4,10 +4,12 @@ mmchatgpt is a Mattermost chatbot built with the mmpy_bot framework. It integrat
 
 ## Features
 
-mmchatgpt includes 16+ specialized plugins that extend its capabilities:
+mmchatgpt includes 18+ specialized plugins that extend its capabilities:
 
 - **ChatGPT**: Primary AI interface with OpenAI's models, image generation, and tool integration
 - **Anthropic**: Alternative AI interface using Claude models for diverse conversational styles
+- **XAI**: X.AI Grok integration for creative and humorous AI interactions
+- **Ollama**: Local AI model hosting for privacy and self-hosted deployments
 - **Calc**: Mathematical calculations with advanced expression support via MathJS
 - **Giphy**: GIF search and sharing integration
 - **HIBP**: Security breach checking via Have I Been Pwned API

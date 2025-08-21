@@ -6,6 +6,8 @@ This document provides comprehensive documentation for all plugins available in 
 
 - [ChatGPT](#chatgpt)
 - [Anthropic](#anthropic)
+- [XAI (X.AI Grok)](#xai-xai-grok)
+- [Ollama](#ollama)
 - [Calc](#calc)
 - [Giphy](#giphy)
 - [HIBP (Have I Been Pwned)](#hibp-have-i-been-pwned)
@@ -32,8 +34,14 @@ This document provides comprehensive documentation for all plugins available in 
 #### User Commands
 - **`.help`** - Display all available commands and usage information
 - **`@{botname} <text>`** - Chat with ChatGPT (reply to a message for context)
+- **`@gpt <text>`** - Chat with ChatGPT (alternative format)
+- **`@gpt4 <text>`** - Chat with ChatGPT using GPT-4 model
+- **`@gpt3 <text>`** - Chat with ChatGPT using GPT-3 model
+- **`@gpt4.5 <text>`** - Chat with ChatGPT using GPT-4.5 model
 - **`.vision <text>`** - Parse images with questions (attach image to message)
 - **`.mkimg <text>`** - Generate HD images using DALL-E3
+- **`.img <text>`** - Generate images using DALL-E3 (alternative format)
+- **`.ming <text>`** - Generate images using DALL-E3 (alternative format)
 - **`.mkstdimg <text>`** - Generate standard quality images using DALL-E3
 - **`.drtts <text>`** - Text-to-speech using DR TTS service
 - **`.tts <text>`** - Text-to-speech using pyttsx3
@@ -44,11 +52,20 @@ This document provides comprehensive documentation for all plugins available in 
 - **`.docker help`** - Docker command help
 
 #### Admin Commands
-- **`.get chatgpt <setting>`** - Get ChatGPT configuration setting
-- **`.set chatgpt <setting> <value>`** - Set ChatGPT configuration setting
-- **`.model get`** - Get current ChatGPT model
-- **`.model set <model>`** - Set ChatGPT model
-- **`.reset chatgpt <setting>`** - Reset ChatGPT setting to default
+- **`.gpt get [<setting>]`** - Get ChatGPT configuration setting(s)
+- **`.gpt set <setting> <value>`** - Set ChatGPT configuration setting
+- **`.gpt reset <setting>`** - Reset ChatGPT setting to default
+- **`.gpt model get`** - Get current ChatGPT model
+- **`.gpt model set <model>`** - Set ChatGPT model
+- **`.gpt model available`** - List available ChatGPT models
+- **`.gpt debugchat`** - Debug conversation context
+- **`.gpt set channel system <message>`** - Set channel-specific system message
+- **`.gpt get channel system`** - Get channel-specific system message
+- **`.gpt clear channel system`** - Clear channel-specific system message
+- **`.gpt memories get`** - Get stored memories
+- **`.gpt memories search <query>`** - Search memories
+- **`.gpt memories save <text>`** - Save memory
+- **`.gpt memories enable/disable <context>`** - Enable/disable memories for context (any/channel/direct)
 - **`.users list/add/remove [<username>]`** - Manage authorized users
 - **`.admins list/add/remove [<username>]`** - Manage administrators
 - **`.eval <code>`** - Execute Python code and return results
@@ -136,6 +153,98 @@ This document provides comprehensive documentation for all plugins available in 
 - Conversation context maintained per thread
 - Models automatically fetched from Anthropic API on startup
 - Thread history stored with 7-day expiry
+
+---
+
+## XAI (X.AI Grok)
+
+**Purpose**: AI conversational interface using X.AI's Grok models for diverse and creative interactions.
+
+### Commands
+
+#### User Commands
+- **`@grok <text>`** - Chat with Grok
+- **`@xai <text>`** - Chat with Grok (alternative format)
+
+#### Admin Commands
+- **`.ant model get`** - Get current Grok model
+- **`.ant model set <model>`** - Set Grok model
+- **`.ant model available`** - List available models
+- **`.ant get [<setting>]`** - Get configuration setting(s)
+- **`.ant set <setting> <value>`** - Set configuration setting
+- **`.ant reset <setting>`** - Reset setting to default
+- **`.ant help`** - Display XAI plugin help
+- **`.ant debugchat`** - Debug conversation context
+
+### Configuration
+
+#### Environment Variables
+- **`XAI_API_KEY`** - Required. X.AI API key for Grok access
+
+#### Available Models
+- `grok-2-latest` (default)
+
+#### Settings
+- **`temperature`** - Response creativity (default: 1.0)
+- **`system`** - System message (default: "You're a helpful assistant.")
+- **`top_p`** - Nucleus sampling parameter (default: 1.0)
+- **`moderation`** - Content moderation (default: false)
+- **`stream`** - Streaming responses (default: true)
+- **`stream_update_delay_ms`** - Stream update delay (default: 200ms)
+
+### Permissions
+- Basic chat: Requires user permission
+- Configuration commands: Admin only
+
+### Notes
+- Similar functionality to Anthropic plugin but uses X.AI's Grok models
+- Known for more creative and humorous responses
+- Supports streaming responses for real-time interaction
+- Thread history stored with 7-day expiry
+- Configuration commands share namespace with Anthropic (`.ant`)
+
+---
+
+## Ollama
+
+**Purpose**: Local AI model integration using Ollama for self-hosted language models.
+
+### Commands
+
+#### Configuration Commands (Admin Only)
+- **`.ollama help`** - Display Ollama plugin help
+- **`.ollama model list`** - List available local models
+- **`.ollama model pull <model>`** - Download/pull a model
+- **`.ollama model show <model>`** - Show model information
+- **`.ollama stream enable`** - Enable streaming responses
+- **`.ollama stream disable`** - Disable streaming responses
+- **`.ollama stream delay set <milliseconds>`** - Set stream delay
+
+### Configuration
+
+#### Environment Variables
+- **`OLLAMA_URL`** - Ollama server URL (default: "http://localhost:11434/api")
+
+#### Default Settings
+- **Model**: mistral (default)
+- **Streaming**: enabled
+- **Stream delay**: 100ms
+
+### Permissions
+- **All commands**: Admin only (model management is high-privilege)
+
+### Features
+- **Local model hosting**: Run AI models on your own infrastructure
+- **Model management**: Download and manage different models
+- **Streaming support**: Real-time response streaming
+- **Configurable endpoints**: Support for remote Ollama instances
+
+### Notes
+- Requires Ollama server running locally or remotely
+- Models must be pulled/downloaded before use
+- Useful for privacy-sensitive environments
+- Lower latency when running locally
+- No external API dependencies once models are downloaded
 
 ---
 
@@ -339,7 +448,7 @@ None required.
 - **`.pushups sub <number>`** - Subtract pushups (corrections)
 - **`.pushups score`** - Show your current scores
 - **`.pushups scores`** - Show your current scores
-- **`.pushups top<number>`** - Show top N users leaderboard
+- **`.pushups top<number>`** - Show top N users leaderboard (e.g., `.pushups top5`, `.pushups top10`)
 - **`.pushups reset`** - Reset your own stats (admin: reset others)
 
 ### Examples

@@ -4,22 +4,26 @@ mmchatgpt is a Mattermost chatbot built with the mmpy_bot framework. It integrat
 
 ## Features
 
-- ChatGPT: Leverage OpenAI's ChatGPT for conversational responses.
-- Anthropic: Communicate using Anthropic's API for generating responses.
-- Calculation: Perform mathematical operations directly through chat commands.
-- Giphy: Search and send GIF images.
-- HIPB: Check for compromised accounts via Have I Been Pwned integration.
-- Jira: Interact with Jira for issue tracking and management.
-- NTP: Provide network time protocol services.
-- Pushups: Fun commands for pushup reminders.
-- TTS: Convert text to speech for audio responses.
-- Shell Commands: Execute shell commands remotely as needed.
-- ValkeyTool: Validate keys and manage secure tokens.
-- Users: Manage user information and permissions.
-- VectorDb: Interface with vector databases as part of data queries.
-- IntervalsIcu: Handle interval-based tasks and scheduling.
-- Log Manager: Manage and review bot logs for debugging.
-- Version: Display the current bot version from the version file.
+mmchatgpt includes 16+ specialized plugins that extend its capabilities:
+
+- **ChatGPT**: Primary AI interface with OpenAI's models, image generation, and tool integration
+- **Anthropic**: Alternative AI interface using Claude models for diverse conversational styles
+- **Calc**: Mathematical calculations with advanced expression support via MathJS
+- **Giphy**: GIF search and sharing integration
+- **HIBP**: Security breach checking via Have I Been Pwned API
+- **Jira**: Project management and issue tracking integration
+- **NTP**: Network time protocol testing and synchronization diagnostics
+- **Pushups**: Fitness tracking with gamification and leaderboards
+- **TTS**: Text-to-speech conversion with multiple engine support
+- **Shell Commands**: Secure network diagnostics and system administration tools
+- **ValkeyTool**: Direct database key management for debugging and administration
+- **Users**: Comprehensive user and permission management system
+- **VectorDb**: Vector database integration for RAG (Retrieval-Augmented Generation)
+- **IntervalsIcu**: Fitness and wellness tracking via Intervals.icu integration
+- **LogManager**: Automated log cleanup and maintenance
+- **Version**: Bot version and source information display
+
+For detailed documentation including commands, configuration, and usage examples, see **[PLUGINS.md](PLUGINS.md)**.
 
 ## Setup
 
@@ -37,6 +41,15 @@ mmchatgpt is a Mattermost chatbot built with the mmpy_bot framework. It integrat
 
 3. Ensure the version file contains the current version of the bot.
 
+## Documentation
+
+- **README.md** (this file) - Overview, setup, and basic usage
+- **[PLUGINS.md](PLUGINS.md)** - Comprehensive plugin documentation including:
+  - All available commands with examples
+  - Configuration requirements and environment variables
+  - Permission levels and security considerations
+  - Usage tips and troubleshooting notes
+
 ## Running the Bot
 
 Start the bot with:
@@ -49,6 +62,7 @@ Alternatively, use Docker with the provided Dockerfile and docker-compose files:
 
 ## Additional Resources
 
+- **[PLUGINS.md](PLUGINS.md)** - Comprehensive plugin documentation with commands and configuration
 - Mattermost API Documentation: https://api.mattermost.com/#tag/introduction
 - mmpy-bot Documentation: https://mmpy-bot.readthedocs.io/en/latest/index.html
 - OpenAI Python Client: https://github.com/openai/openai-python

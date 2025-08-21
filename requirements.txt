@@ -75,7 +75,7 @@ tomli==2.2.1; python_version >= '3.8'
 tqdm==4.67.1; python_version >= '3.7'
 typing-extensions==4.12.2; python_version >= '3.8'
 tzlocal==5.3; python_version >= '3.9'
-urllib3==2.3.0; python_version >= '3.9'
+urllib3==2.5.0; python_version >= '3.9'
 uuid==1.30
 validators==0.34.0; python_version >= '3.8'
 valkey[libvalkey]==6.1.0; python_version >= '3.8'

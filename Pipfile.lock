@@ -1950,11 +1950,11 @@
                 "libvalkey"
             ],
             "hashes": [
-                "sha256:a652df15ed89c41935ffae6dfd09c56f4a9ab80b592e5ed9204d538e2ddad6d3",
-                "sha256:cfe769edae894f74ac946eff1e93f7d7f466032c3030ba7e9d089a742459ac9c"
+                "sha256:5880792990c6c2b5eb604a5ed5f98f300880b6dd92d123819b66ed54bb259731",
+                "sha256:e2691541c6e1503b53c714ad9a35551ac9b7c0bbac93865f063dbc859a46de92"
             ],
-            "markers": "python_version >= '3.8'",
-            "version": "==6.1.0"
+            "markers": "python_version >= '3.9'",
+            "version": "==6.1.1"
         },
         "wheel": {
             "hashes": [

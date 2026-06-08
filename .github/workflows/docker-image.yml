@@ -2,59 +2,68 @@ name: Docker Image CI
 
 on:
   push:
-    tags: 
+    tags:
       - 'v*'
 
-jobs:
+permissions: {}
 
+concurrency:
+  group: docker-image-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
   build:
+    name: Build and publish images
 
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
+      packages: write # needed to publish images to GitHub Container Registry
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      with:
+        persist-credentials: false
 
     - name: Extract tag
       id: extract_tag
       run: echo "TAG=${GITHUB_REF##*/}" >> $GITHUB_ENV
 
     - name: Log in to GitHub Container Registry
-      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
+      env:
+        GHCR_TOKEN: ${{ github.token }}
+      run: echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
 
     - name: Log in to Docker Hub
-      run: echo "${{ env.DOCKER_TOKEN }}" | docker login docker.io -u "${{ env.DOCKER_USERNAME}}" --password-stdin
       env:
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-        DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}    
+        DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+      run: echo "$DOCKER_TOKEN" | docker login docker.io -u "$DOCKER_USERNAME" --password-stdin
 
     - name: Build the Docker image
       run: |
-        docker build . --file Dockerfile --tag ghcr.io/aio-it/mmchatgpt:${{ env.TAG }} --tag docker.io/lbr88/mmchatgpt:${{ env.TAG }}
-        docker tag ghcr.io/aio-it/mmchatgpt:${{ env.TAG }} ghcr.io/aio-it/mmchatgpt:latest
-        docker tag docker.io/lbr88/mmchatgpt:${{ env.TAG }} docker.io/lbr88/mmchatgpt:latest
+        docker build . --file Dockerfile --tag "ghcr.io/aio-it/mmchatgpt:$TAG" --tag "docker.io/lbr88/mmchatgpt:$TAG"
+        docker tag "ghcr.io/aio-it/mmchatgpt:$TAG" ghcr.io/aio-it/mmchatgpt:latest
+        docker tag "docker.io/lbr88/mmchatgpt:$TAG" docker.io/lbr88/mmchatgpt:latest
 
     - name: Run Trivy scan
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -
-        ./bin/trivy image ghcr.io/aio-it/mmchatgpt:${{ env.TAG }}
-        ./bin/trivy image docker.io/lbr88/mmchatgpt:${{ env.TAG }}
+        ./bin/trivy image "ghcr.io/aio-it/mmchatgpt:$TAG"
+        ./bin/trivy image "docker.io/lbr88/mmchatgpt:$TAG"
         ./bin/trivy image ghcr.io/aio-it/mmchatgpt:latest
         ./bin/trivy image docker.io/lbr88/mmchatgpt:latest
 
     - name: Push the Docker image with specific tag to GitHub Container Registry
-      run: docker push ghcr.io/aio-it/mmchatgpt:${{ env.TAG }}
+      run: docker push "ghcr.io/aio-it/mmchatgpt:$TAG"
 
     - name: Push the Docker image with latest tag to GitHub Container Registry
       run: docker push ghcr.io/aio-it/mmchatgpt:latest
 
     - name: Push the Docker image with specific tag to Docker Hub
-      run: docker push docker.io/lbr88/mmchatgpt:${{ env.TAG }}
+      run: docker push "docker.io/lbr88/mmchatgpt:$TAG"
 
     - name: Push the Docker image with latest tag to Docker Hub
       run: docker push docker.io/lbr88/mmchatgpt:latest

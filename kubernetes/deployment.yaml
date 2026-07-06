@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bot
+  labels:
+    app: bot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bot
+  template:
+    metadata:
+      labels:
+        app: bot
+      annotations:
+        com.centurylinklabs.watchtower.scope: "mmchatgpt"
+    spec:
+      containers:
+        - name: bot
+          image: ghcr.io/aio-it/mmchatgpt:latest
+          command: ["python", "bot.py"]
+          envFrom:
+            - configMapRef:
+                name: bot-env
+            - secretRef:
+                name: bot-secrets
+          volumeMounts:
+            - name: docker-socket
+              mountPath: /var/run/docker.sock
+            - name: app-data
+              mountPath: /app-data
+      volumes:
+        - name: docker-socket
+          hostPath:
+            path: /var/run/docker.sock
+        - name: app-data
+          persistentVolumeClaim:
+            claimName: app-data-pvc

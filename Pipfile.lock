@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "be043ddc386e0a5dc1a4484305c2d8187579891cabed373492b79e3288012ffe"
+            "sha256": "acb903e6e7b6114510287d2061676c3aa3336b0a39b70d6b3cd4fd68bb61b326"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -1045,12 +1045,12 @@
         },
         "jsonpickle": {
             "hashes": [
-                "sha256:bb141da6057898aa2438ff268362b126826c812a1721e31cf08a6e142910dc91",
-                "sha256:f86e18f13e2b96c1c1eede0b7b90095bbb61d99fedc14813c44dc2f361dbbae1"
+                "sha256:7ffe34426bc797684dbf1dc84185558bd864cd25b1ff5fb01b7405e392d0a937",
+                "sha256:8afed18aa189fd81e2e833b426bb4af485594921f0b1d36c2001fc5637a2f210"
             ],
             "index": "pypi",
             "markers": "python_version >= '3.8'",
-            "version": "==4.1.1"
+            "version": "==4.1.2"
         },
         "libvalkey": {
             "hashes": [
